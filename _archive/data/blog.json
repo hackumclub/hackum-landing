@@ -1,0 +1,127 @@
+[
+ {
+  "slug": "introducing-the-new-organizer-dashboard",
+  "title": "Introducing the new Organizer Dashboard",
+  "excerpt": "Somewhere right now, a hackathon organizer is on application number 2,586 of 3,000. They’ve probably had the same tab open since morning. Open a hacker’s application, check their GitHub, look through their socials to see what they’ve built in public, read the answers they probably"
+ },
+ {
+  "slug": "pushed-to-prod",
+  "title": "Pushed to Prod with Anthropic, Elevation Capital and Mesa School of Business",
+  "excerpt": "Five hours is not a lot of time, but it is enough to find out whether the boldest part of an idea can actually work. On 8 August 2026, we hosted Push to Prod: Building at the Frontier with Anthropic, Elevation Capital & Mesa School of Business in Bengaluru. The hackathon"
+ },
+ {
+  "slug": "the-new-era-of-builders",
+  "title": "The new era of builders",
+  "excerpt": "Hear from the present generation of builders & learners what they think about programming and how does the present toolstack & challenges look like. This June, in partnership with AWS, we ran three events in Mumbai & Bengaluru — the AWS Student Builder Mixers and Build with David. What came out of both was"
+ },
+ {
+  "slug": "vibe-with-hermes-agent",
+  "title": "Vibe With Hermes Agent: builders, workflows, and a room full of context",
+  "excerpt": "Last Saturday, 13th June, we hosted Vibe With Hermes Agent, a co-build session at our HQ, with a simple motivation: if Hermes Agent was already becoming useful in our own workflows, it was worth bringing together others who were quietly exploring the agent too We wanted a room where people"
+ },
+ {
+  "slug": "the-first-edition-of-our-hardware",
+  "title": "Building a Hardware Community Our First H.M.F Hardware Workshop",
+  "excerpt": "Last Saturday, we hosted the first edition of the H.M.F Hardware Workshop with one simple goal: teach people the fundamentals of hardware and help them build their first hardware device from scratch. We also invited founders, builders, and hardware enthusiasts to showcase the projects they had been working"
+ },
+ {
+  "slug": "devfolio-codex-plugin",
+  "title": "Introducing the Devfolio plugin for Codex",
+  "excerpt": "The hackathon landscape is changing, we are seeing projects getting shipped faster than ever, to accommodate this speed, we are introducing plugin support for codex so you can ship your code during a the hackathon as fast as your agent builds it. The Devfolio plugin for Codex brings all of"
+ },
+ {
+  "slug": "the-discerning-machine",
+  "title": "How we built an AI hackathon judge while preserving human taste and judgment",
+  "excerpt": "What we learned from scaling hackathon judging by separating machine thoroughness from human taste. We recently ran an experiment for the Push to Prod hackathon to see if an AI system could help scale hackathon judging while preserving human judgment and taste. Hackathon judging is usually described as a question"
+ },
+ {
+  "slug": "networking-a-village-ethindia",
+  "title": "Networking a village @ETHIndia",
+  "excerpt": "In the world of high-stakes hackathons, there is a fundamental hierarchy of needs. Most people know the classic Indian adage: Roti, Kapda, aur Makaan (Food, Clothing, and Shelter). But for 800 hackers descending upon ETHIndia, that hierarchy had a critical fourth pillar: Solid, high-speed Internet."
+ },
+ {
+  "slug": "synthesis",
+  "title": "The Synthesis: What happened when AI judged AI",
+  "excerpt": "1500+ builders. 680+ projects. $100k+ in prizes. A live experiment in whether machines can evaluate what humans build. The rules for how AI agents operate in the world are being written right now. Not in whitepapers. In the actual decisions being made about what gets funded, what gets built, and"
+ },
+ {
+  "slug": "pushing-to-prod",
+  "title": "Pushing to Prod with Genspark, Anthropic and Temasek",
+  "excerpt": "Once in a while, we host hackathons with a concise group of builders in a different country. This time, it was Singapore. As of writing this, Singapore also happens to rank #1 in AI adoption according to the Anthropic Economic Index. On 24th April 2026, we hosted Push to Prod"
+ },
+ {
+  "slug": "i-made-openclaw-make-the-hackathon-submission-for-me",
+  "title": "When your hackathon teammate is AI",
+  "excerpt": "In case you missed the hype on the internet this month. Here's a quick tl;dr ClawdBot (now OpenClaw) was made by Peter Steinberger in 2025, which grew in popularity thanks to advancing AI models like Opus 4.5 and GPT 5.2 working very well with agents. OpenClaw is"
+ },
+ {
+  "slug": "ethmumbai2026",
+  "title": "In the city that never sleeps, ETHMumbai found its rhythm",
+  "excerpt": "Last month, Mumbai hosted its Ethereum hackathon: ETHMumbai 2026. Here’s a quick tour, no bus required :P Built in motion Over the years, we have been hosting ETHIndia, bringing builders from across the country together. Now, we’re seeing more teams, more cities, and more communities step up and"
+ },
+ {
+  "slug": "buildindia2026",
+  "title": "Build India 2026: Builders, Agents, and the Future of AI in India",
+  "excerpt": "We had a chance to host Build India Hackathon in partnership with Anthropic, Replit and Lightspeed in Bengaluru on 15th February 2026. For a long time, building meant writing logic, connecting APIs, designing interfaces, and hoping users would adapt to the product. Now, intelligence is part of the foundation. Small"
+ },
+ {
+  "slug": "we-turned-a-train-into-indias-first-moving-web3-hackathon-and-it-was-beautifully-chaotic",
+  "title": "We Turned a Train Into India's First Moving Ethereum Hackathon (And It Was Beautifully Chaotic)",
+  "excerpt": "Nobody would have believed us if we'd just told them. So we showed them instead. For months, we'd been wrestling with a question that kept us up at night: What if we could create an environment where builders didn't have to hunt down mentors in forest-sized venues, where meaningful conversations"
+ },
+ {
+  "slug": "ethindiavilla",
+  "title": "ETHIndiaVilla - Same Mission, New Format",
+  "excerpt": "Our mission for 2025 was clear: We are doing things differently this time. ETHIndia came back with a new version this year, ETHIndiaVilla. A tighter circle of Ethereum builders, a more intentional format, and an experience designed for real collaboration. This edition brought together a team of selected builders for"
+ },
+ {
+  "slug": "how-to-hackathon",
+  "title": "Head of Community, Hacker at Heart: What 1 million builders taught me",
+  "excerpt": "Learn how to use hackathons the right way with practical, first‑hand advice from the head of community at Devfolio."
+ },
+ {
+  "slug": "announcing-devfolio-student-hackathon-grants",
+  "title": "Presenting Student Hackathon Grants India in association with AWS",
+  "excerpt": "Hackathons are where the boldest ideas take shape. Over a single weekend, students come together, form teams, and bring new products into the world. For many, these events are the first taste of entrepreneurship, collaboration, and the thrill of shipping fast. At Devfolio, we’ve seen first-hand how hackathons can"
+ },
+ {
+  "slug": "warpspeed-2025-recap",
+  "title": "Warpspeed 2025: Agents, Algorithms & Airtime - A Recap",
+  "excerpt": "Warpspeed 2025 landed in Bengaluru on June 21–22. What followed was 24 hours of agentic AI ambition, prototypes that pushed practical boundaries, and a builder frenzy felt from start to finish. 🚀 Flying at Warpspeed From the first early-morning check-ins to the adrenaline-charged final minutes, Warpspeed 2025 set a new"
+ },
+ {
+  "slug": "journey-through-hackathons-hustle-heart",
+  "title": "From Volunteer to Chief of Staff: My Journey through Hackathons, Hustle & Heart",
+  "excerpt": "Four and a half years ago, I was invited to volunteer for Devfolio's flagship hackathon, InOut 7.0. I didn’t know it then, but that small decision would eventually shape the next few years of my life."
+ },
+ {
+  "slug": "base-batches-2025-recap",
+  "title": "Rewiring The Onchain Future: The Base Batches #001 Recap",
+  "excerpt": "What do you get when you bring together thousands of builders across the globe, a vibrant ecosystem of mentors and partners, a playful AI alter-ego of Jesse Pollak, and a demo day with $1M on the line? You get Base Batches 2025. Let’s take a look back at how"
+ },
+ {
+  "slug": "jessegpt",
+  "title": "JesseGPT: The onchain hype officer you didn't know you needed",
+  "excerpt": "Last year, we gave you Supabald Jesse, a pixelated, cool-aura oracle who left the chain and entered your wallets. This year, Jesse’s back. Not as a meme. But as an AI. Say gm to JesseGPT - your onchain feedback buddy, Base-pilled mentor, and hype generator all rolled into one."
+ },
+ {
+  "slug": "base-batches-001",
+  "title": "Base Batches: Build Onchain, Get Funded & Go Global",
+  "excerpt": "Forget what you know about hackathons and post-hackathon ghost towns. Base Batches is your deep onchain journey with real funding, real support, and real opportunities waiting on the other side."
+ },
+ {
+  "slug": "ethdenver-2025-recap",
+  "title": "The Mile High Effect: How ETHDenver 2025 Reached Rarefied Air in Ethereum Development",
+  "excerpt": "In the crisp Colorado air, ETHDenver, now a legendary fixture in the Ethereum ecosystem, completed its 7th edition in Feb-Mar 2025. Here’s a rundown of what happened behind-the-scenes and our reflections on yet another successful edition. With each passing year, the legacy of ETHDenver grows even stronger. The fact"
+ },
+ {
+  "slug": "ethsf-2025",
+  "title": "ETHSF 2025: San Francisco Gets a Fresh Coat of Ethereum",
+  "excerpt": "From Stanford lectures to Berkeley brainstorms to hacker houses: Ethereum finally got its moment in the Bay."
+ },
+ {
+  "slug": "google-genaiexchange-recap",
+  "title": "Reflecting on the Gen AI Exchange Hackathon by Google",
+  "excerpt": "Join us as we look back at Google India's pioneer Gen AI hackathon that brought together 38,000+ builders from across the country to build innovative solutions to address some of India's crucial problems."
+ }
+]

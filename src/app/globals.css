@@ -1,0 +1,214 @@
+@import "tailwindcss";
+@source "../";
+
+@theme inline {
+  --font-sans: var(--font-nunito), system-ui, sans-serif;
+  --font-display: var(--font-montserrat), var(--font-nunito), sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Brand (docs/design-plan-v4.md): logo blue #0085CA is the theme; green and yellow are accents only. */
+  --color-whisker: #0085ca;
+  --color-brand: #0085ca;
+  --color-brand-dark: #006ba3;
+  --color-brand-deep: #005b8c;
+  --color-brand-tint: #e0f1fa;
+  --color-leaf: #00ab84;
+  --color-sun: #e5bf03;
+  --color-ink: #071b29;
+  --color-ink-2: #0d2a3d;
+  --color-fur: #eef4f8;
+  --color-paper: #ffffff;
+  --color-muted: #47596a;
+  --color-faint: #66788a;
+  /* Legacy names kept so older markup resolves into the theme. */
+  --color-lav: var(--color-brand-tint);
+  --color-lav-2: #eef7fc;
+  --color-peri: var(--color-brand);
+  --color-sand: var(--color-ink);
+  --color-mint: var(--color-leaf);
+  --color-teal: var(--color-ink-2);
+  --color-ok: var(--color-leaf);
+  --color-surface: var(--color-fur);
+  --color-card: #f6f9fb;
+  --color-chip: #eef4f8;
+  --radius-card: 20px;
+  --shadow-card: 0 1px 0 rgb(7 27 41 / 0.05), 0 14px 34px -14px rgb(7 27 41 / 0.3);
+  --shadow-soft: 0 1px 2px 0 rgb(7 27 41 / 0.06);
+  --shadow-glow: 0 10px 30px -8px rgb(0 133 202 / 0.55);
+}
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { color: var(--color-ink); font-family: var(--font-sans); background: var(--color-fur); }
+.font-display { font-family: var(--font-display); }
+/* In the base layer so component utilities (e.g. focus-visible:outline-none on inputs inside a ringed field) can override it. */
+@layer base {
+  :focus-visible { outline: 3px solid var(--color-brand); outline-offset: 3px; border-radius: 6px; }
+}
+::selection { background: var(--color-brand); color: #fff; }
+
+/* Glass surfaces: frosted, layered. A soft top-lit gradient, a bright hairline border, an inner top highlight
+   and a faint inner bottom shade so the pane reads as a thick sheet rather than a flat tint. */
+.glass {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.78), rgb(255 255 255 / 0.46));
+  backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgb(255 255 255 / 0.7);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.95),
+    inset 0 -1px 0 rgb(0 91 140 / 0.07),
+    0 1px 2px rgb(7 27 41 / 0.05),
+    0 18px 40px -20px rgb(0 60 100 / 0.4);
+}
+.glass-dark {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.07));
+  backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 0.22);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    inset 0 -1px 0 rgb(0 0 0 / 0.12),
+    0 18px 40px -22px rgb(0 20 40 / 0.6);
+}
+
+/* Transparent card (used by the join card on the blue band): no fill and no backdrop filter, so the band's own
+   blue shows through unchanged; only a thin outline keeps the card's shape. */
+.glass-plain {
+  background: transparent;
+  border: 1px solid rgb(255 255 255 / 0.28);
+}
+
+/* Plain white button for blue backgrounds: no fill animation, no text roll; only a soft shadow change on hover. */
+.btn-white {
+  background: #fff; color: var(--color-brand-deep); font-weight: 700;
+  box-shadow: 0 8px 20px -10px rgb(0 40 80 / 0.5);
+  transition: box-shadow 0.2s;
+}
+.btn-white:hover, .btn-white:focus-visible { box-shadow: 0 12px 26px -10px rgb(0 40 80 / 0.6); }
+
+/* Header bar: always glass, a touch clearer at the top of the page and firmer once scrolled. */
+.glass-bar {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.28));
+  backdrop-filter: blur(20px) saturate(170%);
+  border: 1px solid rgb(255 255 255 / 0.6);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 8px 24px -16px rgb(0 60 100 / 0.3);
+  transition: background 0.35s, box-shadow 0.35s;
+}
+.glass-bar[data-scrolled] {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.82), rgb(255 255 255 / 0.58));
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgb(0 91 140 / 0.06), 0 16px 36px -18px rgb(0 60 100 / 0.5);
+}
+
+/* Glass button for blue / dark backgrounds: frosted pill; hover only brightens (no movement). */
+.btn-glass {
+  position: relative; isolation: isolate; overflow: hidden;
+  color: #fff; font-weight: 700;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0.1));
+  backdrop-filter: blur(16px) saturate(170%);
+  border: 1px solid rgb(255 255 255 / 0.45);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), inset 0 -1px 0 rgb(0 40 80 / 0.18), 0 10px 24px -12px rgb(0 40 80 / 0.55);
+  transition: box-shadow 0.3s, border-color 0.3s, background 0.3s;
+}
+.btn-glass:hover, .btn-glass:focus-visible {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.4), rgb(255 255 255 / 0.16));
+  border-color: rgb(255 255 255 / 0.75);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.75), inset 0 -1px 0 rgb(0 40 80 / 0.2), 0 14px 30px -12px rgb(0 40 80 / 0.65);
+}
+
+/* Glass button for light backgrounds. */
+.btn-glass-light {
+  position: relative; isolation: isolate; overflow: hidden;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.5));
+  backdrop-filter: blur(16px) saturate(170%);
+  border: 1px solid rgb(255 255 255 / 0.85);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgb(0 91 140 / 0.08), 0 10px 24px -14px rgb(0 60 100 / 0.5);
+  transition: box-shadow 0.3s, transform 0.3s;
+}
+
+.btn-glass-light:hover { box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgb(0 91 140 / 0.1), 0 16px 30px -14px rgb(0 60 100 / 0.6); }
+
+/* Primary (blue) button with a glassy gloss on its top half. */
+.btn-primary {
+  position: relative; isolation: isolate; overflow: hidden;
+  color: #fff; font-weight: 700;
+  background: linear-gradient(180deg, #13a3ea 0%, #0085ca 55%, #006ba3 100%);
+  border: 1px solid rgb(255 255 255 / 0.28);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), inset 0 -2px 4px rgb(0 40 80 / 0.25), 0 12px 26px -10px rgb(0 133 202 / 0.75);
+  transition: filter 0.3s, box-shadow 0.3s;
+}
+.btn-primary::before {
+  content: ""; position: absolute; inset: 0 0 50% 0; z-index: -1;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.32), rgb(255 255 255 / 0.04));
+}
+/* Quiet hover: only the shadow deepens, no colour shift. */
+.btn-primary:hover, .btn-primary:focus-visible { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), inset 0 -2px 4px rgb(0 40 80 / 0.25), 0 16px 30px -10px rgb(0 133 202 / 0.85); }
+/* Flat variant: same gloss, but no outer shadow/glow at all (also on hover). */
+.btn-primary.btn-flat, .btn-primary.btn-flat:hover, .btn-primary.btn-flat:focus-visible {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), inset 0 -2px 4px rgb(0 40 80 / 0.25);
+}
+.btn-primary:disabled { filter: grayscale(0.4) brightness(0.95); cursor: not-allowed; }
+
+/* Custom cursor (components/Cursor). Native cursor hidden only while the custom one is active. */
+html.has-cursor, html.has-cursor a, html.has-cursor button, html.has-cursor [role="button"], html.has-cursor label { cursor: none; }
+html.has-cursor input, html.has-cursor textarea { cursor: text; }
+/* GSAP Draggable sets an inline grab cursor; the custom ring shows "Drag" instead. */
+html.has-cursor [data-cursor] { cursor: none !important; }
+
+/* The lightbox <dialog> lives in the browser's top layer, above the custom cursor, so while it is open the real
+   cursor comes back (pointer over controls) and the custom one is hidden. */
+html.has-cursor:has(dialog[open]) { cursor: default !important; }
+html.has-cursor:has(dialog[open]) *, html.has-cursor:has(dialog[open]) [data-cursor] { cursor: default !important; }
+html.has-cursor:has(dialog[open]) :is(a, button, [role="button"], label, summary) { cursor: pointer !important; }
+html:has(dialog[open]) [data-cursor-root] { visibility: hidden; }
+
+/* Perforated ticket edge: a column of punched holes in the page colour. */
+.perforation {
+  background-image: radial-gradient(circle at center, var(--color-fur) 5px, transparent 5.5px);
+  background-size: 14px 18px;
+  background-repeat: repeat-y;
+  background-position: center top;
+}
+
+/* Hide scrollbars on horizontal galleries that are also draggable. */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ---- Motion layer (src/motion, components/motion) ---------------------------------------------- */
+/* Text that SplitText will reveal is hidden only when scripting is enabled and the visitor allows motion
+   (CSS media features, so no inline script is needed), and only until it has been split. Without JS, or with
+   reduced motion, it simply shows. A CSS-only safety net reveals it after 4s if the script bundle is very slow.
+   visibility (not display) keeps the text's height reserved so nothing shifts. */
+@keyframes reveal-fallback { to { visibility: visible; } }
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  [data-split]:not([data-split-ready]) { visibility: hidden; animation: reveal-fallback 0s 4s forwards; }
+}
+
+/* Keyword highlight: blue text with an underline that sweeps in once its title has revealed. */
+mark.kw { background: none; color: var(--color-brand); position: relative; white-space: nowrap; }
+mark.kw::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0.04em; height: 0.12em; border-radius: 99px;
+  background: linear-gradient(90deg, #0085ca, #00ab84); transform: scaleX(1); transform-origin: left;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s;
+}
+/* With motion, the underline sweeps in after its title has revealed; otherwise it is simply there. */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  mark.kw::after { transform: scaleX(0); }
+  [data-in] mark.kw::after { transform: scaleX(1); }
+}
+.text-white mark.kw, .text-white .kw { color: #7fd3ff; }
+
+/* Roll-over label: the text slides up and an identical copy rolls in from below (transform only). */
+.roll { display: inline-grid; overflow: hidden; vertical-align: top; }
+.roll > * { grid-area: 1 / 1; transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+.roll > :last-child { transform: translateY(105%); }
+a:hover .roll > :first-child, button:hover .roll > :first-child, a:focus-visible .roll > :first-child { transform: translateY(-105%); }
+a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .roll > :last-child { transform: translateY(0); }
+
+/* Fill-on-hover button: a circle grows from the bottom behind the label. */
+.btn-fill { position: relative; isolation: isolate; overflow: hidden; }
+.btn-fill::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--fill, var(--color-brand-deep));
+  transform: translateY(101%) scale(1.2); transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-fill:hover::before, .btn-fill:focus-visible::before { transform: translateY(0) scale(1.2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .roll > *, .btn-fill::before, mark.kw::after { transition: none; }
+}

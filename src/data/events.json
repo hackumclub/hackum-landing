@@ -1,0 +1,122 @@
+[
+  {
+    "name": "Typerace",
+    "rating": null,
+    "themes": [
+      "Competition"
+    ],
+    "participants": null,
+    "mode": "Offline",
+    "status": "Ended",
+    "slug": "typerace-2026",
+    "url": "https://www.instagram.com/hackumclub/",
+    "tagline": "Хурдан бичих тэмцээн",
+    "dates": "2026",
+    "tagline_en": "Speed-typing championship"
+  },
+  {
+    "name": "Dev Hackathon",
+    "rating": null,
+    "themes": [
+      "Hackathon"
+    ],
+    "participants": null,
+    "mode": "Offline",
+    "status": "Ended",
+    "slug": "dev-hackathon-2025",
+    "url": "https://www.instagram.com/hackumclub/",
+    "tagline": "Hackum-ийн хакатон",
+    "dates": "2025",
+    "tagline_en": "Hackum's own hackathon"
+  },
+  {
+    "name": "C Battle",
+    "rating": null,
+    "themes": [
+      "Competition"
+    ],
+    "participants": null,
+    "mode": "Offline",
+    "status": "Ended",
+    "slug": "c-battle-2025",
+    "url": "https://www.instagram.com/hackumclub/",
+    "tagline": "C хэлний бодлогын тэмцээн",
+    "dates": "2025",
+    "tagline_en": "C programming problem-solving contest"
+  },
+  {
+    "name": "ХАСБАНК Hackathon",
+    "rating": null,
+    "themes": [
+      "Hackathon"
+    ],
+    "participants": null,
+    "mode": "Offline",
+    "status": "Ended",
+    "slug": "xacbank-hackathon-2024",
+    "url": "https://www.instagram.com/hackumclub/",
+    "tagline": "ХасБанктай хамтарсан хакатон",
+    "dates": "2024",
+    "tagline_en": "Hackathon with XacBank"
+  },
+  {
+    "name": "Digital МУИС Appathon",
+    "rating": null,
+    "themes": [
+      "Appathon"
+    ],
+    "participants": null,
+    "mode": "Offline",
+    "status": "Ended",
+    "slug": "digital-num-appathon-2023",
+    "url": "https://www.instagram.com/hackumclub/",
+    "tagline": "Апп хөгжүүлэлтийн тэмцээн",
+    "dates": "2023",
+    "tagline_en": "App development contest"
+  },
+  {
+    "name": "NUM Startup 3.0",
+    "rating": null,
+    "themes": [
+      "Startup"
+    ],
+    "participants": null,
+    "mode": "Offline",
+    "status": "Ended",
+    "slug": "num-startup-3-2023",
+    "url": "https://www.instagram.com/hackumclub/",
+    "tagline": "3-р байр 🥉",
+    "dates": "2023",
+    "tagline_en": "3rd place 🥉"
+  },
+  {
+    "name": "Hackum online hackathon",
+    "rating": null,
+    "themes": [
+      "Hackathon"
+    ],
+    "participants": null,
+    "mode": "Online",
+    "status": "Ended",
+    "slug": "hackum-online-hackathon-2020",
+    "url": "https://www.instagram.com/hackumclub/",
+    "tagline": "Covid үеийн онлайн хакатон",
+    "dates": "2020",
+    "tagline_en": "Online hackathon during COVID-19"
+  },
+  {
+    "name": "NUM Open Data Hackathon",
+    "rating": null,
+    "themes": [
+      "Open Data"
+    ],
+    "participants": null,
+    "mode": "Offline",
+    "status": "Ended",
+    "slug": "num-open-data-hackathon-2019",
+    "url": "https://www.instagram.com/hackumclub/",
+    "tagline": "Нээлттэй өгөгдлийн хакатон",
+    "dates": "2019",
+    "tagline_en": "Open data hackathon"
+  }
+]
