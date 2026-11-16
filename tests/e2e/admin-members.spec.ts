@@ -7,7 +7,7 @@ import { signInAs } from "./helpers/as";
 import { chooseOption, setDateTime } from "./helpers/pickers";
 
 const ADMIN_ROUTES = ["members", "members?tab=applications", "members?tab=merge", "comms", "settings", "settings/staff", "settings/integrations", "audit"];
-const PERSONA_HANDLES = ["dev-admin", "dev-organizer", "anuujin", "temuulen", "saraa", "new-guest"];
+const PERSONA_HANDLES = ["dev-admin", "dev-organizer", "anuujin", "temuulen", "saraa", "bayar", "new-guest"];
 const url = (p: string, lang = "en") => `/${lang}/admin/${p}`;
 
 async function open(page: Page, path: string, lang = "en") {

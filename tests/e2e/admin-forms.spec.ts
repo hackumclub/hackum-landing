@@ -235,8 +235,10 @@ test.describe("quality", () => {
     }
     test("the hub is a list of cards with Edit and Responses actions", async ({ page }) => {
       await page.goto("/en/admin/forms");
-      await expect(page.getByRole("table")).toBeHidden();
-      const card = page.getByRole("listitem").filter({ hasText: "Join Hackum" });
+      // Below md the shared table lays every row out as a card: no header row, each card carries its own actions.
+      const header = await page.locator("thead").boundingBox();
+      expect((header?.width ?? 0) <= 1 && (header?.height ?? 0) <= 1, "the column header is visually hidden (screen readers keep it)").toBe(true);
+      const card = page.locator("tbody tr").filter({ hasText: "Join Hackum" });
       await expect(card.getByRole("link", { name: /^Edit: Join Hackum/ })).toBeVisible();
       await expect(card.getByRole("link", { name: /^View responses: Join Hackum/ })).toBeVisible();
     });
