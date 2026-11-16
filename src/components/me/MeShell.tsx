@@ -76,10 +76,10 @@ export default function MeShell({ lang, t, skip, extras, user, children }: {
   const label = (k: Tab["key"]) => t[k];
   return (
     <ToastProvider>
-    <div className="ops-canvas min-h-dvh">
+    <div className="ops-canvas flow-root min-h-dvh">
       <a href="#main" className="sr-only z-[95] rounded-full bg-accent px-4 py-2 font-bold text-on-accent focus:not-sr-only focus:fixed focus:top-3 focus:left-3">{skip}</a>
       <header className="sticky top-3 z-30 mx-3 mt-3">
-        <div className="mx-auto flex min-h-14 w-full max-w-4xl items-center gap-2 rounded-full border border-white/60 bg-[color-mix(in_srgb,var(--ops-panel)_74%,transparent)] px-3 shadow-[0_14px_34px_-22px_rgb(0_60_100/0.55)] backdrop-blur-xl">
+        <div className="mx-auto flex min-h-14 w-full max-w-4xl items-center gap-2 rounded-full border border-[var(--ops-line)] bg-[color-mix(in_srgb,var(--ops-panel)_74%,transparent)] px-3 shadow-[0_14px_34px_-22px_rgb(0_60_100/0.55)] backdrop-blur-xl">
           <Link href={`/${lang}/me`} className="inline-flex min-h-11 items-center gap-2.5 pl-1 font-display text-lg font-black text-fg">
             <Image src="/img/brand/logo-128.png" alt="" width={34} height={34} className="rounded-full ring-2 ring-white/70" />
             <span>{t.brand}</span>
@@ -108,7 +108,7 @@ export default function MeShell({ lang, t, skip, extras, user, children }: {
       </header>
       <main id="main" className={cx("mx-auto w-full max-w-4xl px-3 pt-4 md:px-4 md:pb-12", onboarding ? "pb-10" : "pb-32")}>{children}</main>
       {!onboarding && (
-        <nav aria-label={t.label} className="fixed inset-x-3 bottom-3 z-30 rounded-[28px] border border-white/60 bg-[color-mix(in_srgb,var(--ops-panel)_86%,transparent)] pb-[env(safe-area-inset-bottom)] shadow-[0_18px_40px_-18px_rgb(0_60_100/0.6)] backdrop-blur-xl md:hidden">
+        <nav aria-label={t.label} className="fixed inset-x-3 bottom-3 z-30 rounded-[28px] border border-[var(--ops-line)] bg-[color-mix(in_srgb,var(--ops-panel)_86%,transparent)] pb-[env(safe-area-inset-bottom)] shadow-[0_18px_40px_-18px_rgb(0_60_100/0.6)] backdrop-blur-xl md:hidden">
           <ul className="mx-auto grid max-w-md grid-cols-4">
             {items.map(({ key, path: href, Icon, match }) => {
               const active = match(path);

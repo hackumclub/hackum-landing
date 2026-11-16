@@ -18,7 +18,7 @@ export default function PersonaSwitcher({ lang, personas, current, labels }: {
         name="handle"
         defaultValue={current ?? ""}
         onChange={(e) => e.currentTarget.form?.requestSubmit()}
-        className="min-h-10 max-w-44 rounded-[var(--radius-sm)] md:max-w-52 border border-line-strong bg-panel px-2 text-sm font-semibold text-fg"
+        className="min-h-10 max-w-44 cursor-pointer rounded-full border border-[var(--ops-line)] bg-neutral-soft px-3 text-sm font-bold text-fg md:max-w-52"
       >
         <option value="">{labels.signedOut}</option>
         {personas.map((p) => <option key={p.handle} value={p.handle}>{p.label[lang]}</option>)}

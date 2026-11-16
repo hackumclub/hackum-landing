@@ -7,11 +7,10 @@ import { copy } from "@/i18n/areas/me";
 import { fill, isLocale, tf } from "@/i18n/config";
 import { profileView } from "@/lib/me/queries";
 import { formatUb } from "@/lib/time";
-import Avatar from "@/components/ui/Avatar";
 import { ButtonLink } from "@/components/ui/Button";
 import StatusPill from "@/components/ui/StatusPill";
 import BadgeGrid from "@/components/me/BadgeGrid";
-import { Card, PageSkeleton, Section } from "@/components/me/parts";
+import { Card, PageHeader, PageSkeleton, Section } from "@/components/me/parts";
 import { meContext } from "@/components/me/context";
 
 type Props = { params: Promise<{ lang: string }> };
@@ -33,17 +32,18 @@ async function Body({ params }: Props) {
   const links = Object.entries(v.links);
   return (
     <div className="grid gap-7">
-      <header className="flex items-center gap-4">
-        <Avatar name={name} size={72} />
-        <div className="grid min-w-0 gap-1">
-          <h1 className="truncate font-display text-2xl font-bold text-fg md:text-3xl">{name}</h1>
-          <p className="flex flex-wrap items-center gap-2 text-sm text-fg-muted">
-            <StatusPill status={v.status} label={d.status[v.status]} />
-            {v.school && <span>{v.grad_year ? fill(t.school, { school: v.school, year: v.grad_year }) : v.school}</span>}
-          </p>
-          <p className="text-sm text-fg-muted tnum">{t.seasons}: {v.seasons.length ? v.seasons.join(" · ") : t.noSeasons}</p>
-        </div>
-      </header>
+      <PageHeader
+        sticker="trophy" title={name}
+        lead={
+          <span className="grid gap-2">
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <StatusPill status={v.status} label={d.status[v.status]} />
+              {v.school && <span>{v.grad_year ? fill(t.school, { school: v.school, year: v.grad_year }) : v.school}</span>}
+            </span>
+            <span className="tnum text-base">{t.seasons}: {v.seasons.length ? v.seasons.join(" · ") : t.noSeasons}</span>
+          </span>
+        }
+      />
 
       <Link href={`/${lang}/me/membership`} className="flex min-h-14 items-center gap-3 rounded-[var(--radius-md)] border border-line bg-panel px-4 py-2 hover:bg-panel-2">
         <span className="grid flex-1 gap-0.5"><span className="font-bold text-fg">{t.membershipLink}</span><span className="text-sm text-fg-muted">{t.membershipLinkLine}</span></span>

@@ -88,7 +88,7 @@ export default function AdminShell({ lang, t, skip, close, extras, children }: {
         </div>
       </aside>
       <div className="min-w-0">
-        <header className="sticky top-3 z-30 mx-3 mt-3 flex min-h-14 items-center gap-2 rounded-full border border-white/60 bg-[color-mix(in_srgb,var(--ops-panel)_74%,transparent)] px-3 shadow-[0_14px_34px_-22px_rgb(0_60_100/0.55)] backdrop-blur-xl lg:ml-0">
+        <header className="sticky top-3 z-30 mx-3 mt-3 flex min-h-14 items-center gap-2 rounded-full border border-[var(--ops-line)] bg-[color-mix(in_srgb,var(--ops-panel)_74%,transparent)] px-3 shadow-[0_14px_34px_-22px_rgb(0_60_100/0.55)] backdrop-blur-xl lg:ml-0">
           <IconButton label={t.nav.openMenu} icon={<Menu size={20} />} className="lg:hidden" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)} />
           <div className="lg:hidden"><Brand t={t} lang={lang} compact /></div>
           <div className="ml-auto flex items-center gap-2">

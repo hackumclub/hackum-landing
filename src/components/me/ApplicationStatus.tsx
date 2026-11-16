@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "./parts";
 import { Users } from "lucide-react";
 import type { Dict } from "@/i18n";
 import type { MeCopy } from "@/i18n/areas/me";
@@ -6,7 +7,6 @@ import { fill, tf, type Locale } from "@/i18n/config";
 import type { EventCardVm } from "@/lib/me/queries";
 import { ButtonLink } from "@/components/ui/Button";
 import StatusPill from "@/components/ui/StatusPill";
-import Sticker from "@/components/Sticker";
 import { CancelButton } from "./EventActions";
 import JoinTeamBox from "./JoinTeamBox";
 
@@ -28,14 +28,8 @@ export default function ApplicationStatus({ vm, lang, d, c, deadline, team, team
       : { trigger: c.event.cancel, title: c.event.cancelTitle, body: c.event.cancelBody };
   return (
     <div className="grid gap-4">
+      <PageHeader title={title} lead={a.statusTitle} sticker={reg.status === "going" ? "rsvp" : reg.status === "rejected" ? "comfort" : reg.status === "waitlisted" ? "queue" : "writing"} />
       <div className="grid gap-3 rounded-[var(--radius-md)] border border-line bg-panel p-4 md:p-5">
-        <div className="flex items-center gap-3">
-          <Sticker name={reg.status === "going" ? "yell" : reg.status === "rejected" ? "toast" : "coffee"} className="w-16 shrink-0" sizes="64px" />
-          <div className="grid gap-1">
-            <h1 className="font-display text-xl font-bold text-fg">{title}</h1>
-            <p className="text-sm font-semibold text-fg-muted">{a.statusTitle}</p>
-          </div>
-        </div>
         <p className="flex flex-wrap items-center gap-2 font-bold text-fg"><StatusPill status={reg.status} label={d.status[reg.status]} />{head}</p>
         {line && <p className="text-sm text-fg-muted">{line}</p>}
         {team && (
