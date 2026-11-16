@@ -178,7 +178,14 @@ export function decideRegistrations(ctx: Ctx, input: { ids: string[]; decision: 
   for (const r of regs) {
     if (r.status === target) continue;
     audit(ctx, "registration.decide", "event_registrations", r.id, { status: [r.status, target] });
+    const wasWaitlisted = r.status === "waitlisted";
     Object.assign(r, { status: target, decided_by: staff.data.id, decided_at: iso(now), decision_notified_at: null });
+    // Plain RSVP events have no "send decisions" step: moving someone off the waitlist emails them straight away, like the automatic promotion.
+    const ev = eventOf(db, r.event_id), person = profileOf(db, r.profile_id);
+    if (ev && person && ev.reg_mode === "rsvp" && wasWaitlisted && target === "going") {
+      r.decision_notified_at = iso(now);
+      enqueue(ctx, { profileId: person.id, priority: 0, template: "waitlist_promoted", payload: eventPayload(ev, person), dedupe: `waitlist_promoted:${ev.id}:${person.id}:${db.seq}` });
+    }
     changed++;
   }
   return ok({ changed });

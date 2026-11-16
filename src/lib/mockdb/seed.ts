@@ -1,5 +1,6 @@
 // Deterministic seed for the LOCAL MOCK of the Supabase schema (spec §4). Everything is derived from `now` and a fixed PRNG
 // seed: no Math.random, no Date.now. Names, emails and handles are plainly fictional (example.* domains only).
+import { nextId } from "./core";
 import type { L, Locale } from "@/i18n/config";
 import type { Answers, Question } from "@/lib/events/questions";
 import type { MemberStatus, RegStatus } from "@/lib/status";
@@ -357,7 +358,7 @@ export function buildSeed(now: Date): Db {
     });
   }
 
-  const regOpens = nowMs - 30 * DAY;
+  const regOpens = nowMs - 50 * DAY;
   const kdStart = ubAt(4, 18, 30);
   const knowledgeDay = mkEvent({
     slug: "knowledge-day-rag", kind: "knowledge_day", status: "published",
@@ -430,7 +431,7 @@ export function buildSeed(now: Date): Db {
   // ---- registrations & teams -----------------------------------------------------------------------------------
   const regDrafts = new Map<string, Omit<Registration, "id">[]>();
   const draft = (event: EventRow, p: Profile, status: RegStatus, o: Partial<Omit<Registration, "id" | "event_id" | "profile_id" | "status">> = {}) => {
-    const lo = Math.max(event.reg_opens_at ? Date.parse(event.reg_opens_at) : 0, nowMs - 30 * DAY);
+    const lo = Math.max(event.reg_opens_at ? Date.parse(event.reg_opens_at) : 0, nowMs - 55 * DAY);
     const hi = Math.min(nowMs - 30 * MIN, Date.parse(event.starts_at) - 10 * MIN);
     const created = between(lo, hi);
     const cancelledAt = status === "cancelled" ? sec(Math.min(created + rng() * 5 * DAY, nowMs - 10 * MIN)) : null;
@@ -681,10 +682,53 @@ export function buildSeed(now: Date): Db {
     .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
     .map((a) => ({ id: nid("au"), ...a }));
 
-  return {
+  const db: Db = {
     profiles, memberships, staff_roles, seasons,
     events,
     registrations, teams, membership_applications, notifications, email_daily_usage, email_suppressions, subscribers,
     timeline_milestones, audit_log, seq: seq + 1,
   };
+  addRecentPastEvents(db, nowMs);
+  return db;
+}
+
+/**
+ * Five recently completed events with real attendance, so badges, the "Past" tabs and new-vs-returning statistics have
+ * data to show. Deterministic (no randomness): the member persona attends all five, the alumna the three oldest.
+ */
+function addRecentPastEvents(db: Db, nowMs: number) {
+  const iso = (ms: number) => new Date(ms).toISOString();
+  const defs = [
+    { slug: "react-workshop-autumn", kind: "workshop" as const, daysAgo: 49, mn: "React workshop: хоёр цагт анхны апп", en: "React workshop: your first app in two hours", img: "react-workshop" },
+    { slug: "cv-workshop-autumn", kind: "workshop" as const, daysAgo: 37, mn: "Компьютер хараа: зураг таних workshop", en: "Computer vision: image recognition workshop", img: "cv-workshop" },
+    { slug: "css-battle-autumn", kind: "competition" as const, daysAgo: 24, mn: "CSS Battle · Намар", en: "CSS Battle · Autumn", img: "quiz" },
+    { slug: "git-night-autumn", kind: "workshop" as const, daysAgo: 13, mn: "Git-ийн үдэш: баг дотор яаж ажиллах вэ", en: "Git night: how to work in a team", img: "git-workshop" },
+    { slug: "pitch-night-autumn", kind: "meetup" as const, daysAgo: 5, mn: "Pitch Night · Намар", en: "Pitch Night · Autumn", img: "pitch-night" },
+  ];
+  const persona = (handle: string) => db.profiles.find((p) => p.handle === handle)?.id;
+  const staff = new Set(db.staff_roles.map((r) => r.profile_id));
+  const pool = db.profiles.filter((p) => p.clerk_user_id && p.onboarded_at && !p.deleted_at && !staff.has(p.id) && p.handle !== "new-guest" && p.handle !== "temuulen" && p.handle !== "anuujin" && p.handle !== "saraa");
+  defs.forEach((d, i) => {
+    const start = nowMs - d.daysAgo * DAY + 11 * HOUR; // 19:00 Ulaanbaatar
+    const event: EventRow = {
+      id: nextId(db, "e"), slug: d.slug, kind: d.kind, title: { mn: d.mn, en: d.en }, tagline: { mn: "", en: "" }, description: { mn: "", en: "" },
+      starts_at: iso(start), ends_at: iso(start + 2 * HOUR), tz: "Asia/Ulaanbaatar", approximate_date: false, mode: "offline", venue_name: "МУИС · 1-р байр 305", venue_address: null,
+      online_url: null, audience: "open", capacity: 60, waitlist: true, reg_opens_at: null, reg_closes_at: null, status: "completed",
+      cover_path: `/img/posters/${d.img}.jpg`, poster_path: `/img/posters/${d.img}.jpg`, themes: [], external_url: null, legacy_participants: null, ics_sequence: 0,
+      reg_mode: "rsvp", questions: [], team_mode: "none", team_size_min: 1, team_size_max: 1, decision_deadline: null, created_by: null, created_at: iso(start - 20 * DAY),
+    };
+    db.events.push(event);
+    const attendees = new Set<string>();
+    const anuujin = persona("anuujin"), saraa = persona("saraa");
+    if (anuujin) attendees.add(anuujin);
+    if (saraa && i < 3) attendees.add(saraa);
+    pool.forEach((p, j) => { if ((j * 7 + i * 3) % 5 < 2) attendees.add(p.id); });
+    for (const profileId of attendees) {
+      db.registrations.push({
+        id: nextId(db, "r"), event_id: event.id, profile_id: profileId, status: "attended", source: "web", answers: {}, team_id: null,
+        decided_by: null, decided_at: null, decision_notified_at: null, created_at: iso(start - 3 * DAY), cancelled_at: null,
+      });
+    }
+  });
+  db.seq += 1; // keep the convention: seq = last id number used + 1
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, ImageOff, Inbox, Info, Languages, UserPlus, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ImageOff, Inbox, Languages, UserPlus, type LucideIcon } from "lucide-react";
 import type { Dict } from "@/i18n";
 import { fill, tf, type Locale } from "@/i18n/config";
 import { plural } from "@/i18n/plural";
@@ -28,11 +28,11 @@ const ATTENTION_ICON: Record<AttentionKind, LucideIcon> = {
   failed_emails: AlertTriangle, pending_applications: Inbox, pending_members: UserPlus, missing_cover: ImageOff, needs_en: Languages,
 };
 
-function SectionCard({ id, title, action, children }: { id: string; title: string; action?: React.ReactNode; children: React.ReactNode }) {
+function SectionCard({ id, title, action, className, children }: { id: string; title: string; action?: React.ReactNode; className?: string; children: React.ReactNode }) {
   return (
-    <section aria-labelledby={id} className="rounded-[var(--radius-md)] border border-line bg-panel">
+    <section aria-labelledby={id} className={`rounded-[var(--radius-md)] border border-line bg-panel ${className ?? ""}`}>
       <div className="flex min-h-12 items-center justify-between gap-3 border-b border-line px-4">
-        <h2 id={id} className="font-display text-base font-bold text-fg">{title}</h2>
+        <h2 id={id} className="text-base font-bold text-fg">{title}</h2>
         {action}
       </div>
       {children}
@@ -79,25 +79,18 @@ export default function Dashboard({ data, lang, d }: { data: Data; lang: Locale;
   const eventsReady = isAdminRouteReady(lang, "events");
   return (
     <div className="grid grid-cols-1 gap-6">
-      {data.sample && (
-        <p role="note" className="flex items-start gap-2 rounded-[var(--radius-md)] border border-line bg-accent-soft px-4 py-3 text-sm text-fg">
-          <Info aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-accent-fg" />
-          <span><strong className="font-bold">{d.admin.sample.title}.</strong> {d.admin.sample.text}</span>
-        </p>
-      )}
-
       <section aria-labelledby="kpis">
         <h2 id="kpis" className="sr-only">{t.kpis}</h2>
-        <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <KpiCard label={t.activeMembers} value={n.format(kpis.activeMembers90d)} hint={t.activeMembersHint} />
           <KpiCard label={t.upcomingEvents} value={n.format(kpis.upcomingEvents)} hint={t.upcomingEventsHint} />
-          <KpiCard label={t.rsvps} value={n.format(kpis.rsvps30d)} delta={toDelta(t, kpis.rsvps30d, kpis.rsvpsPrev30d)} hint={t.rsvpsHint} />
+          <KpiCard label={t.rsvps} value={n.format(kpis.rsvps30d)} delta={toDelta(t, kpis.rsvps30d, kpis.rsvpsPrev30d)} hint={fill(t.rsvpsHint, { n: n.format(kpis.rsvpsPrev30d) })} />
           <KpiCard label={t.people} value={n.format(kpis.membersTotal + kpis.guestsTotal)} hint={fill(t.peopleHint, { members: n.format(kpis.membersTotal), guests: n.format(kpis.guestsTotal) })} />
         </div>
       </section>
 
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <SectionCard id="upcoming" title={t.upcoming} action={eventsReady ? <Link href={`/${lang}/admin/events`} className="text-sm font-semibold text-accent-fg hover:underline">{t.allEvents}</Link> : undefined}>
+        <SectionCard id="upcoming" className="order-2 xl:order-1" title={t.upcoming} action={eventsReady ? <Link href={`/${lang}/admin/events`} className="text-sm font-semibold text-accent-fg hover:underline">{t.allEvents}</Link> : undefined}>
           {data.upcoming.length === 0 ? (
             <div className="p-4">
               <EmptyState sticker="laptop" title={t.emptyUpcomingTitle} line={t.emptyUpcomingLine}
@@ -108,7 +101,7 @@ export default function Dashboard({ data, lang, d }: { data: Data; lang: Locale;
           )}
         </SectionCard>
 
-        <SectionCard id="attention" title={t.attention}>
+        <SectionCard id="attention" className="order-1 xl:order-2" title={t.attention}>
           {data.attention.length === 0 ? (
             <div className="grid justify-items-center gap-2 px-4 py-8 text-center">
               <Sticker name="sleepy" className="w-20" sizes="80px" />
@@ -143,7 +136,7 @@ export function DashboardSkeleton({ label }: { label: string }) {
     <div className="grid grid-cols-1 gap-6" role="status" aria-live="polite">
       <span className="sr-only">{label}</span>
       <Skeleton className="h-12" />
-      <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[118px] rounded-[var(--radius-md)]" />)}
       </div>
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">

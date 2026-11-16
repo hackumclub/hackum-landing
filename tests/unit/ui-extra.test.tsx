@@ -60,3 +60,12 @@ describe("Avatar initials", () => {
     expect(initials("")).toBe("?");
   });
 });
+
+describe("ThemeToggle size", () => {
+  it("offers 44px touch targets for the member app", () => {
+    const labels = { system: "System theme", light: "Light theme", dark: "Dark theme", group: "Theme" };
+    const { container } = render(<OpsRoot><ThemeToggle size="lg" labels={labels} /></OpsRoot>);
+    for (const label of container.querySelectorAll("label[title]")) expect(label.className).toContain("size-11");
+    expect(container.querySelectorAll("label[title]")).toHaveLength(3);
+  });
+});

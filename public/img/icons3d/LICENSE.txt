@@ -1,2 +1,3 @@
 3D icons from https://3dicons.co (CC0 — no attribution required).
 send.png / send.svg: paper plane drawn in-house in the 3dicons style (3dicons.co has no paper-plane icon). Not from 3dicons; free to use and edit with the project.
+In-house generated for Hackum OS: bell.png, camera.png, chart.png, clipboard.png, clock.png, flag.png, gift.png, grad-cap.png, handshake.png, id.png, link.png, lock.png, mail.png, passkey.png, pin.png, qr.png, shield.png, ticket.png, users.png, and wifi.png. These are original project assets, not third-party characters or logos.

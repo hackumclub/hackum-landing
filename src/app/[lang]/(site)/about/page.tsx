@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CLUB } from "@/lib/club";
-import { MEMBERS, SEASONS, type Team } from "@/data/members";
+import { getPublicMembers } from "@/lib/public/readers";
+import { copy } from "@/i18n/areas/public";
 import { STICKERS, type StickerName } from "@/lib/manul";
 import { fill, isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
@@ -13,6 +14,7 @@ import RevealGroup from "@/components/motion/RevealGroup";
 import TiltCard from "@/components/motion/TiltCard";
 
 const GOAL_ICON = ["chat", "heart", "rocket"];
+type Team = "project" | "marketing" | "external" | "internal";
 const TEAM_ICON: Record<Team, string> = { project: "notebook", marketing: "megaphone", external: "trophy", internal: "calendar" };
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/about">): Promise<Metadata> {
@@ -26,6 +28,7 @@ export default async function Page({ params }: PageProps<"/[lang]/about">) {
   const d = getDictionary(lang);
   const a = d.about;
   const nums = { year: CLUB.founded };
+  const { data: directory, failed } = await getPublicMembers();
 
   return (
     <div className="mx-auto max-w-[1100px] px-6 pb-8 pt-14">
@@ -84,7 +87,7 @@ export default async function Page({ params }: PageProps<"/[lang]/about">) {
         </RevealGroup>
       </section>
 
-      <Members members={MEMBERS} seasons={SEASONS} lang={lang} dict={d.members} teams={a.teams} />
+      <Members members={directory.members} seasons={directory.seasons} current={directory.current} lang={lang} dict={d.members} teams={copy[lang].teams} unavailable={failed && copy[lang].empty.membersLine} />
 
       <section className="mt-24 overflow-hidden rounded-[40px] bg-ink p-8 text-white md:p-12">
         <Split as="h2" className="font-display text-3xl font-black md:text-5xl">{a.mascotTitle}</Split>

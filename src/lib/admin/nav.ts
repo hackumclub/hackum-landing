@@ -12,11 +12,11 @@ export type AdminNavItem = { key: AdminNavKey; href: string; ready: boolean };
 // Flip `ready` as each plan task ships its page; unready items render as "Soon" instead of linking to a 404.
 const ITEMS: [AdminNavKey, string, boolean][] = [
   ["dashboard", "", true],
-  ["events", "/events", false],
-  ["members", "/members", false],
-  ["comms", "/comms", false],
-  ["settings", "/settings", false],
-  ["audit", "/audit", false],
+  ["events", "/events", true],
+  ["members", "/members", true],
+  ["comms", "/comms", true],
+  ["settings", "/settings", true],
+  ["audit", "/audit", true],
   ["kit", "/kit", true],
 ];
 

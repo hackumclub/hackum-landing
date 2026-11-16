@@ -186,8 +186,8 @@ describe("staff, seasons, memberships", () => {
 });
 
 describe("events", () => {
-  it("has 14 events: 8 archived legacy plus the six scenario events", () => {
-    expect(db.events).toHaveLength(14);
+  it("has 19 events: 8 archived legacy, the six scenario events and five recent completed ones", () => {
+    expect(db.events).toHaveLength(19);
     const legacy = db.events.filter((e) => e.status === "archived");
     expect(legacy).toHaveLength(8);
     for (const e of legacy) {
@@ -312,7 +312,7 @@ describe("registrations", () => {
       const e = db.events.find((x) => x.id === r.event_id);
       expect(answersValid(e?.questions ?? [], r.answers)).toBe(true);
       expect(t(r.created_at)).toBeLessThanOrEqual(NOW.getTime());
-      expect(t(r.created_at)).toBeGreaterThanOrEqual(NOW.getTime() - 30 * DAY);
+      expect(t(r.created_at)).toBeGreaterThanOrEqual(NOW.getTime() - 60 * DAY);
       if (e?.audience === "members") expect(p.status).not.toBe("guest");
     }
   });
@@ -492,5 +492,33 @@ describe("no real personal data", () => {
     const blob = JSON.stringify(db);
     const found = blob.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g) ?? [];
     for (const e of found) expect(e).toMatch(/@example\.(com|org|edu\.mn)$/);
+  });
+});
+
+describe("recent past events with attendance (so badges, past tabs and returning-vs-new have data)", () => {
+  const recent = ["react-workshop-autumn", "cv-workshop-autumn", "css-battle-autumn", "git-night-autumn", "pitch-night-autumn"];
+  it("has five completed events in the last 50 days, each with attendance", () => {
+    for (const slug of recent) {
+      const e = ev(slug);
+      expect(e.status).toBe("completed");
+      expect(Date.parse(e.ends_at)).toBeLessThan(NOW.getTime());
+      expect(Date.parse(e.starts_at)).toBeGreaterThan(NOW.getTime() - 50 * DAY);
+      expect(regs(slug, "attended").length).toBeGreaterThanOrEqual(12);
+      expect(e.cover_path && existsSync(path.join(process.cwd(), "public", e.cover_path))).toBeTruthy();
+    }
+  });
+  it("lets the member persona earn the 'regular' badge and the alumna a few attendances", () => {
+    const attended = (handle: string) => db.registrations.filter((r) => r.profile_id === prof(handle).id && r.status === "attended" && recent.includes(db.events.find((e) => e.id === r.event_id)!.slug)).length;
+    expect(attended("anuujin")).toBe(5);
+    expect(attended("saraa")).toBeGreaterThanOrEqual(3);
+    expect(attended("dev-admin")).toBe(0);
+    expect(attended("new-guest")).toBe(0);
+    expect(attended("temuulen")).toBe(0); // the guest persona has no past events (empty "Past" tab, locked badges)
+  });
+  it("keeps ids unique after the extra rows", () => {
+    const ids = [...db.events.map((e) => e.id), ...db.registrations.map((r) => r.id)];
+    expect(new Set(ids).size).toBe(ids.length);
+    const numeric = ids.map((id) => Number(id.split("_")[1]));
+    expect(db.seq).toBeGreaterThan(Math.max(...numeric));
   });
 });

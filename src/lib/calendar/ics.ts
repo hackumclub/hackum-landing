@@ -19,7 +19,7 @@ const MAX_OCTETS = 75;
 const utc = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 
 /** TEXT value escaping (RFC 5545 §3.3.11): backslash first, then , ; and line breaks. */
-const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\r\n|\r|\n/g, "\\n");
+const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/;/g, "\u005c;").replace(/,/g, "\\,").replace(/\r\n|\r|\n/g, "\\n");
 
 /** Strip control characters from values that are not escaped (UID, URL, email) so they cannot inject extra lines. */
 const clean = (s: string) => s.replace(/[\u0000-\u001f\u007f]/g, "");

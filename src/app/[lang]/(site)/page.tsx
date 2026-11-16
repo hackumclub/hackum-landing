@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CLUB, INSTAGRAM, TIMELINE, TIMELINE_MEDIA, WHO_PHOTOS } from "@/lib/club";
-import { EVENTS } from "@/lib/events";
+import { CLUB, INSTAGRAM, WHO_PHOTOS } from "@/lib/club";
+import { getPublicEvents, getPublicTimeline } from "@/lib/public/readers";
+import { ticketDict } from "@/i18n/areas/public";
 import { POSTERS } from "@/lib/posters";
 import { IG_POSTS } from "@/lib/feed";
 import type { StickerName } from "@/lib/manul";
@@ -35,6 +36,8 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
   if (!isLocale(lang)) notFound();
   const d = getDictionary(lang);
   const nums = { year: CLUB.founded };
+  const [{ data: events }, { data: timeline }] = await Promise.all([getPublicEvents(), getPublicTimeline()]);
+  const ticket = ticketDict(lang, d.ticket);
 
   return (
     <>
@@ -72,9 +75,11 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
         </div>
       </section>
 
-      <section aria-labelledby="memories" className="pb-24">
-        <Timeline items={TIMELINE} media={TIMELINE_MEDIA} lang={lang} dict={d.timeline} joinHref={href(lang, "/join")} />
-      </section>
+      {timeline.items.length > 0 ? (
+        <section aria-labelledby="memories" className="pb-24">
+          <Timeline items={timeline.items} media={timeline.media} lang={lang} dict={d.timeline} joinHref={href(lang, "/join")} />
+        </section>
+      ) : null}
 
       <section className="mx-auto max-w-[1200px] px-6 py-16">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -82,7 +87,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
           <Link href={href(lang, "/events")} className="font-bold text-brand underline decoration-2 underline-offset-4 hover:decoration-4">{d.latest.all}</Link>
         </div>
         <RevealGroup className="mt-6 grid gap-8 md:grid-cols-3">
-          {EVENTS.slice(0, 3).map((e, i) => <EventTicket key={e.slug} e={e} lang={lang} dict={d.ticket} tilt={TILT[i]} />)}
+          {events.slice(0, 3).map((e, i) => <EventTicket key={e.slug} e={e} lang={lang} dict={ticket} tilt={TILT[i]} />)}
         </RevealGroup>
       </section>
 

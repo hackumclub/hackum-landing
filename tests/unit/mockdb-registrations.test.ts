@@ -221,3 +221,18 @@ describe("staff decisions", () => {
     expect(sendDecisions(ctx(db, "a"), { eventId: "h1" })).toEqual({ ok: false, error: "forbidden" });
   });
 });
+
+describe("promoting from an RSVP waitlist by hand", () => {
+  it("emails the person right away with the waitlist-promoted message and leaves nothing to 'send decisions'", () => {
+    addEvent(db, { id: "w1", capacity: 1 });
+    register("a", "w1"); register("c", "w1");
+    expect(regOf(db, "w1", "c")!.status).toBe("waitlisted");
+    db.events.find((e) => e.id === "w1")!.capacity = 2; // an organizer raised the limit
+    expect(decideRegistrations(ctx(db, "org"), { ids: [regOf(db, "w1", "c")!.id], decision: "accept" })).toEqual({ ok: true, data: { changed: 1 } });
+    expect(regOf(db, "w1", "c")!.status).toBe("going");
+    expect(queued(db, "waitlist_promoted").map((n) => n.profile_id)).toEqual(["c"]);
+    expect(regOf(db, "w1", "c")!.decision_notified_at).not.toBeNull();
+    expect(sendDecisions(ctx(db, "org"), { eventId: "w1" })).toEqual({ ok: true, data: { queued: 0 } });
+    expect(queued(db, "application_accepted")).toHaveLength(0);
+  });
+});

@@ -1,5 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { signInAs } from "./helpers/as";
+
+test.beforeEach(async ({ page }) => { await signInAs(page, "dev-admin"); });
 
 for (const scheme of ["light", "dark"] as const) {
   for (const path of ["/mn/admin", "/en/admin?state=empty", "/en/admin/kit"]) {

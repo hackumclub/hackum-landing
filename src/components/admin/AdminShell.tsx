@@ -80,7 +80,7 @@ export default function AdminShell({ lang, t, skip, close, extras, children }: {
           <IconButton label={t.nav.openMenu} icon={<Menu size={20} />} className="-ml-2 lg:hidden" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)} />
           <div className="lg:hidden"><Brand t={t} lang={lang} compact /></div>
           <div className="ml-auto flex items-center gap-2">
-            {extras}
+            <div className="hidden items-center gap-2 md:flex">{extras}</div>
             <Link href={switchLocale(path, other)} hrefLang={other} lang={other} aria-label={t.nav.switchLangLabel} className="inline-flex min-h-10 items-center rounded-[var(--radius-sm)] px-3 text-sm font-semibold text-fg hover:bg-neutral-soft">
               {t.nav.switchLang}
             </Link>
@@ -91,6 +91,8 @@ export default function AdminShell({ lang, t, skip, close, extras, children }: {
       </div>
       <Drawer open={menuOpen} onOpenChange={setMenuOpen} title={t.nav.label} closeLabel={close}>
         <SideNav lang={lang} t={t} onNavigate={() => setMenuOpen(false)} />
+        {/* Below 768px the top bar has no room for these; the drawer only mounts while open, so ids stay unique. */}
+        {extras && <div className="mt-6 grid gap-3 border-t border-line pt-4 md:hidden">{extras}</div>}
       </Drawer>
     </div>
   );

@@ -19,10 +19,11 @@ describe("adminPreviewAllowed (temporary gate until Clerk staff auth, plan Task 
 });
 
 describe("adminNav", () => {
-  it("builds locale-prefixed hrefs and marks unbuilt sections as not ready", () => {
+  it("builds locale-prefixed hrefs and has no unfinished sections left", () => {
     const nav = adminNav("en");
     expect(nav.find((i) => i.key === "dashboard")).toMatchObject({ href: "/en/admin", ready: true });
-    expect(nav.find((i) => i.key === "events")).toMatchObject({ href: "/en/admin/events", ready: false });
+    expect(nav.find((i) => i.key === "events")).toMatchObject({ href: "/en/admin/events", ready: true });
+    expect(nav.every((i) => i.ready)).toBe(true); // every backoffice area is built; no "Soon" items left
     expect(nav.map((i) => i.key)).toEqual(["dashboard", "events", "members", "comms", "settings", "audit", "kit"]);
   });
 });

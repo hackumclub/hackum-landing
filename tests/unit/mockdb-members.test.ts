@@ -105,6 +105,22 @@ describe("staff tools", () => {
     expect(grantRole(ctx(db, "admin"), { profileId: "admin", role: null })).toEqual({ ok: false, error: "conflict" });
     expect(grantRole(ctx(db, "admin"), { profileId: "g", role: null }).ok).toBe(true);
   });
+  it("never lets the club end up with no admin: not by self-demotion, not by demoting the last admin", () => {
+    expect(grantRole(ctx(db, "admin"), { profileId: "admin", role: "organizer" })).toEqual({ ok: false, error: "conflict" });
+    addProfile(db, { id: "admin2" });
+    expect(grantRole(ctx(db, "admin"), { profileId: "admin2", role: "admin" }).ok).toBe(true);
+    expect(grantRole(ctx(db, "admin"), { profileId: "admin2", role: "organizer" }).ok).toBe(true); // another admin remains
+    expect(db.staff_roles.filter((r) => r.role === "admin").map((r) => r.profile_id)).toEqual(["admin"]);
+    expect(grantRole(ctx(db, "admin"), { profileId: "admin", role: "organizer" })).toEqual({ ok: false, error: "conflict" });
+  });
+  it("does not let you un-mark the only current season; make another season current instead", () => {
+    const season = (year: number, is_current: boolean) => ({ year, label: { mn: `${year}`, en: `${year}` }, application_opens_at: null, application_closes_at: null, is_current });
+    upsertSeason(ctx(db, "admin"), season(2026, true));
+    expect(upsertSeason(ctx(db, "admin"), season(2026, false))).toEqual({ ok: false, error: "conflict" });
+    expect(db.seasons.find((x) => x.year === 2026)!.is_current).toBe(true);
+    expect(upsertSeason(ctx(db, "admin"), season(2027, true)).ok).toBe(true);
+    expect(upsertSeason(ctx(db, "admin"), season(2026, false)).ok).toBe(true); // 2027 is current now, so this is fine
+  });
   it("keeps exactly one current season", () => {
     const season = (year: number, is_current: boolean) => ({ year, label: { mn: `${year}`, en: `${year}` }, application_opens_at: null, application_closes_at: null, is_current });
     expect(upsertSeason(ctx(db, "org"), season(2026, true))).toEqual({ ok: false, error: "forbidden" });

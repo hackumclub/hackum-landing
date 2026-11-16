@@ -210,7 +210,7 @@ export const en: Dict = {
       kpis: "Key numbers",
       activeMembers: "Active members", activeMembersHint: "last 90 days",
       upcomingEvents: "Upcoming events", upcomingEventsHint: "including drafts",
-      rsvps: "RSVPs · 30 days", rsvpsHint: "vs previous 30 days",
+      rsvps: "RSVPs · 30 days", rsvpsHint: "previous 30 days: {n}",
       people: "People", peopleHint: "{members} members · {guests} guests",
       deltaNew: "New", deltaSrUp: "Up {pct} from the previous period", deltaSrDown: "Down {pct} from the previous period", deltaSrFlat: "Same as the previous period", deltaSrNew: "No RSVPs in the previous period",
       upcoming: "Upcoming", allEvents: "All events",

@@ -53,7 +53,7 @@ describe("buildIcs", () => {
 
   it("escapes commas, semicolons, backslashes and newlines in text values", () => {
     const out = unfold(buildIcs([{ ...base, title: "A, B; C\\D", description: "line1\nline2\r\nline3" }]));
-    expect(out).toContain("SUMMARY:A\\, B\; C\\\\D\r\n");
+    expect(out).toContain("SUMMARY:A\\, B\u005c; C\\\\D\r\n");
     expect(out).toContain("DESCRIPTION:line1\\nline2\\nline3\r\n");
     expect(out).toContain("LOCATION:NUM\\, Ulaanbaatar\r\n");
   });

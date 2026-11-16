@@ -102,9 +102,11 @@ export function grantRole(ctx: Ctx, input: { profileId: string; role: StaffRoleN
   if (!admin.ok) return admin;
   const { db } = ctx;
   if (!profileOf(db, input.profileId)) return err("not_found");
+  // Whoever is an admin may be demoted or removed, but never by themselves and never the last one (the club must keep an admin).
+  const current = db.staff_roles.find((r) => r.profile_id === input.profileId);
+  const demoting = current?.role === "admin" && input.role !== "admin";
+  if (demoting && (input.profileId === admin.data.id || db.staff_roles.filter((r) => r.role === "admin").length <= 1)) return err("conflict");
   if (input.role === null) {
-    const target = db.staff_roles.find((r) => r.profile_id === input.profileId);
-    if (target?.role === "admin" && (input.profileId === admin.data.id || db.staff_roles.filter((r) => r.role === "admin").length <= 1)) return err("conflict");
     db.staff_roles = db.staff_roles.filter((r) => r.profile_id !== input.profileId);
   } else {
     db.staff_roles = db.staff_roles.filter((r) => r.profile_id !== input.profileId);
@@ -120,6 +122,8 @@ export function upsertSeason(ctx: Ctx, input: Season): Result<void> {
   if (!Number.isInteger(input.year) || input.year < 2000 || input.year > 2100) return err("invalid");
   if (input.application_opens_at && input.application_closes_at && new Date(input.application_opens_at) >= new Date(input.application_closes_at)) return err("invalid");
   const { db } = ctx;
+  // Un-marking the only current season would leave the club with none: make another season current instead.
+  if (db.seasons.find((x) => x.year === input.year)?.is_current && !input.is_current) return err("conflict");
   if (input.is_current) for (const s of db.seasons) s.is_current = false;
   const i = db.seasons.findIndex((s) => s.year === input.year);
   if (i >= 0) db.seasons[i] = { ...input }; else db.seasons.push({ ...input });

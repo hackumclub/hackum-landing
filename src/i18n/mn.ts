@@ -208,7 +208,7 @@ export const mn = {
       kpis: "Гол үзүүлэлтүүд",
       activeMembers: "Идэвхтэй гишүүд", activeMembersHint: "сүүлийн 90 хоногт",
       upcomingEvents: "Удахгүй болох эвент", upcomingEventsHint: "ноорог орсон",
-      rsvps: "Бүртгэл · 30 хоног", rsvpsHint: "өмнөх 30 хоногоос",
+      rsvps: "Бүртгэл · 30 хоног", rsvpsHint: "өмнөх 30 хоногт: {n}",
       people: "Нийт хүн", peopleHint: "{members} гишүүн · {guests} зочин",
       deltaNew: "Шинэ", deltaSrUp: "Өмнөх хугацаанаас {pct} өссөн", deltaSrDown: "Өмнөх хугацаанаас {pct} буурсан", deltaSrFlat: "Өмнөх хугацаатай ижил", deltaSrNew: "Өмнөх хугацаанд бүртгэл байгаагүй",
       upcoming: "Удахгүй болох", allEvents: "Бүх эвент",

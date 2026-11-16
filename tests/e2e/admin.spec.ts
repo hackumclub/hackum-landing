@@ -1,4 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { signInAs } from "./helpers/as";
+
+test.beforeEach(async ({ page }) => { await signInAs(page, "dev-admin"); });
 
 const WIDTHS = [360, 768, 1280];
 const PAGES = ["/mn/admin", "/en/admin", "/mn/admin?state=empty", "/mn/admin/kit"];
@@ -42,4 +45,22 @@ test("bilingual inputs line up side by side at 1280px", async ({ page }) => {
   const mn = await page.locator('input[name="title.mn"]').boundingBox();
   const en = await page.locator('input[name="title.en"]').boundingBox();
   expect(mn && en && Math.abs(mn.y - en.y)).toBeLessThanOrEqual(1);
+});
+
+test("non-staff get the ordinary 404 and signed-out visitors never see the backoffice", async ({ page }) => {
+  for (const who of [null, "anuujin", "temuulen"]) {
+    await signInAs(page, who);
+    const res = await page.goto("/en/admin");
+    await expect(page.getByText("coffee not found")).toBeVisible();
+    expect(res?.status()).toBeLessThan(500);
+    await expect(page.locator("main h1", { hasText: "Dashboard" })).toHaveCount(0);
+  }
+});
+
+test("an organizer sees the dashboard with live demo data and the demo-data marker", async ({ page }) => {
+  await signInAs(page, "dev-organizer");
+  await page.goto("/en/admin");
+  await expect(page.getByRole("heading", { name: "Dashboard", level: 1 })).toBeVisible();
+  await expect(page.getByText("Demo data").first()).toBeVisible();
+  await expect(page.getByText("Needs attention")).toBeVisible();
 });

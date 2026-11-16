@@ -6,6 +6,8 @@ import { isLocale, type Locale } from "@/i18n/config";
 import { formatUb } from "@/lib/time";
 import { getDashboard, type Scenario } from "@/lib/admin/dashboard";
 import Dashboard, { DashboardSkeleton } from "@/components/admin/Dashboard";
+import DemoPill from "@/components/admin/DemoPill";
+import { mockEnabled } from "@/lib/mockdb/store";
 
 const SCENARIOS: Scenario[] = ["default", "empty", "error", "slow"];
 
@@ -25,7 +27,10 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   return (
     <div className="grid grid-cols-1 gap-6">
       <header className="grid grid-cols-1 gap-1">
-        <h1 className="font-display text-2xl font-bold text-fg md:text-3xl">{t.title}</h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="font-display text-2xl font-bold text-fg md:text-3xl">{t.title}</h1>
+          {mockEnabled() && <DemoPill title={getDictionary(lang).admin.sample.title} text={getDictionary(lang).admin.sample.text} />}
+        </div>
         <Suspense fallback={<p className="h-5" />}><Today lang={lang} /></Suspense>
       </header>
       <Suspense fallback={<DashboardSkeleton label={t.loading} />}>

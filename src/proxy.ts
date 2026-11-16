@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "@/i18n/config";
-import { EVENTS } from "@/lib/events";
 
 const COOKIE = "lang";
 
@@ -34,16 +33,8 @@ export function proxy(req: NextRequest) {
     url.pathname = `/${isLocale(first) ? first : pickLocale(req)}/page-not-found`;
     return NextResponse.redirect(url);
   }
-  if (isLocale(first)) {
-    // Unknown event slug → render the 404 route. (notFound() inside the page's Suspense would stream a 200 "soft 404".)
-    const m = pathname.match(/^\/(?:mn|en)\/events\/([^/]+)\/?$/);
-    if (m && !EVENTS.some((e) => e.slug === safeDecode(m[1]))) {
-      const url = req.nextUrl.clone();
-      url.pathname = `/${first}/page-not-found`;
-      return NextResponse.rewrite(url);
-    }
-    return;
-  }
+  // Unknown event slugs are a real 404 from the event page itself (it awaits the cached event before streaming).
+  if (isLocale(first)) return;
   const url = req.nextUrl.clone();
   url.pathname = `/${pickLocale(req)}${pathname === "/" ? "" : pathname}`;
   return NextResponse.redirect(url);
