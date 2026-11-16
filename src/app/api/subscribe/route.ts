@@ -1,7 +1,7 @@
-import { appendFile, mkdir, readFile } from "node:fs/promises";
-import path from "node:path";
 import { isLocale } from "@/i18n/config";
 import { log } from "@/lib/log";
+import { subscribe, SUBSCRIBE_SOURCES } from "@/lib/mockdb/ext-subscribe";
+import { getStore, mockEnabled } from "@/lib/mockdb/store";
 
 /**
  * POST /api/subscribe  { name, email, lang, website }  → store a "notify me about events" sign-up.
@@ -10,10 +10,10 @@ import { log } from "@/lib/log";
  * a honeypot field that silently succeeds for bots, and a best-effort per-IP rate limit. Duplicate emails
  * return the same success response so the endpoint can't be used to probe who is subscribed.
  *
- * Where sign-ups go (see docs/subscribe.md):
- *  - SUBSCRIBE_WEBHOOK_URL (https; optional SUBSCRIBE_WEBHOOK_SECRET sent as a Bearer token) → forwarded as JSON.
- *  - otherwise, in development only, appended to .data/subscribers.jsonl (gitignored).
- *  - otherwise (production with nothing configured) → 503, and the form tells the visitor to use Instagram.
+ * Where sign-ups go:
+ *  - db.subscribers, through the `subscribe` rule (src/lib/mockdb/ext-subscribe.ts), whenever the mock database is on.
+ *  - SUBSCRIBE_WEBHOOK_URL (https; optional SUBSCRIBE_WEBHOOK_SECRET sent as a Bearer token) → also forwarded as JSON.
+ *  - with the mock off and no webhook configured → 503, and the form tells the visitor to use Instagram.
  * Names and emails are never written to logs.
  */
 const LOGGER = "api.subscribe";
@@ -48,38 +48,45 @@ function sameOrigin(req: Request) {
   try { return new URL(origin).host === host; } catch { return false; }
 }
 
-type Signup = { name: string; email: string; lang: string; ts: string };
+type Signup = { name: string; email: string; lang: string; source: string; ts: string };
 
-async function deliver(rec: Signup): Promise<"ok" | "unavailable" | "error"> {
+/** Optional extra: forward a new sign-up to a webhook (https, or http://localhost in development). Never throws. */
+async function forward(rec: Signup): Promise<boolean> {
   const hook = process.env.SUBSCRIBE_WEBHOOK_URL;
-  if (hook) {
-    let url: URL;
-    try { url = new URL(hook); } catch { return "error"; }
-    const dev = process.env.NODE_ENV !== "production";
-    const allowed = url.protocol === "https:" || (dev && url.protocol === "http:" && url.hostname === "localhost");
-    if (!allowed) return "error";
-    const secret = process.env.SUBSCRIBE_WEBHOOK_SECRET;
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(secret ? { Authorization: `Bearer ${secret}` } : {}) },
-        body: JSON.stringify(rec),
-        signal: AbortSignal.timeout(8000),
-        redirect: "error",
-      });
-      return res.ok ? "ok" : "error";
-    } catch { return "error"; }
-  }
-  if (process.env.NODE_ENV === "production") return "unavailable";
+  if (!hook) return true;
+  let url: URL;
+  try { url = new URL(hook); } catch { return false; }
+  const dev = process.env.NODE_ENV !== "production";
+  const allowed = url.protocol === "https:" || (dev && url.protocol === "http:" && url.hostname === "localhost");
+  if (!allowed) return false;
+  const secret = process.env.SUBSCRIBE_WEBHOOK_SECRET;
   try {
-    const dir = path.join(process.cwd(), ".data");
-    const file = path.join(dir, "subscribers.jsonl");
-    await mkdir(dir, { recursive: true });
-    const existing = await readFile(file, "utf8").catch(() => "");
-    const dup = existing.split("\n").some((l) => { try { return (JSON.parse(l) as Signup).email === rec.email; } catch { return false; } });
-    if (!dup) await appendFile(file, JSON.stringify(rec) + "\n", { mode: 0o600 });
-    return "ok";
-  } catch { return "error"; }
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(secret ? { Authorization: `Bearer ${secret}` } : {}) },
+      body: JSON.stringify(rec),
+      signal: AbortSignal.timeout(8000),
+      redirect: "error",
+    });
+    return res.ok;
+  } catch { return false; }
+}
+
+/**
+ * Store the sign-up in db.subscribers (what the admin reads) through the `subscribe` rule, then forward it to the
+ * optional webhook. With the mock database switched off (a plain production deploy) the webhook is the only
+ * destination, and without one there is nowhere to put the sign-up.
+ */
+async function deliver(rec: Signup): Promise<"ok" | "unavailable" | "error"> {
+  if (!mockEnabled()) {
+    if (!process.env.SUBSCRIBE_WEBHOOK_URL) return "unavailable";
+    return (await forward(rec)) ? "ok" : "error";
+  }
+  const stored = getStore().mutate((ctx) => subscribe(ctx, { name: rec.name, email: rec.email, lang: isLocale(rec.lang) ? rec.lang : "mn", source: rec.source }), null);
+  if (!stored.ok) return "error";
+  // A duplicate is a silent success; only a new row is forwarded. A webhook failure never fails a stored sign-up.
+  if (stored.data.created && !(await forward(rec))) log("WARN", LOGGER, "subscribe_webhook_failed", "n/a", { source: rec.source });
+  return "ok";
 }
 
 export async function POST(req: Request) {
@@ -110,8 +117,9 @@ export async function POST(req: Request) {
   const email = typeof b.email === "string" ? b.email.trim().toLowerCase() : "";
   if (email.length < 6 || email.length > 254 || CONTROL.test(email) || !EMAIL.test(email)) return done("email", 400, fail("email"));
   const lang = typeof b.lang === "string" && isLocale(b.lang) ? b.lang : "mn";
+  const source = typeof b.source === "string" && (SUBSCRIBE_SOURCES as readonly string[]).includes(b.source) ? b.source : "join_page";
 
-  const result = await deliver({ name, email, lang, ts: new Date().toISOString() });
+  const result = await deliver({ name, email, lang, source, ts: new Date().toISOString() });
   if (result === "unavailable") return done("unavailable", 503, fail("unavailable"));
   if (result === "error") return done("delivery_failed", 502, fail("server"));
   return done("stored", 200, reply(200, { ok: true }));

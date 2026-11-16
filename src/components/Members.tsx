@@ -4,12 +4,13 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "@/motion/gsap";
 import { Flip } from "@/motion/flip";
 import { DUR, EASE, MQ } from "@/motion/config";
-import type { Member } from "@/data/members";
-import { fill, type Locale } from "@/i18n/config";
+import type { Member } from "@/lib/public/types";
+import { fill, tf, type Locale } from "@/i18n/config";
 import type { Dict } from "@/i18n";
 import Split from "./motion/Split";
 
 const season = (y: number) => `${y}–${String(y + 1).slice(2)}`;
+const roleLabel = (m: Member, lang: Locale, fallback: string) => (m.role ? tf(m.role, lang) : fallback);
 const initials = (name: string) => name.replace(/^[A-ZА-ЯӨҮЁ]\.\s*/u, "").slice(0, 2).toUpperCase();
 // Avatar backgrounds rotate through the three logo colours.
 const AVATAR = ["bg-brand", "bg-leaf", "bg-sun text-ink"];
@@ -19,21 +20,23 @@ const AVATAR = ["bg-brand", "bg-leaf", "bg-sun text-ink"];
  * All cards stay in the DOM and filtered ones are hidden, so GSAP Flip can animate cards moving,
  * entering and leaving whenever the filter changes. Reduced motion: instant.
  */
-export default function Members({ members, seasons, lang, dict, teams }: {
-  members: Member[]; seasons: number[]; lang: Locale; dict: Dict["members"]; teams: Dict["about"]["teams"];
+export default function Members({ members, seasons, current, lang, dict, teams, unavailable = false }: {
+  members: Member[]; seasons: number[]; current?: number | null; lang: Locale; dict: Dict["members"]; teams: Record<string, string>;
+  /** The member list could not be read: show the unavailable line instead of "still adding this season". */
+  unavailable?: string | false;
 }) {
   const [q, setQ] = useState("");
-  const [year, setYear] = useState<number | null>(seasons[0] ?? null);
+  const [year, setYear] = useState<number | null>(current && seasons.includes(current) ? current : seasons[0] ?? null);
   const grid = useRef<HTMLUListElement>(null);
   const flip = useRef<Flip.FlipState | null>(null);
   const query = q.trim().toLowerCase();
 
   const visible = useMemo(() => members.map((m) => {
-    const team = m.team ? teams[m.team][0] : "";
+    const team = m.team ? teams[m.team] ?? m.team : "";
     const inYear = query ? true : year === null || m.season === year;
-    const hit = !query || [m.name.mn, m.name.en, team, dict.roles[m.role]].some((s) => s.toLowerCase().includes(query));
+    const hit = !query || [m.name.mn, m.name.en, team, roleLabel(m, lang, dict.roles.member)].some((s) => s.toLowerCase().includes(query));
     return inYear && hit;
-  }), [members, query, year, teams, dict.roles]);
+  }), [members, query, year, teams, dict.roles.member, lang]);
   const count = visible.filter(Boolean).length;
 
   // Record positions before React re-renders the filter...
@@ -79,10 +82,10 @@ export default function Members({ members, seasons, lang, dict, teams }: {
       </div>
       <p id="member-count" aria-live="polite" className="mt-4 text-sm font-bold text-faint">{fill(dict.count, { n: count })}</p>
 
-      {count === 0 ? <p className="glass mt-6 max-w-xl rounded-[22px] p-6 text-muted">{query ? dict.empty : dict.missing}</p> : null}
+      {count === 0 ? <p className="glass mt-6 max-w-xl rounded-[22px] p-6 text-muted">{unavailable || (query ? dict.empty : dict.missing)}</p> : null}
       <ul ref={grid} className="relative mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {members.map((m, i) => (
-          <li key={`${m.season}-${m.name.en}`} data-member hidden={!visible[i]}
+          <li key={m.id} data-member hidden={!visible[i]}
             className="group rounded-[22px] bg-paper p-5 shadow-soft ring-1 ring-ink/5 transition-shadow duration-300 hover:shadow-[0_18px_40px_-18px_rgb(0_91_140/0.45)]">
             <div className="flex items-start justify-between">
               {m.photo ? (
@@ -93,8 +96,8 @@ export default function Members({ members, seasons, lang, dict, teams }: {
               <span className="rounded-full bg-brand-tint px-2.5 py-1 text-[11px] font-bold text-brand-deep">{season(m.season)}</span>
             </div>
             <p className="mt-4 font-display text-lg font-black leading-tight">{m.name[lang]}</p>
-            <p className="mt-1 text-sm font-bold text-brand">{dict.roles[m.role]}</p>
-            {m.team ? <p className="mt-0.5 text-sm text-muted">{teams[m.team][0]}</p> : null}
+            <p className="mt-1 text-sm font-bold text-brand-dark">{roleLabel(m, lang, dict.roles.member)}</p>
+            {m.team ? <p className="mt-0.5 text-sm text-muted">{teams[m.team] ?? m.team}</p> : null}
           </li>
         ))}
       </ul>

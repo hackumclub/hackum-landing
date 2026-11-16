@@ -42,3 +42,7 @@ next-env.d.ts
 
 # local sign-up store used by /api/subscribe in development
 /.data/
+
+# Playwright MCP artifacts
+.playwright-mcp/
+.superpowers/

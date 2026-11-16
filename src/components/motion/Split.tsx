@@ -16,7 +16,7 @@ export function rich(text: string) {
 /**
  * SplitText reveal. Modes (see docs/motion-plan.md):
  *  - lines: masked line slide-up (hero/page titles)   - words: masked word reveal (section titles)
- *  - fade: line fade + slide (paragraphs)              - scrub: word opacity 20%→100% tied to scroll
+ *  - fade: line fade + slide (paragraphs)              - scrub: word opacity 50%→100% tied to scroll (50% keeps large text at 3:1 contrast, WCAG 1.4.3)
  * `hero` plays as soon as fonts are ready instead of waiting for scroll.
  * Text stays readable without JS (hidden by CSS only when scripting is enabled and motion is allowed, until split), SplitText's aria="auto"
  * keeps the real string for screen readers, and autoSplit re-splits on resize / font load (Cyrillic-safe:
@@ -43,7 +43,9 @@ export default function Split({ as: Tag = "p", mode = "words", hero = false, cla
           type: mode === "lines" || mode === "fade" ? "lines" : "words",
           mask: mode === "lines" ? "lines" : mode === "words" ? "words" : undefined,
           autoSplit: true,
-          aria: "auto",
+          // aria-label is only valid on headings (and elements with a role); on a plain paragraph SplitText's "auto" produced an
+          // invalid aria-label, so paragraphs keep their real words in the accessibility tree instead.
+          aria: typeof Tag === "string" && /^h[1-6]$/.test(Tag) ? "auto" : "none",
           onSplit(self) {
             el.dataset.splitReady = "1";
             const st = hero ? undefined : { trigger: el, start: REVEAL_START, once: true };
@@ -52,7 +54,7 @@ export default function Split({ as: Tag = "p", mode = "words", hero = false, cla
             if (mode === "words") return gsap.from(self.words, { yPercent: 110, duration: DUR.base, ease: EASE.text, stagger: STAGGER.words, scrollTrigger: st, onComplete: mark });
             if (mode === "fade") return gsap.from(self.lines, { y: 18, opacity: 0, duration: DUR.base, ease: EASE.ui, stagger: 0.06, scrollTrigger: st, onComplete: mark });
             mark();
-            return gsap.from(self.words, { opacity: 0.2, ease: "none", stagger: 0.1, scrollTrigger: { trigger: el, start: "top 80%", end: "bottom 45%", scrub: true } });
+            return gsap.from(self.words, { opacity: 0.5, ease: "none", stagger: 0.1, scrollTrigger: { trigger: el, start: "top 80%", end: "bottom 45%", scrub: true } });
           },
         });
       });

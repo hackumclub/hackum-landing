@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "@/i18n/config";
-import { EVENTS } from "@/lib/events";
+import { isVisibleEventSlug } from "@/lib/public/slugs";
+import { getStore, mockEnabled } from "@/lib/mockdb/store";
+import { guardDecision } from "@/lib/guard";
+
+const PERSONA_COOKIE = "hackum-dev-as"; // same name as src/lib/server/session.ts (that module is server-only)
 
 const COOKIE = "lang";
 
@@ -35,9 +39,27 @@ export function proxy(req: NextRequest) {
     return NextResponse.redirect(url);
   }
   if (isLocale(first)) {
-    // Unknown event slug → render the 404 route. (notFound() inside the page's Suspense would stream a 200 "soft 404".)
+    // /me and /admin: signed out → real 307 to sign-in; signed-in non-staff (or organizer on admin-only areas) → real 404.
+    // Mock auth only; without it the layouts themselves answer 404.
+    if (mockEnabled()) {
+      const g = guardDecision({ pathname, search: req.nextUrl.search, handle: req.cookies.get(PERSONA_COOKIE)?.value, db: getStore().read() });
+      if (g.type === "redirect") {
+        // Built from the request's own URL with a fixed path: the only variable part is the percent-encoded `next` value.
+        const url = req.nextUrl.clone();
+        url.pathname = `/${g.lang}/sign-in`;
+        url.search = `?next=${encodeURIComponent(g.next)}`;
+        return NextResponse.redirect(url);
+      }
+      if (g.type === "notFound") {
+        const url = req.nextUrl.clone();
+        url.pathname = `/${first}/page-not-found`;
+        url.search = "";
+        return NextResponse.rewrite(url);
+      }
+    }
+    // Unknown (or draft) event slug → render the 404 route. Must happen here: once a page streams, its status is already 200.
     const m = pathname.match(/^\/(?:mn|en)\/events\/([^/]+)\/?$/);
-    if (m && !EVENTS.some((e) => e.slug === safeDecode(m[1]))) {
+    if (m && !isVisibleEventSlug(getStore().read(), safeDecode(m[1]))) {
       const url = req.nextUrl.clone();
       url.pathname = `/${first}/page-not-found`;
       return NextResponse.rewrite(url);

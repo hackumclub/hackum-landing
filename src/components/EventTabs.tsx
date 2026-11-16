@@ -12,7 +12,7 @@ export default function EventTabs({ labels, panels }: { labels: string[]; panels
         {labels.map((l, i) => (
           <button key={l} id={`${id}-t${i}`} role="tab" type="button" aria-selected={tab === i} aria-controls={`${id}-p${i}`} tabIndex={tab === i ? 0 : -1}
             onClick={() => setTab(i)}
-            className={`-mb-px border-b-2 py-3 font-display text-sm font-bold transition-colors ${tab === i ? "border-brand text-brand" : "border-transparent text-muted hover:text-ink"}`}>{l}</button>
+            className={`-mb-px border-b-2 py-3 font-display text-sm font-bold transition-colors ${tab === i ? "border-brand text-brand-dark" : "border-transparent text-muted hover:text-ink"}`}>{l}</button>
         ))}
       </div>
       <div id={`${id}-p${tab}`} role="tabpanel" aria-labelledby={`${id}-t${tab}`} className="py-8">{panels[tab]}</div>

@@ -9,6 +9,7 @@ import Sticker from "./Sticker";
 import type { Event } from "@/lib/events";
 import { fill, type Locale } from "@/i18n/config";
 import type { Dict } from "@/i18n";
+import type { TicketDict } from "@/i18n/areas/public";
 
 const TILT = [-1.2, 0.8, -0.4, 1.1];
 
@@ -16,7 +17,7 @@ const TILT = [-1.2, 0.8, -0.4, 1.1];
  * Events list with a glass search: icon, animated example placeholder, "/" shortcut, clear button,
  * type and year chips, live result count. Filtering is instant and client-side.
  */
-export default function EventSearch({ items, lang, dict, ticket }: { items: Event[]; lang: Locale; dict: Dict["events"]; ticket: Dict["ticket"] }) {
+export default function EventSearch({ items, lang, dict, ticket }: { items: Event[]; lang: Locale; dict: Dict["events"]; ticket: TicketDict }) {
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<string | null>(null);
   const [year, setYear] = useState<string | null>(null);

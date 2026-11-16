@@ -5,6 +5,7 @@ import { lang as rootLang } from "next/root-params";
 import NotFoundFx from "@/components/motion/NotFoundFx";
 import Sticker from "@/components/Sticker";
 import Icon3D from "@/components/Icon3D";
+import SiteChrome from "@/components/SiteChrome";
 import { DEFAULT_LOCALE, href, isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
 
@@ -15,6 +16,7 @@ export default async function NotFound() {
   const d = getDictionary(lang);
 
   return (
+    <SiteChrome lang={lang} dict={d}>
     <section data-nf className="relative mx-auto flex min-h-[72vh] max-w-3xl flex-col items-center justify-center px-6 py-16 text-center">
       <NotFoundFx />
       <title>{d.meta.notFound}</title>
@@ -35,5 +37,6 @@ export default async function NotFound() {
         </div>
       </div>
     </section>
+    </SiteChrome>
   );
 }
