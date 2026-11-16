@@ -1,5 +1,5 @@
 begin;
-select plan(68);
+select plan(73);
 select tests.use_issuer();
 
 select tests.profile(h) from unnest(array['p1', 'p2', 'p3', 'viewer', 'seated']) h;
@@ -14,12 +14,13 @@ from (values
   ('hk-abcd-efgh-jkmn', 'HK-ABCD-EFGH-JKMN', 'lowercase'), ('  hk abcd efgh jkmn ', 'HK-ABCD-EFGH-JKMN', 'spaces'),
   ('HKABCDEFGHJKMN', 'HK-ABCD-EFGH-JKMN', 'missing dashes'), ('HK-ABCD-EFGH-JKMN', 'HK-ABCD-EFGH-JKMN', 'an already canonical code'),
   ('hk_abcd.efgh/jkmn', 'HK-ABCD-EFGH-JKMN', 'other separators'),
-  ('hk-ab12', 'HK-AB12', 'a legacy code'), ('HKAB12', 'HK-AB12', 'a legacy code without the dash'),
+  ('hk-ab12', 'HK-AB12', 'a short code (no legacy branch: just uppercased)'), ('HKAB12', 'HKAB12', 'a short code without the dash (left as typed)'),
   ('  nope!! ', 'NOPE!!', 'anything else (uppercased, trimmed)'), ('', '', 'an empty string')
 ) v(i, o, d);
 select ok(not has_function_privilege('authenticated', 'app.gen_invite_code()', 'execute') and not has_function_privilege('authenticated', 'app.team_code_allowed(uuid)', 'execute')
   and not has_function_privilege('anon', 'app.normalize_invite_code(text)', 'execute'), 'code generation and the throttle check are internal');
-select ok(has_function_privilege('authenticated', 'app.note_team_code_failure()', 'execute') and not has_function_privilege('anon', 'app.note_team_code_failure()', 'execute'), 'only signed-in people can note a failed guess');
+select is((select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'app' and p.proname = 'note_team_code_failure'
+  and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute'))), 0::bigint, 'no API role can call note_team_code_failure: a miss is recorded inside the join call');
 select ok(not has_table_privilege('authenticated', 'app.team_code_failures', 'select') and not has_table_privilege('anon', 'app.team_code_failures', 'insert')
   and (select relrowsecurity from pg_class where oid = 'app.team_code_failures'::regclass), 'the failure log is private with RLS on');
 
@@ -27,7 +28,6 @@ select tests.event('hackx', 20, 'published', '10 days', 'application', 'open', '
 select tests.as_person('p1');
 select ok((select app.register_for_event(tests.eid('hackx'), '{}', '{"mode":"create","name":"Alpha"}') ->> 'invite_code') ~ '^HK-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$', 'a created team gets the new format');
 select tests.as_owner();
-insert into public.teams (event_id, name, invite_code, captain_profile_id) values (tests.eid('hackx'), 'Legacy', 'HK-AB12', tests.pid('p1'));
 select tests.as_person('p2');
 select is((select app.register_for_event(tests.eid('hackx'), '{}', jsonb_build_object('mode', 'join', 'code', lower(replace(tests.team_code('Alpha'), '-', ' ')))) ->> 'status'), 'applied', 'joining accepts lowercase and spaces (register_for_event)');
 select tests.as_person('p3');
@@ -35,29 +35,39 @@ select is((select app.register_for_event(tests.eid('hackx'), '{}') ->> 'status')
 select is((select app.join_team(replace(lower(tests.team_code('Alpha')), '-', ''))) ->> 'team_id', tests.val($$select id::text from public.teams where name = 'Alpha'$$), 'join_team accepts a code with no dashes');
 select tests.as_person('viewer');
 select app.register_for_event(tests.eid('hackx'), '{}');
-select is((select app.join_team('hk ab12') ->> 'team_id'), tests.val($$select id::text from public.teams where name = 'Legacy'$$), 'a legacy HK-XXXX demo code still works');
+select is((select app.join_team('hk ab12')), '{"ok": false, "error": "not_found"}'::jsonb, 'a short HK-XXXX code matches nothing');
 
--- throttle: 10 noted failures in an hour
+-- throttle: every miss is recorded inside the call itself (no client step to skip); the 11th attempt is rate_limited
 select tests.as_person('mem');
 select app.register_for_event(tests.eid('hackx'), '{}');
-select throws_ok($$select app.join_team('HK-NOPE-NOPE-NOPE')$$, 'P0001', 'not_found', 'a wrong code is not_found');
-select app.note_team_code_failure() from generate_series(1, 9);
-select throws_ok($$select app.join_team('HK-NOPE-NOPE-NOPE')$$, 'P0001', 'not_found', 'still not_found after 9 noted failures');
-select app.note_team_code_failure();
-select throws_ok($$select app.join_team('HK-NOPE-NOPE-NOPE')$$, 'P0001', 'rate_limited', 'rate_limited from the 10th noted failure on');
+select is((select app.join_team('HK-NOPE-NOPE-NOPE')), '{"ok": false, "error": "not_found"}'::jsonb, 'a wrong code returns {ok:false,error:not_found} (no exception)');
+select tests.as_owner();
+select is(tests.count($$select 1 from app.team_code_failures where profile_id = tests.pid('mem')$$), 1::bigint, 'and the miss was recorded by the call itself, without any client call');
+select tests.as_person('mem');
+select app.join_team('HK-NOPE-NOPE-NOPE') from generate_series(1, 8);
+select is((select app.join_team('HK-NOPE-NOPE-NOPE') ->> 'error'), 'not_found', 'the 10th miss still answers not_found');
+select throws_ok($$select app.join_team('HK-NOPE-NOPE-NOPE')$$, 'P0001', 'rate_limited', 'the 11th attempt is rate_limited');
+select throws_ok(format($f$select app.join_team(%L)$f$, tests.team_code('Alpha')), 'P0001', 'rate_limited', 'even with a right code');
+select tests.as_owner();
+select is(tests.count($$select 1 from app.team_code_failures where profile_id = tests.pid('mem')$$), 10::bigint, 'ten failures recorded, nothing more while blocked');
 select tests.as_person('seated');
-select app.note_team_code_failure() from generate_series(1, 10);
-select throws_ok(format($f$select app.register_for_event(tests.eid('hackx'), '{}', jsonb_build_object('mode', 'join', 'code', %L))$f$, tests.team_code('Alpha')), 'P0001', 'rate_limited', 'the register_for_event join branch is throttled too, even with a right code');
+select app.register_for_event(tests.eid('hackx'), '{}', '{"mode":"join","code":"HK-NOPE-NOPE-NOPE"}') from generate_series(1, 10);
+select tests.as_owner();
+select is(tests.count($$select 1 from public.event_registrations where profile_id = tests.pid('seated')$$), 0::bigint, 'register_for_event misses write no registration, only the failure row');
+select tests.as_person('seated');
+select throws_ok(format($f$select app.register_for_event(tests.eid('hackx'), '{}', jsonb_build_object('mode', 'join', 'code', %L))$f$, tests.team_code('Alpha')), 'P0001', 'rate_limited', 'the register_for_event join branch is throttled too (11th attempt)');
 select tests.as_person('alum');
 select app.register_for_event(tests.eid('hackx'), '{}');
-select throws_ok($$select app.join_team('HK-NOPE-NOPE-NOPE')$$, 'P0001', 'not_found', 'a different person is unaffected');
+select is((select app.join_team('HK-NOPE-NOPE-NOPE') ->> 'error'), 'not_found', 'a different person is unaffected');
+select tests.as_person('p1');
+select throws_ok($$select app.note_team_code_failure()$$, '42883', null, 'a direct call to note_team_code_failure does not exist for authenticated');
+select throws_ok($$select app.note_team_code_failure(gen_random_uuid())$$, '42501', null, 'and the internal variant is denied');
 select tests.as_anon();
-select throws_ok($$select app.note_team_code_failure()$$, '42501', null, 'anon cannot call note_team_code_failure');
+select throws_ok($$select app.note_team_code_failure()$$, '42883', null, 'nor for anon');
 select tests.as_owner();
-select is(tests.count($$select 1 from app.team_code_failures where profile_id = tests.pid('mem')$$), 10::bigint, 'ten failures were recorded for the guesser');
 update app.team_code_failures set at = now() - interval '2 hours' where profile_id = tests.pid('mem');
 select tests.as_person('mem');
-select throws_ok($$select app.join_team('HK-NOPE-NOPE-NOPE')$$, 'P0001', 'not_found', 'old failures stop counting after an hour');
+select is((select app.join_team('HK-NOPE-NOPE-NOPE') ->> 'error'), 'not_found', 'old failures stop counting after an hour');
 
 -- 2. notification preferences ---------------------------------------------------------------------------------------------
 select tests.as_person('p1');

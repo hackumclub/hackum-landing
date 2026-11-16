@@ -62,7 +62,11 @@ begin
     elsif v_mode = 'join' then
       if not app.team_code_allowed(me.id) then perform app.fail('rate_limited'); end if;
       select * into t from public.teams x where x.invite_code = app.normalize_invite_code(p_team ->> 'code') for update;
-      if not found or t.event_id <> ev.id then perform app.fail('not_found'); end if;
+      if not found or t.event_id <> ev.id then
+        -- A miss is recorded in this very call and RETURNED (a raised error would roll the failure row back). Nothing else was written yet.
+        perform app.note_team_code_failure(me.id);
+        return jsonb_build_object('ok', false, 'error', 'not_found');
+      end if;
       if t.locked then perform app.fail('closed'); end if;
       if (select count(*) from public.event_registrations x where x.team_id = t.id and x.status <> 'cancelled') >= ev.team_size_max then
         perform app.fail('full');
@@ -164,7 +168,10 @@ begin
   me := app.require_profile(true);
   if not app.team_code_allowed(me.id) then perform app.fail('rate_limited'); end if;
   select * into t from public.teams x where x.invite_code = app.normalize_invite_code(p_code);
-  if not found then perform app.fail('not_found'); end if;
+  if not found then
+    perform app.note_team_code_failure(me.id);
+    return jsonb_build_object('ok', false, 'error', 'not_found');
+  end if;
   select * into ev from public.events where id = t.event_id for update;
   select * into t from public.teams where id = t.id for update;
   select * into reg from public.event_registrations r where r.event_id = t.event_id and r.profile_id = me.id

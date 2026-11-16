@@ -152,8 +152,7 @@ grant execute on function
   app.create_event(jsonb), app.preview_event_change(uuid, jsonb), app.update_event(uuid, jsonb), app.set_event_status(uuid, text),
   app.create_poll(jsonb), app.update_poll(uuid, jsonb), app.set_poll_status(uuid, text), app.vote(uuid, text[]), app.poll_tallies(uuid),
   app.submit_feedback(uuid, integer, integer, text, text, boolean), app.feedback_summary(uuid),
-  app.mark_read(uuid[]), app.mark_all_read(), app.retry_notification(uuid), app.send_announcement(text, jsonb, jsonb, jsonb),
-  app.note_team_code_failure()
+  app.mark_read(uuid[]), app.mark_all_read(), app.retry_notification(uuid), app.send_announcement(text, jsonb, jsonb, jsonb)
   to authenticated;
 
 grant execute on function app.subscribe(text, text, text, text) to anon, authenticated;

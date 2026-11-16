@@ -22,7 +22,7 @@ select is((select app.join_team(lower(tests.team_code('Team T'))) ->> 'team_id')
 select throws_ok($$select app.join_team(tests.team_code('Team T'))$$, 'P0001', 'conflict', 'joining twice conflicts');
 select tests.as_person('c');
 select throws_ok($$select app.join_team(tests.team_code('Team T'))$$, 'P0001', 'forbidden', 'joining without a registration is forbidden');
-select throws_ok($$select app.join_team('HK-NOPE')$$, 'P0001', 'not_found', 'unknown code is not_found');
+select is((select app.join_team('HK-NOPE-NOPE-NOPE')), '{"ok": false, "error": "not_found"}'::jsonb, 'unknown code returns {ok:false,error:not_found}');
 select throws_ok($$select * from app.team_roster((select id from public.teams where name = 'Team T'))$$, 'P0001', 'forbidden', 'outsiders cannot read a team roster');
 select tests.as_person('b');
 select is((select count(*) from app.team_roster((select id from public.teams where name = 'Team T'))), 2::bigint, 'teammates read the roster (names only)');

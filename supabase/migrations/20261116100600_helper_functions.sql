@@ -332,19 +332,19 @@ begin
   return null;
 end $$;
 
--- What people type or paste -> the stored form. Strips everything that is not a letter or digit, uppercases. HK + 12 -> canonical,
--- HK + 4 -> the legacy demo code HK-XXXX, anything else -> uppercased trimmed input (it will simply not be found).
+-- What people type or paste -> the stored form. Strips everything that is not a letter or digit, uppercases. HK + 12 -> canonical
+-- HK-XXXX-XXXX-XXXX; anything else -> uppercased trimmed input (it will simply not be found). No legacy short codes exist here.
 create function app.normalize_invite_code(p_code text) returns text
 language plpgsql immutable parallel safe set search_path = '' as $$
 declare v text := upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g'));
 begin
   if v ~ '^HK[A-Z0-9]{12}$' then return 'HK-' || substr(v, 3, 4) || '-' || substr(v, 7, 4) || '-' || substr(v, 11, 4); end if;
-  if v ~ '^HK[A-Z0-9]{4}$' then return 'HK-' || substr(v, 3, 4); end if;
   return upper(btrim(coalesce(p_code, '')));
 end $$;
 
--- Guess throttling: failed joins are noted here (by the app, after a join `not_found`, because a raised error rolls its own
--- writes back) and 10 in an hour block further attempts. Private: no policy, no privileges for API roles.
+-- Guess throttling: a join whose code matches nothing inserts a row here inside the same call (and returns {ok:false,error:'not_found'}
+-- instead of raising, because a raised error would roll the row back); 10 in an hour block further attempts with `rate_limited`.
+-- Private: no policy, no privileges for API roles.
 create table app.team_code_failures (
   profile_id uuid not null references public.profiles (id) on delete cascade,
   at timestamptz not null default now()
@@ -358,11 +358,10 @@ language sql stable security definer set search_path = '' as $$
   select (select count(*) from app.team_code_failures f where f.profile_id = p_profile and f.at > now() - interval '1 hour') < 10
 $$;
 
-create function app.note_team_code_failure() returns void
+-- Records one miss for the caller. Internal: called by the join functions, never granted (so it cannot be skipped or spammed at others).
+create function app.note_team_code_failure(p_profile uuid) returns void
 language plpgsql security definer set search_path = '' as $$
-declare me uuid := app.current_profile_id();
 begin
-  if me is null then perform app.fail('unauthenticated'); end if;
-  insert into app.team_code_failures (profile_id) values (me);
-  delete from app.team_code_failures where profile_id = me and at < now() - interval '1 day';
+  insert into app.team_code_failures (profile_id) values (p_profile);
+  delete from app.team_code_failures where profile_id = p_profile and at < now() - interval '1 day';
 end $$;

@@ -6,7 +6,7 @@ Phase 1 of `docs/production-setup.md`: schema, row-level security and the rule f
 ```bash
 supabase start                 # local stack (Docker); applies migrations
 supabase db reset              # recreate + apply every migration (what CI should run)
-supabase test db               # pgTAP: 11 files, 504 assertions (supabase/tests/*.test.sql)
+supabase test db               # pgTAP: 11 files, 509 assertions (supabase/tests/*.test.sql)
 supabase db lint --level warning --schema public,app
 supabase gen types typescript --local --schema public --schema app > src/lib/db/types.ts
 supabase/tests/concurrency.sh 20 5   # 20 parallel registrations into 5 seats, real sessions (not part of test db)
@@ -53,7 +53,7 @@ Nobody updates `profiles` directly (no UPDATE grant at all): every write goes th
 |---|---|
 | `registrations.registerForEvent` | `register_for_event(p_event_id, p_answers jsonb, p_team jsonb) → {status, team_id, invite_code}` (locks the event row; `p_team` = `{mode: create\|join\|solo, name?, code?}`) |
 | `cancelRegistration` (+ waitlist promotion and mail) | `cancel_registration(p_event_id)` |
-| `joinTeam`, `leaveTeam`, (new) | `join_team(p_code)`, `leave_team(p_team_id)`, `create_team(p_event_id, p_name)`, `team_roster(p_team_id)`, `note_team_code_failure()` (see Invite codes) |
+| `joinTeam`, `leaveTeam`, (new) | `join_team(p_code)`, `leave_team(p_team_id)`, `create_team(p_event_id, p_name)`, `team_roster(p_team_id)`, (see Invite codes: a miss returns `{ok:false,error:"not_found"}`) |
 | `decideRegistrations`, `sendDecisions` | `decide_registrations(p_ids uuid[], p_decision, p_scope)`, `send_decisions(p_event_id)` |
 | `members.completeOnboarding`, `updatePrefs` | `complete_onboarding(p_name, p_school, p_grad_year, p_locale)`, `update_prefs(p_notif_prefs, p_locale, p_visibility)` |
 | `profile.updateProfile`, `academic.updateAcademic`, `setSemesterSubjects` | `update_profile`, `update_academic`, `set_semester_subjects` |
@@ -73,8 +73,8 @@ Nobody updates `profiles` directly (no UPDATE grant at all): every write goes th
 Table renames: mock `registrations` is `event_registrations` (spec §4); `events.online_url` lives in `event_online_links` (events rows are public, the link is for seat holders and staff). Everything else keeps the mock's column names.
 
 ## Invite codes and guess throttling
-- Format `HK-XXXX-XXXX-XXXX`: 12 characters (60 bits) from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no I, O, 0, 1), generated with pgcrypto's `gen_random_bytes` (`app.gen_invite_code`). `app.normalize_invite_code` is applied at both lookup sites (`register_for_event` join branch and `join_team`): it strips non-alphanumerics and uppercases (`hk abcd efgh jkmn` works), and still maps legacy `HK-XXXX` demo codes.
-- Throttle: ten noted failures in the last hour make the next join attempt (either site) raise `rate_limited`. A raised error rolls the function's own writes back, so **the app adapter must call `supabase.schema("app").rpc("note_team_code_failure")` after every join that returned `not_found`** (the failure is then counted for the signed-in person). The log (`app.team_code_failures`) is private (RLS on, no policy, no privileges for API roles).
+- Format `HK-XXXX-XXXX-XXXX`: 12 characters (60 bits) from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no I, O, 0, 1), generated with pgcrypto's `gen_random_bytes` (`app.gen_invite_code`). `app.normalize_invite_code` is applied at both lookup sites (`register_for_event` join branch and `join_team`): it strips non-alphanumerics and uppercases, so `hk abcd efgh jkmn` works. Codes are exactly this format; there is no legacy short-code branch in the database.
+- Throttle, recorded inside the call so it cannot be skipped: when a code matches nothing, `register_for_event` (join branch) and `join_team` insert a row into the private `app.team_code_failures` and **return** `{"ok": false, "error": "not_found"}` instead of raising (a raised error would roll the row back). Nothing else has been written at that point (no registration, no team change). **The adapter must map a returned `{ok: false, error}` to the same `ErrorCode`** (successful results have no `ok` key). Ten misses in the last hour make the next attempt raise `P0001 rate_limited` (nothing to persist). Other join errors (`closed`, `full`, `forbidden`, `conflict`) still raise as before and are not counted. The log has RLS on, no policy and no privileges for API roles; `app.note_team_code_failure(uuid)` is internal and granted to nobody.
 
 ## Clerk identity: no takeover by email
 `upsert_clerk_profile` takes `p_email_verified`: pass whether the *primary* address is verified in Clerk. Only a verified address is stored or used to claim an unclaimed legacy profile; an unverified one creates a separate profile with no email. A legacy profile that holds a `staff_roles` row is never auto-claimed: the Clerk user gets a fresh profile and an audit row `profile.claim_blocked` (diff: the legacy profile id) is written so an admin can fold them together with `merge_profiles`. A second Clerk id for an already claimed address raises `conflict`.

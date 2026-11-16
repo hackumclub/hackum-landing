@@ -112,7 +112,7 @@ select is((select app.register_for_event(tests.eid('hack'), '{"skills":"y"}', js
 select tests.as_person('c');
 select throws_ok($$select app.register_for_event(tests.eid('hack'), '{"skills":"z"}', jsonb_build_object('mode', 'join', 'code', tests.team_code('Нүүдэлчид')))$$, 'P0001', 'full', 'a third member is over the size limit');
 select throws_ok($$select app.register_for_event(tests.eid('hack'), '{"skills":"z"}', '{"mode":"create","name":"T"}')$$, 'P0001', 'invalid', 'a one-letter team name is invalid');
-select throws_ok($$select app.register_for_event(tests.eid('hack'), '{"skills":"z"}', '{"mode":"join","code":"HK-ZZZZ"}')$$, 'P0001', 'not_found', 'an unknown code is not_found');
+select is((select app.register_for_event(tests.eid('hack'), '{"skills":"z"}', '{"mode":"join","code":"HK-ZZZZ-ZZZZ-ZZZZ"}')), '{"ok": false, "error": "not_found"}'::jsonb, 'an unknown code returns {ok:false,error:not_found}');
 select throws_ok($$select app.register_for_event(tests.eid('hack'), '{"skills":"z"}', '{"mode":"create","name":"нүүдэлчид"}')$$, 'P0001', 'conflict', 'a duplicate team name (any case) conflicts');
 select tests.as_owner();
 select is(tests.count($$select 1 from public.event_registrations where event_id = tests.eid('hack') and profile_id = tests.pid('c')$$), 0::bigint, 'failures create no registration');
