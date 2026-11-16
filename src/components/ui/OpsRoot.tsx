@@ -40,7 +40,8 @@ export default function OpsRoot({ children, className }: { children: ReactNode; 
   return (
     <OpsContext.Provider value={{ root, theme, setTheme }}>
       <div ref={setRoot} className={cx("ops min-h-dvh", className)} data-theme={theme === "system" ? undefined : theme} suppressHydrationWarning>
-        <script dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
+        {/* Runs during HTML parsing (hard loads). `text/plain` on the client avoids React's "script tag while rendering" warning. */}
+        <script type={typeof window === "undefined" ? "text/javascript" : "text/plain"} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
         {children}
       </div>
     </OpsContext.Provider>

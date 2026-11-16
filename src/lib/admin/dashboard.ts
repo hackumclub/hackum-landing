@@ -1,8 +1,10 @@
 import type { L, Locale } from "@/i18n/config";
+import { goingCount } from "@/lib/mockdb/core";
+import { attentionCounts, kpis, upcomingEvents } from "@/lib/mockdb/queries";
+import { getStore } from "@/lib/mockdb/store";
 
-// Dashboard data. Until Supabase (plan Tasks 1–5) lands this serves SAMPLE data with the exact shape the real
-// v_kpis / v_event_stats queries will return; `sample: true` makes the UI say so. Replace the body of
-// getDashboard(), not its return type.
+// Dashboard data, read from the local mock database (src/lib/mockdb). Same shapes the real v_kpis / v_event_stats
+// queries will return; `sample: true` makes the UI say it is demo data. Swap fromDb(), not getDashboard()'s type.
 
 export const ATTENTION_ORDER = ["failed_emails", "pending_applications", "pending_members", "missing_cover", "needs_en"] as const;
 export type AttentionKind = (typeof ATTENTION_ORDER)[number];
@@ -40,33 +42,22 @@ type Raw = { kpis: Kpis; upcoming: UpcomingEvent[]; attention: Partial<Record<At
 export type Dashboard = { kpis: Kpis; upcoming: UpcomingEvent[]; attention: AttentionItem[]; sample: boolean };
 export type Scenario = "default" | "empty" | "error" | "slow";
 
-const DAY = 86_400_000;
-/** Sample start time: `days` from now at a UB wall-clock hour (UB = UTC+8). */
-function at(now: Date, days: number, ubHour: number, ubMin = 0) {
-  const d = new Date(now.getTime() + days * DAY);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), ubHour - 8, ubMin));
+function fromDb(now: Date): Raw {
+  const store = getStore();
+  const db = store.read();
+  const upcoming: UpcomingEvent[] = upcomingEvents(db, now).slice(0, 6).map((e) => ({
+    id: e.id, slug: e.slug, title: e.title, kind: e.kind, status: e.status === "draft" ? "draft" : "published", startsAt: new Date(e.starts_at), regMode: e.reg_mode,
+    going: goingCount(db, e.id), applied: db.registrations.filter((r) => r.event_id === e.id && r.status === "applied").length, capacity: e.capacity,
+  }));
+  return { kpis: kpis(db, now), upcoming, attention: attentionCounts(db) };
 }
 
-function sample(now: Date): Raw {
-  const upcoming: UpcomingEvent[] = [
-    { id: "e3", slug: "devhack-2027", title: { mn: "DevHack 2027", en: "DevHack 2027" }, kind: "hackathon", status: "published", startsAt: at(now, 75, 9), regMode: "application", going: 0, applied: 64, capacity: 120 },
-    { id: "e1", slug: "knowledge-day-rag", title: { mn: "Knowledge Day #6: RAG чатбот бүтээх", en: "Knowledge Day #6: Build a RAG chatbot" }, kind: "knowledge_day", status: "published", startsAt: at(now, 4, 18, 30), regMode: "rsvp", going: 52, applied: 0, capacity: 60 },
-    { id: "e4", slug: "c-battle-winter", title: { mn: "C Battle · Өвөл", en: "" }, kind: "competition", status: "draft", startsAt: at(now, 30, 14), regMode: "rsvp", going: 0, applied: 0, capacity: 40 },
-    { id: "e2", slug: "alumni-night", title: { mn: "Tech Meetup: Төгсөгчидтэй үдэш", en: "Tech Meetup: Alumni night" }, kind: "meetup", status: "published", startsAt: at(now, 11, 19), regMode: "rsvp", going: 23, applied: 0, capacity: null },
-  ];
-  return {
-    kpis: { activeMembers90d: 86, upcomingEvents: upcoming.length, rsvps30d: 112, rsvpsPrev30d: 74, membersTotal: 142, guestsTotal: 231 },
-    upcoming: upcoming.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime()),
-    attention: { pending_applications: 64, pending_members: 7, missing_cover: 1, needs_en: 1 },
-  };
-}
-
-/** `scenario` exists so every state (empty / loading / error) can be reviewed before real data exists. */
-export async function getDashboard({ lang = "mn", scenario = "default", now = new Date() }: { lang?: Locale; scenario?: Scenario; now?: Date } = {}): Promise<Dashboard> {
+/** `scenario` exists so every state (empty / loading / error) can be reviewed against the local mock database. */
+export async function getDashboard({ lang = "mn", scenario = "default", now }: { lang?: Locale; scenario?: Scenario; now?: Date } = {}): Promise<Dashboard> {
   if (scenario === "error") throw new Error("dashboard_unavailable");
   if (scenario === "slow") await new Promise((r) => setTimeout(r, 1500));
   const raw: Raw = scenario === "empty"
     ? { kpis: { activeMembers90d: 0, upcomingEvents: 0, rsvps30d: 0, rsvpsPrev30d: 0, membersTotal: 0, guestsTotal: 0 }, upcoming: [], attention: {} }
-    : sample(now);
+    : fromDb(now ?? getStore().now());
   return { ...raw, attention: toAttention(raw.attention, lang), sample: true };
 }

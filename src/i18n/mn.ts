@@ -200,7 +200,9 @@ export const mn = {
       viewSite: "Нийтийн сайт", switchLang: "English", switchLangLabel: "Switch to English",
     },
     theme: { group: "Өнгөний горим", system: "Системийн дагуу", light: "Цайвар", dark: "Бараан" },
-    sample: { title: "Жишээ өгөгдөл", text: "Supabase холбогдох хүртэл энэ самбар жишээ тоо харуулна. Бодит бүртгэл нөлөөлөхгүй." },
+    live: { live: "Шууд", reconnecting: "Холбогдож байна…" },
+    persona: { viewingAs: "Хэн болж харах", signedOut: "Нэвтрээгүй" },
+    sample: { title: "Демо өгөгдөл", text: "Энэ нь зөвхөн таны компьютер дээрх орон нутгийн демо сан. Өөрчлөлт бодит бүртгэлд нөлөөлөхгүй, сервер дахин асахад анхны байдалдаа орно." },
     dashboard: {
       title: "Хянах самбар",
       kpis: "Гол үзүүлэлтүүд",

@@ -61,7 +61,7 @@ function Brand({ t, lang, compact = false }: { t: T; lang: Locale; compact?: boo
 }
 
 /** Backoffice frame: sticky sidebar ≥1024px, drawer below; translucent top bar is the screen's one glass surface. */
-export default function AdminShell({ lang, t, skip, close, children }: { lang: Locale; t: T; skip: string; close: string; children: ReactNode }) {
+export default function AdminShell({ lang, t, skip, close, extras, children }: { lang: Locale; t: T; skip: string; close: string; /** Server-rendered controls for the top bar (live badge, persona switcher). */ extras?: ReactNode; children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const path = usePathname();
   const other: Locale = lang === "mn" ? "en" : "mn";
@@ -80,6 +80,7 @@ export default function AdminShell({ lang, t, skip, close, children }: { lang: L
           <IconButton label={t.nav.openMenu} icon={<Menu size={20} />} className="-ml-2 lg:hidden" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)} />
           <div className="lg:hidden"><Brand t={t} lang={lang} compact /></div>
           <div className="ml-auto flex items-center gap-2">
+            {extras}
             <Link href={switchLocale(path, other)} hrefLang={other} lang={other} aria-label={t.nav.switchLangLabel} className="inline-flex min-h-10 items-center rounded-[var(--radius-sm)] px-3 text-sm font-semibold text-fg hover:bg-neutral-soft">
               {t.nav.switchLang}
             </Link>

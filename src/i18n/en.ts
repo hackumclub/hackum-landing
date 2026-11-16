@@ -202,7 +202,9 @@ export const en: Dict = {
       viewSite: "Public site", switchLang: "Монгол", switchLangLabel: "Монгол хэл рүү шилжих",
     },
     theme: { group: "Colour theme", system: "Match system", light: "Light", dark: "Dark" },
-    sample: { title: "Sample data", text: "This dashboard shows sample numbers until Supabase is connected. Nothing here affects real registrations." },
+    live: { live: "Live", reconnecting: "Reconnecting…" },
+    persona: { viewingAs: "View as", signedOut: "Signed out" },
+    sample: { title: "Demo data", text: "This is a local demo database on your machine. Changes don’t affect real registrations and reset when the server restarts." },
     dashboard: {
       title: "Dashboard",
       kpis: "Key numbers",
