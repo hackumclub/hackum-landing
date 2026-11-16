@@ -34,6 +34,32 @@
   --shadow-card: 0 1px 0 rgb(7 27 41 / 0.05), 0 14px 34px -14px rgb(7 27 41 / 0.3);
   --shadow-soft: 0 1px 2px 0 rgb(7 27 41 / 0.06);
   --shadow-glow: 0 10px 30px -8px rgb(0 133 202 / 0.55);
+
+  /* Ops layer (backoffice + member app, direction "Clubhouse Ops"): semantic colours resolved at runtime from
+     --ops-* so one class set serves light and dark. Public pages never set .ops, so they are unaffected. */
+  --color-canvas: var(--ops-canvas);
+  --color-panel: var(--ops-panel);
+  --color-panel-2: var(--ops-panel-2);
+  --color-fg: var(--ops-fg);
+  --color-fg-muted: var(--ops-fg-muted);
+  --color-line: var(--ops-line);
+  --color-line-strong: var(--ops-line-strong);
+  --color-accent: var(--ops-accent);
+  --color-accent-hover: var(--ops-accent-hover);
+  --color-on-accent: var(--ops-on-accent);
+  --color-accent-fg: var(--ops-accent-fg);
+  --color-accent-soft: var(--ops-accent-soft);
+  --color-neutral-soft: var(--ops-neutral-soft);
+  --color-ok-fg: var(--ops-ok-fg);
+  --color-ok-soft: var(--ops-ok-soft);
+  --color-warn-fg: var(--ops-warn-fg);
+  --color-warn-soft: var(--ops-warn-soft);
+  --color-danger: var(--ops-danger);
+  --color-on-danger: var(--ops-on-danger);
+  --color-danger-fg: var(--ops-danger-fg);
+  --color-danger-soft: var(--ops-danger-soft);
+  --radius-sm: 10px;
+  --radius-md: 14px;
 }
 
 html { scroll-behavior: smooth; }
@@ -212,3 +238,84 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
 @media (prefers-reduced-motion: reduce) {
   .roll > *, .btn-fill::before, mark.kw::after { transition: none; }
 }
+
+/* ── Ops theme (admin + member app) ───────────────────────────────────────────────────────────────────────
+   Contrast is enforced by tests/unit/tokens.test.ts (text ≥ 4.5:1, boundaries/focus ≥ 3:1, both themes). */
+.ops {
+  --ops-canvas: #eef4f8;
+  --ops-panel: #ffffff;
+  --ops-panel-2: #f6f9fb;
+  --ops-fg: #071b29;
+  --ops-fg-muted: #47596a;
+  --ops-line: #dbe4ec;
+  --ops-line-strong: #728494;
+  --ops-accent: #006ba3;
+  --ops-accent-hover: #005b8c;
+  --ops-on-accent: #ffffff;
+  --ops-accent-fg: #006ba3;
+  --ops-accent-soft: #e0f1fa;
+  --ops-neutral-soft: #e6edf2;
+  --ops-ok-fg: #00785c;
+  --ops-ok-soft: #e1f5ee;
+  --ops-warn-fg: #7a5f00;
+  --ops-warn-soft: #fbf3cf;
+  --ops-danger: #c42b2b;
+  --ops-on-danger: #ffffff;
+  --ops-danger-fg: #c42b2b;
+  --ops-danger-soft: #fdeceb;
+  color-scheme: light;
+  background: var(--ops-canvas);
+  color: var(--ops-fg);
+}
+.ops[data-theme="dark"] {
+  --ops-canvas: #071b29;
+  --ops-panel: #0d2a3d;
+  --ops-panel-2: #12344a;
+  --ops-fg: #e8f0f6;
+  --ops-fg-muted: #a3b6c6;
+  --ops-line: #1d3d52;
+  --ops-line-strong: #6a879c;
+  --ops-accent: #4db8ef;
+  --ops-accent-hover: #7ccbf4;
+  --ops-on-accent: #071b29;
+  --ops-accent-fg: #6cc5f2;
+  --ops-accent-soft: #123f5a;
+  --ops-neutral-soft: #1b3a4f;
+  --ops-ok-fg: #2fd3a6;
+  --ops-ok-soft: #0e3d3f;
+  --ops-warn-fg: #e5bf03;
+  --ops-warn-soft: #33361c;
+  --ops-danger: #ff7b7b;
+  --ops-on-danger: #071b29;
+  --ops-danger-fg: #ff8f8f;
+  --ops-danger-soft: #3a2533;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  .ops:not([data-theme="light"]) {
+    --ops-canvas: #071b29;
+    --ops-panel: #0d2a3d;
+    --ops-panel-2: #12344a;
+    --ops-fg: #e8f0f6;
+    --ops-fg-muted: #a3b6c6;
+    --ops-line: #1d3d52;
+    --ops-line-strong: #6a879c;
+    --ops-accent: #4db8ef;
+    --ops-accent-hover: #7ccbf4;
+    --ops-on-accent: #071b29;
+    --ops-accent-fg: #6cc5f2;
+    --ops-accent-soft: #123f5a;
+    --ops-neutral-soft: #1b3a4f;
+    --ops-ok-fg: #2fd3a6;
+    --ops-ok-soft: #0e3d3f;
+    --ops-warn-fg: #e5bf03;
+    --ops-warn-soft: #33361c;
+    --ops-danger: #ff7b7b;
+    --ops-on-danger: #071b29;
+    --ops-danger-fg: #ff8f8f;
+    --ops-danger-soft: #3a2533;
+    color-scheme: dark;
+  }
+}
+.ops :focus-visible { outline-color: var(--ops-accent); }
+.tnum { font-variant-numeric: tabular-nums; }
