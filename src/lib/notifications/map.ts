@@ -44,7 +44,7 @@ export function describeInbox(item: InboxItem, lang: Locale): InboxView {
   else if (item.kind === "welcome") href = `/${lang}/me`;
   else href = slug ? `/${lang}/events/${slug}` : null; // announcement
 
-  const own = item.kind === "announcement" ? str(p.title) : "";
+  const own = item.kind === "announcement" ? str(p[`subject_${lang}`]) || str(p[`subject_${other}`]) || str(p.title) : "";
   return {
     id: item.id, kind: item.kind,
     title: own || kind.title,
