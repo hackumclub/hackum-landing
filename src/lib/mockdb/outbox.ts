@@ -1,6 +1,6 @@
 import { err, ok, type Result } from "@/lib/result";
-import type { Ctx, Db, Notification, TemplateName } from "./types";
-import { audit, enqueue, eventOf, eventPayload, goingCount, iso, profileOf, requireStaff, ubDay } from "./core";
+import type { Ctx, Db, Notification } from "./types";
+import { audit, enqueue, eventOf, eventPayload, goingCount, iso, notifyStaff, PREF_OF, profileOf, requireStaff, ubDay } from "./core";
 
 export const DAILY_LIMIT = 100; // Resend free tier
 export const RESERVED_FOR_TRANSACTIONAL = 20;
@@ -25,15 +25,13 @@ export type SendFn = (n: Notification, to: string) => "ok" | "fail";
 /** Stands in for Resend: any address containing "bounce" fails, so the failure UI can be exercised locally. */
 const simulatedSend: SendFn = (_n, to) => (to.includes("bounce") ? "fail" : "ok");
 
-const PREF: Partial<Record<TemplateName, "reminders" | "updates" | "announcements">> = { reminder_24h: "reminders", event_updated: "updates", announcement: "announcements" };
-
 /** Why a queued message should not go out any more (null = fine to send). */
 function skipReason(db: Db, n: Notification, to: string | null): string | null {
   const p = n.profile_id ? profileOf(db, n.profile_id) : null;
   if (n.profile_id && !p) return "recipient_gone";
   if (!to) return "no_address";
   if (db.email_suppressions.some((s) => s.email.toLowerCase() === to.toLowerCase())) return "suppressed";
-  const pref = PREF[n.template];
+  const pref = PREF_OF[n.template];
   if (p && pref && !p.notif_prefs[pref]) return "opted_out";
   const eventId = typeof n.payload.event_id === "string" ? n.payload.event_id : null;
   const ev = eventId ? eventOf(db, eventId) : null;
@@ -66,7 +64,7 @@ export function dispatchOutbox(db: Db, now: Date, opts: { send?: SendFn; limit?:
       out.sent++;
     } else {
       n.attempts += 1; n.last_error = "mailbox_unavailable"; out.failed++;
-      if (n.attempts >= 5) n.status = "failed";
+      if (n.attempts >= 5) { n.status = "failed"; notifyStaff(db, now, { kind: "staff_failed_email", payload: { notification_id: n.id, template: n.template }, dedupe: `failed:${n.id}` }); }
       else n.scheduled_at = iso(new Date(now.getTime() + 2 ** n.attempts * 60_000));
     }
   }

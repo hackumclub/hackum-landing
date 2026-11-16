@@ -51,6 +51,16 @@ export interface Profile {
 }
 /** Subjects a member studies in one semester; shown on the profile only when `shared`. */
 export interface ProfileSemester { profile_id: string; year: number; term: Term; subjects: string[]; shared: boolean }
+export type InboxKind = TemplateName | "staff_application" | "staff_failed_email";
+/** The in-app notification list (bell + page). Separate from the email outbox: own retention, own read state, no budget. */
+export interface InboxItem { id: string; profile_id: string; kind: InboxKind; payload: Record<string, string | number | boolean | null>; created_at: string; read_at: string | null; dedupe_key: string }
+/** A site-level form staff can edit (event registration forms live on the event itself). */
+export interface Form { id: "membership_application" | "join"; kind: "membership_application" | "join"; title: L; questions: Question[]; updated_at: string; updated_by: string | null }
+export interface FormSubmission { id: string; form_id: "join"; profile_id: string; answers: Answers; created_at: string }
+/** MOCK ONLY: profile photo bytes (base64). Supabase Storage in production. */
+export type StoredAvatar = { mime: "image/png" | "image/jpeg" | "image/webp"; data: string; etag: string };
+/** MOCK ONLY: a one-time sign-in code. Clerk owns this in production, so it is never ported to Supabase. */
+export interface AuthCode { email: string; code: string; attempts: number; created_at: string; expires_at: string; used_at: string | null }
 export interface Membership { profile_id: string; season: number; team: string | null; role_title: L | null }
 export interface StaffRole { profile_id: string; role: StaffRoleName; granted_by: string | null; granted_at: string }
 export interface Season { year: number; label: L; application_opens_at: string | null; application_closes_at: string | null; is_current: boolean }
@@ -158,6 +168,11 @@ export interface Db {
   timeline_milestones: Milestone[];
   audit_log: AuditEntry[];
   profile_semesters: ProfileSemester[];
+  auth_codes: AuthCode[];
+  inbox: InboxItem[];
+  forms: Form[];
+  avatars: Record<string, StoredAvatar>;
+  form_submissions: FormSubmission[];
   /** Monotonic id counter so generated ids are stable and unique across a persisted session. */
   seq: number;
 }

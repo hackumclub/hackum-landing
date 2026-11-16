@@ -6,7 +6,7 @@ import type { L, Locale } from "@/i18n/config";
 import type { Answers, Question } from "@/lib/events/questions";
 import type { MemberStatus, RegStatus } from "@/lib/status";
 import type {
-  AuditEntry, Db, EventRow, Membership, MembershipApplication, Milestone, Notification, Profile, ProfileSemester, Registration, Season,
+  AuditEntry, Db, EventRow, Form, FormSubmission, InboxItem, Membership, MembershipApplication, Milestone, Notification, Profile, ProfileSemester, Registration, Season,
   StaffRole, Subscriber, Team, TemplateName, Visibility,
 } from "./types";
 
@@ -701,6 +701,37 @@ export function buildSeed(now: Date): Db {
     .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
     .map((a) => ({ id: nid("au"), ...a }));
 
+  // In-app inbox: the latest sent mail of each demo persona (the two newest unread), and for staff the pending applications
+  // and the mail that gave up.
+  const inbox: InboxItem[] = [];
+  const inboxId = () => nid("in");
+  for (const who of [anuujin, temuulen, saraa]) {
+    const sent = notifications.filter((n) => n.profile_id === who.id && n.status === "sent" && n.sent_at).sort((a, b) => b.sent_at!.localeCompare(a.sent_at!)).slice(0, 6);
+    sent.forEach((n, i) => inbox.push({ id: inboxId(), profile_id: who.id, kind: n.template, payload: n.payload, created_at: n.sent_at!, read_at: i < 2 ? null : n.sent_at!, dedupe_key: n.dedupe_key }));
+  }
+  for (const a of membership_applications.filter((x) => x.status === "pending").slice(0, 3)) {
+    const who = profiles.find((p) => p.id === a.profile_id);
+    for (const r of staff_roles) inbox.push({ id: inboxId(), profile_id: r.profile_id, kind: "staff_application", payload: { application_id: a.id, profile_id: a.profile_id, name: who?.name.mn || who?.name.en || "" }, created_at: a.created_at, read_at: null, dedupe_key: `staffapp:${a.id}:${r.profile_id}` });
+  }
+  for (const n of notifications.filter((x) => x.status === "failed").slice(0, 2)) {
+    for (const r of staff_roles) inbox.push({ id: inboxId(), profile_id: r.profile_id, kind: "staff_failed_email", payload: { notification_id: n.id, template: n.template }, created_at: n.scheduled_at, read_at: null, dedupe_key: `failed:${n.id}:${r.profile_id}` });
+  }
+
+  // Site forms staff can edit under Forms (all optional so the demo flows stay short).
+  const sel = (id: string, mn: string, en: string, opts: [string, string][]): Question => ({ id, type: "select", required: false, label: { mn, en }, options: opts.map(([a, b]) => ({ mn: a, en: b })) });
+  const forms: Form[] = [
+    { id: "membership_application", kind: "membership_application", title: { mn: "Гишүүнчлэлийн өргөдөл", en: "Membership application" }, updated_at: iso(nowMs - 30 * DAY), updated_by: null, questions: [
+      sel("experience", "Программчлалын туршлага", "Programming experience", [["Анхан шат", "Beginner"], ["Дунд", "Some projects"], ["Ахисан", "Advanced"]]),
+      { id: "portfolio", type: "url", required: false, label: { mn: "GitHub эсвэл портфолио холбоос", en: "GitHub or portfolio link" } },
+    ] },
+    { id: "join", kind: "join", title: { mn: "Hackum-д нэгдэх", en: "Join Hackum" }, updated_at: iso(nowMs - 30 * DAY), updated_by: null, questions: [
+      sel("how_heard", "Бидний тухай хаанаас мэдсэн бэ?", "How did you hear about us?", [["Найз", "A friend"], ["Сошиал", "Social media"], ["Арга хэмжээ", "An event"], ["Багш", "A teacher"], ["Бусад", "Other"]]),
+      { id: "goal", type: "short", required: false, label: { mn: "Юу сурахыг хүсэж байна вэ?", en: "What do you want to learn?" } },
+    ] },
+  ];
+  const form_submissions: FormSubmission[] = profiles.filter((p) => p.onboarded_at && !p.handle.startsWith("dev-")).slice(0, 14)
+    .map((p, i) => ({ id: nid("fs"), form_id: "join" as const, profile_id: p.id, answers: { how_heard: String(i % 5), ...(i % 3 === 0 ? { goal: "Web ба AI" } : {}) }, created_at: p.created_at }));
+
   const profile_semesters: ProfileSemester[] = [
     { profile_id: anuujin.id, year: 2026, term: "autumn", subjects: ["Algorithms and data structures", "Databases", "Operating systems"], shared: true },
     { profile_id: anuujin.id, year: 2025, term: "spring", subjects: ["Discrete mathematics", "Object-oriented programming"], shared: false },
@@ -710,7 +741,7 @@ export function buildSeed(now: Date): Db {
     profiles, memberships, staff_roles, seasons,
     events,
     registrations, teams, membership_applications, notifications, email_daily_usage, email_suppressions, subscribers,
-    timeline_milestones, audit_log, profile_semesters, seq: seq + 1,
+    timeline_milestones, audit_log, profile_semesters, auth_codes: [], inbox, forms, form_submissions, avatars: {}, seq: seq + 1,
   };
   addRecentPastEvents(db, nowMs);
   return db;

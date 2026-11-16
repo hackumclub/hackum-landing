@@ -1,7 +1,8 @@
 import { err, ok, type Result } from "@/lib/result";
+import { type Answers, parseAnswers } from "@/lib/events/questions";
 import type { L, Locale } from "@/i18n/config";
 import type { MemberStatus } from "@/lib/status";
-import { audit, enqueue, iso, nextId, profileOf, requireProfile, requireStaff } from "./core";
+import { audit, enqueue, iso, nextId, notifyStaff, profileOf, requireProfile, requireStaff } from "./core";
 import type { Ctx, NotifPrefs, Season, StaffRoleName, Visibility } from "./types";
 
 export function completeOnboarding(ctx: Ctx, input: { name: L; school: string; grad_year: number; locale: Locale }): Result<void> {
@@ -30,20 +31,24 @@ export function updatePrefs(ctx: Ctx, input: { notif_prefs: NotifPrefs; locale: 
 export const openSeason = (ctx: Ctx) =>
   ctx.db.seasons.find((s) => s.application_opens_at && s.application_closes_at && new Date(s.application_opens_at) <= ctx.now && ctx.now <= new Date(s.application_closes_at)) ?? null;
 
-export function applyForMembership(ctx: Ctx, input: { motivation: string; team_interest: string[] }): Result<{ id: string }> {
+export function applyForMembership(ctx: Ctx, input: { motivation: string; team_interest: string[]; answers?: Answers }): Result<{ id: string }> {
   const me = requireProfile(ctx, { onboarded: true });
   if (!me.ok) return me;
   const motivation = input.motivation.trim();
   if (motivation.length < 10 || motivation.length > 1000) return err("invalid");
+  // The club's own questions (staff edit them under Forms); answers to unknown ones are dropped.
+  const answers = parseAnswers(ctx.db.forms.find((f) => f.id === "membership_application")?.questions ?? [], input.answers ?? {});
+  if (!answers.ok) return err("invalid");
   if (me.data.status === "member") return err("conflict");
   // Membership is for National University of Mongolia students who have chosen a major; everyone else stays a guest.
   if (me.data.school_id !== "num" || !me.data.major_track) return err("ineligible");
   const season = openSeason(ctx);
   if (!season) return err("closed");
   if (ctx.db.membership_applications.some((a) => a.profile_id === me.data.id && a.season === season.year)) return err("conflict");
-  const row = { id: nextId(ctx.db, "a"), profile_id: me.data.id, season: season.year, motivation, team_interest: input.team_interest.slice(0, 6), answers: {}, status: "pending" as const, reviewed_by: null, reviewed_at: null, review_note: null, created_at: iso(ctx.now) };
+  const row = { id: nextId(ctx.db, "a"), profile_id: me.data.id, season: season.year, motivation, team_interest: input.team_interest.slice(0, 6), answers: answers.data, status: "pending" as const, reviewed_by: null, reviewed_at: null, review_note: null, created_at: iso(ctx.now) };
   ctx.db.membership_applications.push(row);
   audit(ctx, "membership.apply", "membership_applications", row.id, { season: season.year });
+  notifyStaff(ctx.db, ctx.now, { kind: "staff_application", payload: { application_id: row.id, profile_id: me.data.id, name: me.data.name.mn || me.data.name.en }, dedupe: `staffapp:${row.id}` });
   return ok({ id: row.id });
 }
 
@@ -94,6 +99,7 @@ export function mergeProfiles(ctx: Ctx, input: { keep: string; drop: string }): 
   for (const a of db.membership_applications) if (a.profile_id === drop.id) a.profile_id = keep.id;
   for (const t of db.teams) if (t.captain_profile_id === drop.id) t.captain_profile_id = keep.id;
   for (const n of db.notifications) if (n.profile_id === drop.id) n.profile_id = keep.id;
+  for (const i of db.inbox) if (i.profile_id === drop.id) i.profile_id = keep.id;
   Object.assign(drop, { deleted_at: iso(ctx.now), email: null, clerk_user_id: null, handle: `${drop.handle}-merged-${++db.seq}` });
   audit(ctx, "profile.merge", "profiles", keep.id, { merged: drop.id });
   return ok(undefined);

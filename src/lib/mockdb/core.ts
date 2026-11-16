@@ -1,5 +1,5 @@
 import { err, type ErrorCode, type Result } from "@/lib/result";
-import type { AuditEntry, Ctx, Db, EventRow, Notification, Profile, TemplateName } from "./types";
+import type { AuditEntry, Ctx, Db, EventRow, InboxKind, Notification, Profile, TemplateName } from "./types";
 
 export const iso = (d: Date) => d.toISOString();
 export const nextId = (db: Db, prefix: string) => `${prefix}_${++db.seq}`;
@@ -37,6 +37,20 @@ export function eventPayload(ev: EventRow, p: Profile): Notification["payload"] 
   };
 }
 
+/** Which notification preference silences a template (others are always delivered). Shared by the dispatcher and the inbox. */
+export const PREF_OF: Partial<Record<TemplateName, "reminders" | "updates" | "announcements">> = { reminder_24h: "reminders", event_updated: "updates", announcement: "announcements" };
+
+/** In-app notification. A repeated dedupe key is a no-op, like the outbox. Returns whether a row was added. */
+export function pushInbox(db: Db, now: Date, n: { profileId: string; kind: InboxKind; payload: Notification["payload"]; dedupe: string }): boolean {
+  if (db.inbox.some((x) => x.dedupe_key === n.dedupe)) return false;
+  db.inbox.push({ id: nextId(db, "in"), profile_id: n.profileId, kind: n.kind, payload: n.payload, created_at: iso(now), read_at: null, dedupe_key: n.dedupe });
+  return true;
+}
+/** Every staff member gets the item (new application, mail that gave up). */
+export function notifyStaff(db: Db, now: Date, n: { kind: InboxKind; payload: Notification["payload"]; dedupe: string }) {
+  for (const r of db.staff_roles) if (profileOf(db, r.profile_id)) pushInbox(db, now, { profileId: r.profile_id, kind: n.kind, payload: n.payload, dedupe: `${n.dedupe}:${r.profile_id}` });
+}
+
 /** Outbox insert; a repeated dedupe key is a no-op (same contract as `on conflict (dedupe_key) do nothing`). */
 export function enqueue(ctx: Ctx, n: { profileId: string; template: TemplateName; payload: Notification["payload"]; priority: 0 | 1 | 2; dedupe: string; at?: Date }) {
   if (ctx.db.notifications.some((x) => x.dedupe_key === n.dedupe)) return false;
@@ -44,6 +58,10 @@ export function enqueue(ctx: Ctx, n: { profileId: string; template: TemplateName
     id: nextId(ctx.db, "n"), profile_id: n.profileId, to_email: null, channel: "email", template: n.template, payload: n.payload, priority: n.priority,
     scheduled_at: iso(n.at ?? ctx.now), status: "queued", attempts: 0, last_error: null, dedupe_key: n.dedupe, sent_at: null,
   });
+  // The same message also lands in the person's in-app list, unless they switched that kind off.
+  const pref = PREF_OF[n.template];
+  const who = profileOf(ctx.db, n.profileId);
+  if (who && !(pref && !who.notif_prefs[pref])) pushInbox(ctx.db, ctx.now, { profileId: who.id, kind: n.template, payload: n.payload, dedupe: n.dedupe });
   return true;
 }
 
