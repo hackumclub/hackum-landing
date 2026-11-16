@@ -1,4 +1,5 @@
 import { err, ok, type Result } from "@/lib/result";
+import { generateInviteCode, normalizeInviteCode } from "@/lib/teams/invite-code";
 import type { Answers, Question } from "@/lib/events/questions";
 import type { RegStatus } from "@/lib/status";
 import { audit, enqueue, eventOf, eventPayload, goingCount, iso, nextId, profileOf, requireProfile, requireStaff } from "./core";
@@ -17,12 +18,12 @@ function answersComplete(qs: Question[], a: Answers) {
 }
 
 const codeFrom = (db: Db) => {
-  for (let n = db.seq * 7919; ; n += 1) {
-    const c = `HK-${(n % 1_679_616).toString(36).toUpperCase().padStart(4, "0")}`;
+  for (;;) {
+    const c = generateInviteCode(); // 60 random bits, like the production database
     if (!db.teams.some((t) => t.invite_code === c)) return c;
   }
 };
-const findTeamByCode = (db: Db, code: string) => db.teams.find((t) => t.invite_code === code.trim().toUpperCase());
+const findTeamByCode = (db: Db, code: string) => db.teams.find((t) => t.invite_code === normalizeInviteCode(code));
 const members = (db: Db, teamId: string) => db.registrations.filter((r) => r.team_id === teamId && r.status !== "cancelled");
 
 function checkTeam(ev: EventRow, db: Db, team: TeamChoice | undefined): Result<null> {

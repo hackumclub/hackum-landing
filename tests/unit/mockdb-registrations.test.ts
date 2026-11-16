@@ -129,7 +129,7 @@ describe("teams", () => {
   it("creates a team with an invite code and lets a second person join with it", () => {
     applicationEvent();
     const first = register("a", "h1", { answers: { skills: "x" }, team: { mode: "create", name: "Нүүдэлчид" } });
-    expect(first.ok && first.data.inviteCode).toMatch(/^HK-[A-Z0-9]{4}$/);
+    expect(first.ok && first.data.inviteCode).toMatch(/^HK-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
     const code = first.ok ? first.data.inviteCode! : "";
     const second = register("b", "h1", { answers: { skills: "y" }, team: { mode: "join", code: code.toLowerCase() } });
     expect(second.ok).toBe(true);
