@@ -91,7 +91,8 @@
 - [ ] **Step 3:** Implement per Interfaces. Drawer: desktop floating panel (`sm:inset-y-3 sm:right-3 sm:rounded-[28px] sm:border sm:shadow-[var(--shadow-float)]`), phones bottom sheet (`inset-x-0 bottom-0 max-h-[88dvh] rounded-t-[28px]`) with grab handle. `StatusPill` keeps state only; migrate category chips (event kind, school, scope) to `Tag` via search of `StatusPill`/ad-hoc chip usages (list them in the commit message).
 - [ ] **Step 4:** Run unit + `npx playwright test tests/e2e/a11y.spec.ts tests/e2e/no-live-ui.spec.ts`; expect PASS. Commit `feat(ui): rounded drawer, Tag/CountBadge, SegmentedTabs, DateRange, FilterBar, paginated table; remove live UI`.
 
-### Task 5: Auth and Join forms (tall.so-style split screen)
+### Task 5: Auth and Join forms
+> **Status:** rules done (`src/lib/mockdb/auth.ts`: `requestEmailCode` → `{code}`, `verifyEmailCode(ctx, email, code, create?: NewAccount)`, `addPasskey`, `signInWithPasskey`; limits tested). Remaining: actions, pages and components. `createAccountAction` must chain: `verifyEmailCode` (with `create`) → `updateAcademic` → `submitJoinForm` → `applyForMembership` only when eligible (NUM + major) else subscriber, as the actor of the new profile. (tall.so-style split screen)
 **Files:**
 - Create: `src/lib/mockdb/auth.ts`, `src/components/auth/{AuthShell,EmailCodeForm,PasskeyButton,CreateAccountForm,DemoAccounts}.tsx`, `src/components/auth/slides.ts`, `tests/unit/mockdb-auth.test.ts`, `tests/e2e/auth-join.spec.ts`
 - Modify: `src/app/[lang]/(site)/sign-in/page.tsx`, `src/app/[lang]/(site)/join/page.tsx`, `src/lib/server/auth-actions.ts`, `src/i18n/areas/public.ts`.
@@ -108,6 +109,7 @@
 - [ ] **Step 4:** Run `npx vitest run tests/unit/mockdb-auth.test.ts` and `npx playwright test tests/e2e/auth-join.spec.ts tests/e2e/sign-in-landing.spec.ts`; expect PASS. Commit `feat(auth): email-code and passkey sign-in, create-account and join forms`.
 
 ### Task 6: In-app notifications
+> **Status:** domain done (`src/lib/mockdb/notifications.ts`, `pushInbox`/`notifyStaff` in `core.ts`, table `inbox`, tests in `mockdb-notifications.test.ts`). Remaining: server actions, bell, panel, pages. The text below says `channel: "in_app"` on the outbox; the build uses the separate `inbox` table (`InboxItem`), whose API is `inboxFor(db, profileId, {limit?, before?})`, `unreadCount`, `markRead(ctx, ids)`, `markAllRead(ctx)`.
 **Files:**
 - Create: `src/lib/mockdb/notifications.ts`, `src/components/notifications/{NotificationBell,NotificationPanel,NotificationList}.tsx`, `src/app/[lang]/me/notifications/page.tsx`, `src/app/[lang]/admin/inbox/page.tsx`, `tests/unit/mockdb-notifications.test.ts`, `tests/e2e/notifications.spec.ts`
 - Modify: `src/lib/mockdb/{types,registrations,members,events,outbox}.ts`, `src/lib/server/*` actions, i18n.
@@ -135,6 +137,7 @@
 - [ ] **Step 3:** Implement. **Step 4:** Run unit + `tests/e2e/shells-roles.spec.ts admin.spec.ts member-app.spec.ts a11y.spec.ts`; expect PASS. Commit `feat(shell): role switch, avatar menu, themed dashboard, laptop member layout`.
 
 ### Task 8: Profile, photo, semester subjects
+> **Status:** rules done (`updateProfile` in `profile.ts`, `updateAcademic` + `setSemesterSubjects` in `academic.ts`, `saveAvatar`/`avatarFor` in `avatars.ts`, `src/lib/media/image.ts`). Remaining: client resize, upload action, `/api/avatar/[id]` route (use `avatarFor`, `Cache-Control: public, max-age=31536000, immutable` only when `cacheable` and `?v` equals the etag, else `private, no-store`; `X-Content-Type-Options: nosniff`), ProfileForm, SemesterSubjects, ProfilePreview.
 **Files:**
 - Create: `src/lib/mockdb/avatars.ts`, `src/app/api/avatar/[id]/route.ts`, `src/components/profile/{ProfileForm,AvatarUploader,SemesterSubjects,ProfilePreview}.tsx`, `src/lib/media/resizeImage.ts`, `tests/unit/mockdb-avatars.test.ts`, `tests/unit/resize-image.test.ts`, `tests/e2e/profile.spec.ts`
 - Modify: `src/app/[lang]/me/profile/page.tsx`, `src/lib/me/actions.ts`, `src/lib/me/queries.ts`.
@@ -148,6 +151,7 @@
 - [ ] **Step 2:** Run; expect FAIL. **Step 3:** Implement (concurrency 1, object URL revoked on replace/unmount, optimistic preview, error text inline). **Step 4:** Run unit + `tests/e2e/profile.spec.ts`; expect PASS. Commit `feat(profile): photo upload pipeline, school/major, semester subjects`.
 
 ### Task 9: Forms: admin editor, responses, guest registration form
+> **Status:** domain + CSV done (`forms.ts`: `listForms`, `listResponses`, `formDefinition`, `orphanKeys`, `updateForm`, `submitJoinForm`; `src/lib/forms/csv.ts: responsesToCsv(questions, rows, lang, orphans?)`; `applyForMembership` now takes `answers`). Remaining: admin pages, editor, responses table, CSV download route, guest registration form wiring.
 **Files:**
 - Create: `src/lib/mockdb/forms.ts`, `src/lib/forms/csv.ts`, `src/app/[lang]/admin/forms/page.tsx`, `src/app/[lang]/admin/forms/[id]/page.tsx`, `src/components/admin/forms/{FormsList,FormEditor,ResponsesTable}.tsx`, `tests/unit/{mockdb-forms,forms-csv}.test.ts`, `tests/e2e/admin-forms.spec.ts`
 - Modify: `src/lib/mockdb/{types,seed,queries}.ts`, `src/components/admin/events/EventForm.tsx` (reuse `FormEditor` for the question builder), `src/app/[lang]/me/events/[slug]/apply/page.tsx`, `src/components/me/ApplyFlow.tsx`, public event page RSVP panel.
@@ -167,6 +171,7 @@
 - [ ] **Step 2:** Run; expect FAIL. **Step 3:** Implement UI only (rule exists from Task 2). **Step 4:** Run; expect PASS. Commit `feat(events): МУИС-only vs all-schools audience in admin, member app and public site`.
 
 ### Task 11: Analytics diagrams
+> **Status:** `analytics(db, range)` done in `src/lib/mockdb/analytics.ts` with tests. Remaining: chart components, page, dashboard.
 **Files:**
 - Create: `src/lib/mockdb/analytics.ts`, `src/components/charts/{AreaChart,BarChart,FunnelChart,DonutChart,HeatStrip,ChartFigure}.tsx`, `src/app/[lang]/admin/analytics/page.tsx`, `tests/unit/{mockdb-analytics,charts}.test.ts(x)`, `tests/e2e/admin-analytics.spec.ts`
 - Modify: `src/components/admin/Dashboard.tsx` (replace ad-hoc charts with the shared ones).

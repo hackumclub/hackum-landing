@@ -20,7 +20,7 @@ Extends `2026-11-16-hackum-backoffice-design.md`. Still 100% local mock (`src/li
 | Analysis diagrams | Hand-rolled accessible SVG charts (line/area, bars, funnel, donut, heat) with table fallback; `/admin/analytics` with semester picker; dashboard uses the same parts. |
 | Remove "live" stuff | Remove every *visible* "live"/realtime label, pulse dot and `LivePill`. The SSE refresh stays, silent. (Assumption: this is what "live shit" meant. Say so if you meant the demo persona switcher.) |
 | Best icons, labels, badges | Three roles, three components: `StatusPill` (state), `Tag` (category: kind, school, scope), `CountBadge` (numbers). Achievements keep the name "badge" (BadgeMedal) only. |
-| Notifications | In-app channel in the outbox table (`channel: "in_app"`, `read_at`), bell with unread count + panel, `/me/notifications` and `/admin/inbox`. |
+| Notifications | **Separate `inbox` table** (decided during build: own read state and retention, never touches the email outbox or its daily budget). Written by `enqueue` next to each email (respecting the person's preferences), plus staff alerts for new applications and mail that gave up. Bell with unread count + panel, `/me/notifications` and `/admin/inbox`. |
 | Profile image | Upload ≤ 5 MB source, resized client-side to 512px WebP (EXIF stripped by re-encode), server re-validates magic bytes, versioned immutable URL. |
 | Two semesters a year | `Term = "autumn" | "spring"`; `semesterOf(date)`; analytics, reports and subjects group by semester. |
 | Share the subjects I learn this semester (optional) | `profile_semesters` rows `{profile_id, year, term, subjects[], shared}`; shown on the profile only when `shared`. |
@@ -41,8 +41,11 @@ Public: `/` `/events` `/events/[slug]` `/about` `/join` `/sign-in` · Member: `/
 Landing: staff → `/admin`; member/guest → `/me`; new account → `/me/onboarding`; signed-out hit on `/me|/admin` → `/sign-in?next=…`; organizer on admin-only page → 404.
 
 ## 4. Data model delta (mock, Supabase-shaped)
-`profiles += school_id, major_track, program_index, passkeys[]` · `events += school_scope` · `profile_semesters` · `forms` (site forms only) · `form_responses` is *derived* (event registrations' answers, membership applications' answers, join submissions) not stored twice · `notifications.channel += "in_app"`, `read_at` · `auth_codes` (mock only, never ported) · `avatars` blob store (mock only; Storage later).
+`profiles += school_id, major_track, program_index, passkeys[]` · `events += school_scope` · `profile_semesters` · `forms` (site forms only) · `form_responses` is *derived* (event registrations' answers, membership applications' answers, join submissions) not stored twice · `inbox` (in-app notifications) · `forms` + `form_submissions` · `auth_codes` (mock only, never ported) · `avatars` blob store (mock only; Storage later).
 New `ErrorCode`: `ineligible`.
+
+## 4b. Demo personas (seven)
+`dev-admin` (club leader), `dev-organizer` (sub-leader), `anuujin` (NUM member, software), `temuulen` (guest, MUST: shows every non-NUM restriction), `saraa` (alumni), **`bayar` (guest, NUM, software: can apply for membership)**, `new-guest` (onboarding not done).
 
 ## 5. Non-goals
 Real Clerk/Supabase/Resend wiring; real WebAuthn; importing NUM student records (only the public program list); feedback/check-in slice.
