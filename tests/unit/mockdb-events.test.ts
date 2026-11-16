@@ -13,7 +13,7 @@ beforeEach(() => {
 });
 const input = (over: Partial<EventInput> = {}): EventInput => ({
   slug: "knowledge-day-7", kind: "knowledge_day", title: { mn: "Knowledge Day #7", en: "" }, tagline: { mn: "", en: "" }, description: { mn: "", en: "" },
-  starts_at: at(100), ends_at: at(102), mode: "offline", venue_name: "МУИС 305", venue_address: null, online_url: null, audience: "open", capacity: 60, waitlist: true,
+  starts_at: at(100), ends_at: at(102), mode: "offline", venue_name: "МУИС 305", venue_address: null, online_url: null, audience: "open", school_scope: "all", capacity: 60, waitlist: true,
   reg_opens_at: null, reg_closes_at: null, cover_path: null, poster_path: null, themes: [], external_url: null, reg_mode: "rsvp", questions: [], team_mode: "none",
   team_size_min: 1, team_size_max: 1, decision_deadline: null, ...over,
 });
@@ -70,7 +70,7 @@ describe("editing a published event", () => {
   });
   it("previews who would be told before anything is saved", () => {
     const r = previewEventChange(ctx(db, "org"), "e1", input({ slug: "e1-slug", starts_at: at(80), ends_at: at(82), venue_name: "Шинэ танхим" }));
-    expect(r).toEqual({ ok: true, data: { changed: ["starts_at", "ends_at", "venue_name"], willNotify: 2 } });
+    expect(r).toEqual({ ok: true, data: { changed: ["starts_at", "ends_at", "venue_name"], willNotify: 2, nonNumRegistrants: 0 } });
     expect(db.events[0].venue_name).toBe("МУИС 305");
   });
   it("does not notify anyone when a draft is edited", () => {

@@ -4,7 +4,7 @@
 import { z } from "zod";
 import type { L } from "@/i18n/config";
 import { questionsSchema, MAX_QUESTIONS, type Question } from "@/lib/events/questions";
-import type { EventAudience, EventKind, EventMode, EventRow, RegMode, TeamMode } from "@/lib/mockdb/types";
+import type { EventAudience, EventKind, EventMode, EventRow, RegMode, SchoolScope, TeamMode } from "@/lib/mockdb/types";
 import type { EventInput } from "@/lib/mockdb/events";
 
 export const KINDS = ["hackathon", "workshop", "meetup", "competition", "knowledge_day", "outing", "other"] as const satisfies readonly EventKind[];
@@ -24,6 +24,7 @@ export type FormState = {
   mode: EventMode;
   venue_name: string; venue_address: string; online_url: string;
   audience: EventAudience;
+  school_scope: SchoolScope;
   capacity: string; unlimited: boolean; waitlist: boolean;
   reg_mode: RegMode;
   questions: Question[];
@@ -57,7 +58,7 @@ export function defaultState(now: Date): FormState {
     title: { mn: "", en: "" }, tagline: { mn: "", en: "" }, description: { mn: "", en: "" },
     starts_at: start, ends_at: new Date(start.getTime() + 2 * HOUR), reg_opens_at: null, reg_closes_at: null, decision_deadline: null,
     mode: "offline", venue_name: "", venue_address: "", online_url: "",
-    audience: "open", capacity: "", unlimited: true, waitlist: true,
+    audience: "open", school_scope: "all", capacity: "", unlimited: true, waitlist: true,
     reg_mode: "rsvp", questions: [], team_mode: "none", team_size_min: 1, team_size_max: 1,
     cover_path: "",
   };
@@ -70,7 +71,7 @@ export function stateFromEvent(e: EventRow): FormState {
     slug: e.slug, slugTouched: true, kind: e.kind, title: { ...e.title }, tagline: { ...e.tagline }, description: { ...e.description },
     starts_at: date(e.starts_at), ends_at: date(e.ends_at), reg_opens_at: date(e.reg_opens_at), reg_closes_at: date(e.reg_closes_at), decision_deadline: date(e.decision_deadline),
     mode: e.mode, venue_name: e.venue_name ?? "", venue_address: e.venue_address ?? "", online_url: e.online_url ?? "",
-    audience: e.audience, capacity: e.capacity === null ? "" : String(e.capacity), unlimited: e.capacity === null, waitlist: e.waitlist,
+    audience: e.audience, school_scope: e.school_scope, capacity: e.capacity === null ? "" : String(e.capacity), unlimited: e.capacity === null, waitlist: e.waitlist,
     reg_mode: e.reg_mode, questions: structuredClone(e.questions), team_mode: e.team_mode, team_size_min: e.team_size_min, team_size_max: e.team_size_max,
     cover_path: e.cover_path ?? "",
   };
@@ -91,7 +92,7 @@ export function toInput(s: FormState, keep: Pick<EventRow, "poster_path" | "them
     venue_name: s.mode === "online" ? null : orNull(s.venue_name),
     venue_address: s.mode === "online" ? null : orNull(s.venue_address),
     online_url: s.mode === "offline" ? null : orNull(s.online_url),
-    audience: s.audience,
+    audience: s.audience, school_scope: s.school_scope,
     capacity: s.unlimited ? null : parsedCapacity, waitlist: s.waitlist,
     reg_opens_at: iso(s.reg_opens_at), reg_closes_at: iso(s.reg_closes_at),
     cover_path: orNull(s.cover_path), poster_path: keep?.poster_path ?? null, themes: keep?.themes ?? [], external_url: keep?.external_url ?? null,
@@ -183,7 +184,7 @@ export const eventInputSchema: z.ZodType<EventInput> = z.object({
   starts_at: isoDate, ends_at: isoDate,
   mode: z.enum(MODES),
   venue_name: z.string().max(200).nullable(), venue_address: z.string().max(300).nullable(), online_url: z.string().max(500).nullable(),
-  audience: z.enum(AUDIENCES),
+  audience: z.enum(AUDIENCES), school_scope: z.enum(["num", "all"]),
   capacity: z.number().int().min(1).max(5000).nullable(), waitlist: z.boolean(),
   reg_opens_at: isoDate.nullable(), reg_closes_at: isoDate.nullable(),
   cover_path: path.nullable(), poster_path: path.nullable(), themes: z.array(z.string().max(40)).max(10), external_url: z.string().max(500).nullable(),

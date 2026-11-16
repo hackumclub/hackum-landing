@@ -2,6 +2,8 @@
 // enums, timestamps as ISO strings: swapping the mock for supabase-js is a change of data source, not of shapes.
 import type { L, Locale } from "@/i18n/config";
 import type { Answers, Question } from "@/lib/events/questions";
+import type { MajorTrack, SchoolId } from "@/lib/num/schools";
+import type { Term } from "@/lib/semester";
 import type { ApplicationStatus, EventStatus, MemberStatus, RegStatus } from "@/lib/status";
 
 export type EventKind = "hackathon" | "workshop" | "meetup" | "competition" | "knowledge_day" | "outing" | "other";
@@ -10,6 +12,9 @@ export type EventAudience = "open" | "members" | "alumni" | "invite";
 export type RegMode = "rsvp" | "application";
 export type TeamMode = "none" | "optional" | "required";
 export type Visibility = "public" | "members" | "private";
+/** Who may register: every school, or only National University of Mongolia (МУИС) students. */
+export type SchoolScope = "num" | "all";
+export type Passkey = { id: string; label: string; created_at: string };
 export type StaffRoleName = "organizer" | "admin";
 export type NotifStatus = "queued" | "sending" | "sent" | "failed" | "skipped";
 export type NotifPrefs = { reminders: boolean; updates: boolean; announcements: boolean };
@@ -26,8 +31,12 @@ export interface Profile {
   handle: string;
   name: L;
   avatar_path: string | null;
-  school: string | null;
-  major: string | null;
+  school: string | null; // display text
+  school_id: SchoolId | null; // drives eligibility: only "num" can become a member
+  major: string | null; // display text
+  major_track: MajorTrack | null;
+  program_index: string | null; // NUM program index, e.g. "D 061302"
+  passkeys: Passkey[];
   grad_year: number | null;
   status: MemberStatus;
   visibility: Visibility;
@@ -40,6 +49,8 @@ export interface Profile {
   last_seen_at: string | null;
   deleted_at: string | null;
 }
+/** Subjects a member studies in one semester; shown on the profile only when `shared`. */
+export interface ProfileSemester { profile_id: string; year: number; term: Term; subjects: string[]; shared: boolean }
 export interface Membership { profile_id: string; season: number; team: string | null; role_title: L | null }
 export interface StaffRole { profile_id: string; role: StaffRoleName; granted_by: string | null; granted_at: string }
 export interface Season { year: number; label: L; application_opens_at: string | null; application_closes_at: string | null; is_current: boolean }
@@ -60,6 +71,7 @@ export interface EventRow {
   venue_address: string | null;
   online_url: string | null;
   audience: EventAudience;
+  school_scope: SchoolScope;
   capacity: number | null;
   waitlist: boolean;
   reg_opens_at: string | null;
@@ -145,6 +157,7 @@ export interface Db {
   subscribers: Subscriber[];
   timeline_milestones: Milestone[];
   audit_log: AuditEntry[];
+  profile_semesters: ProfileSemester[];
   /** Monotonic id counter so generated ids are stable and unique across a persisted session. */
   seq: number;
 }

@@ -52,6 +52,7 @@ export function registerForEvent(ctx: Ctx, input: { eventId: string; answers: An
   if (ev.audience === "invite") return err("closed");
   if (ev.audience === "members" && me.data.status !== "member") return err("forbidden");
   if (ev.audience === "alumni" && me.data.status !== "alumni") return err("forbidden");
+  if (ev.school_scope === "num" && me.data.school_id !== "num") return err("ineligible");
   if ((ev.reg_opens_at && now < new Date(ev.reg_opens_at)) || (ev.reg_closes_at && now > new Date(ev.reg_closes_at)) || now > new Date(ev.ends_at)) return err("closed");
 
   const existing = db.registrations.find((r) => r.event_id === ev.id && r.profile_id === me.data.id);

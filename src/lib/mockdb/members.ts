@@ -36,6 +36,8 @@ export function applyForMembership(ctx: Ctx, input: { motivation: string; team_i
   const motivation = input.motivation.trim();
   if (motivation.length < 10 || motivation.length > 1000) return err("invalid");
   if (me.data.status === "member") return err("conflict");
+  // Membership is for National University of Mongolia students who have chosen a major; everyone else stays a guest.
+  if (me.data.school_id !== "num" || !me.data.major_track) return err("ineligible");
   const season = openSeason(ctx);
   if (!season) return err("closed");
   if (ctx.db.membership_applications.some((a) => a.profile_id === me.data.id && a.season === season.year)) return err("conflict");

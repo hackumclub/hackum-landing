@@ -1,11 +1,12 @@
 // Deterministic seed for the LOCAL MOCK of the Supabase schema (spec §4). Everything is derived from `now` and a fixed PRNG
 // seed: no Math.random, no Date.now. Names, emails and handles are plainly fictional (example.* domains only).
 import { nextId } from "./core";
+import type { MajorTrack, SchoolId } from "@/lib/num/schools";
 import type { L, Locale } from "@/i18n/config";
 import type { Answers, Question } from "@/lib/events/questions";
 import type { MemberStatus, RegStatus } from "@/lib/status";
 import type {
-  AuditEntry, Db, EventRow, Membership, MembershipApplication, Milestone, Notification, Profile, Registration, Season,
+  AuditEntry, Db, EventRow, Membership, MembershipApplication, Milestone, Notification, Profile, ProfileSemester, Registration, Season,
   StaffRole, Subscriber, Team, TemplateName, Visibility,
 } from "./types";
 
@@ -68,6 +69,10 @@ const FAMILY: readonly Pair[] = [
   ["Үйлсийн", "Uils"],
 ];
 const SCHOOLS = ["МУИС · ХШУИС", "МУИС · ШУС", "ШУТИС", "ШУТИС · МТЭС", "МУБИС", "ХААИС"] as const;
+const NUM_SCHOOLS = ["МУИС · ХШУИС", "МУИС · ШУС"] as const;
+const TRACK_OF_MAJOR: Record<string, MajorTrack> = {
+  "Программ хангамж": "software", "Компьютерийн ухаан": "cs", "Мэдээллийн систем": "is", "Мэдээллийн технологи": "it",
+};
 const MAJORS = [
   "Мэдээллийн технологи", "Программ хангамж", "Компьютерийн ухаан", "Цахилгаан, электроник", "Мэдээлэл зүй",
   "Мэдээллийн систем", "Дата шинжлэх ухаан", "График дизайн",
@@ -165,7 +170,8 @@ export function buildSeed(now: Date): Db {
     usedTokens.add(tok);
     const claimed = o.claimed ?? true;
     const onboarded = o.onboarded ?? true;
-    const school = o.bare ? null : pick(SCHOOLS);
+    // Only NUM students can be members or alumni; guests come from any school.
+    const school = o.bare ? null : o.status === "guest" ? pick(SCHOOLS) : pick(NUM_SCHOOLS);
     const major = o.bare ? null : pick(MAJORS);
     const domain = chance(0.6) ? "example.edu.mn" : "example.com";
     const created = nowMs - o.createdAgo;
@@ -177,7 +183,11 @@ export function buildSeed(now: Date): Db {
       name: o.name,
       avatar_path: null,
       school,
+      school_id: school === null ? null : school.startsWith("МУИС") ? "num" : school.startsWith("ШУТИС") ? "must" : "other",
       major,
+      major_track: major === null ? null : (TRACK_OF_MAJOR[major] ?? "other"),
+      program_index: null,
+      passkeys: [],
       grad_year: o.bare ? null : o.grad,
       status: o.status,
       visibility: o.visibility ?? (claimed ? pick<Visibility>(["public", "public", "members", "members", "private"]) : "public"),
@@ -211,6 +221,14 @@ export function buildSeed(now: Date): Db {
   const temuulen = mkProfile({ handle: "temuulen", name: { mn: "Доржийн Тэмүүлэн", en: "Temuulen Dorj" }, status: "guest", grad: 2028, createdAgo: 40 * DAY, seenAgo: 3 * HOUR, visibility: "members" });
   const saraa = mkProfile({ handle: "saraa", name: { mn: "Ганбаатарын Сараа", en: "Saraa Ganbaatar" }, status: "alumni", grad: 2024, createdAgo: 200 * DAY, seenAgo: 2 * DAY, locale: "en", visibility: "public" });
   mkProfile({ handle: "new-guest", name: { mn: "", en: "" }, status: "guest", grad: null, onboarded: false, bare: true, createdAgo: 20 * MIN, seenAgo: 5 * MIN, visibility: "members" });
+
+  const academic = (p: Profile, school: string, school_id: SchoolId, major: string, major_track: MajorTrack, program_index: string | null = null) =>
+    Object.assign(p, { school, school_id, major, major_track, program_index });
+  academic(admin, "МУИС · ШУС", "num", "Компьютерийн ухаан", "cs", "D 061301");
+  academic(organizer, "МУИС · ШУС", "num", "Мэдээллийн технологи", "it", "D 061304");
+  academic(anuujin, "МУИС · ШУС", "num", "Программ хангамж", "software", "D 061302");
+  academic(temuulen, "ШУТИС", "must", "Мэдээллийн технологи", "it");
+  academic(saraa, "МУИС · ШУС", "num", "Компьютерийн ухаан", "cs", "D 061301");
 
   const members: Profile[] = [];
   for (let i = 0; i < 37; i++) {
@@ -292,6 +310,7 @@ export function buildSeed(now: Date): Db {
     venue_address: null,
     online_url: null,
     audience: "open",
+    school_scope: "all",
     capacity: null,
     waitlist: false,
     reg_opens_at: null,
@@ -386,7 +405,7 @@ export function buildSeed(now: Date): Db {
     tagline: { mn: "Хурдан, зөв, цэвэр C код", en: "" },
     description: { mn: "C хэлний бодлого бодох өвлийн тэмцээн. Дүрэм, шагналын сан удахгүй зарлагдана.", en: "" },
     starts_at: iso(cbStart), ends_at: iso(cbStart + 8 * HOUR), venue_name: "МУИС · Компьютерийн лаборатори", venue_address: null,
-    audience: "open", capacity: 40, reg_mode: "rsvp", themes: ["C", "Algorithms"], cover_path: null, poster_path: null, created_at: iso(nowMs - 5 * DAY),
+    audience: "open", school_scope: "num", capacity: 40, reg_mode: "rsvp", themes: ["C", "Algorithms"], cover_path: null, poster_path: null, created_at: iso(nowMs - 5 * DAY),
   });
   const dhStart = ubAt(75, 9, 0);
   const experienceOptions: L[] = [
@@ -414,7 +433,7 @@ export function buildSeed(now: Date): Db {
     tagline: { mn: "Төслүүдийн явц, шинэ санаа, пицца", en: "Project updates, new ideas and pizza" },
     description: { mn: "Гишүүд долоо хоногийн ажлаа танилцуулж, дараагийн арга хэмжээнүүдийг хамтдаа төлөвлөнө.", en: "Members present their weekly progress and plan upcoming events together." },
     starts_at: iso(liveStart), ends_at: iso(nowMs + 2 * HOUR), venue_name: "Hackum өрөө · МУИС 2-р байр 114", venue_address: null,
-    audience: "members", capacity: 40, reg_opens_at: iso(regOpens), themes: ["Community"],
+    audience: "members", school_scope: "num", capacity: 40, reg_opens_at: iso(regOpens), themes: ["Community"],
     cover_path: "/img/posters/meetup-1.jpg", poster_path: "/img/posters/meetup-arch.jpg", created_at: iso(regOpens - 3 * DAY),
   });
   const gitStart = ubAt(6, 20, 0);
@@ -682,11 +701,16 @@ export function buildSeed(now: Date): Db {
     .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
     .map((a) => ({ id: nid("au"), ...a }));
 
+  const profile_semesters: ProfileSemester[] = [
+    { profile_id: anuujin.id, year: 2026, term: "autumn", subjects: ["Algorithms and data structures", "Databases", "Operating systems"], shared: true },
+    { profile_id: anuujin.id, year: 2025, term: "spring", subjects: ["Discrete mathematics", "Object-oriented programming"], shared: false },
+  ];
+
   const db: Db = {
     profiles, memberships, staff_roles, seasons,
     events,
     registrations, teams, membership_applications, notifications, email_daily_usage, email_suppressions, subscribers,
-    timeline_milestones, audit_log, seq: seq + 1,
+    timeline_milestones, audit_log, profile_semesters, seq: seq + 1,
   };
   addRecentPastEvents(db, nowMs);
   return db;
@@ -713,7 +737,7 @@ function addRecentPastEvents(db: Db, nowMs: number) {
     const event: EventRow = {
       id: nextId(db, "e"), slug: d.slug, kind: d.kind, title: { mn: d.mn, en: d.en }, tagline: { mn: "", en: "" }, description: { mn: "", en: "" },
       starts_at: iso(start), ends_at: iso(start + 2 * HOUR), tz: "Asia/Ulaanbaatar", approximate_date: false, mode: "offline", venue_name: "МУИС · 1-р байр 305", venue_address: null,
-      online_url: null, audience: "open", capacity: 60, waitlist: true, reg_opens_at: null, reg_closes_at: null, status: "completed",
+      online_url: null, audience: "open", school_scope: "all", capacity: 60, waitlist: true, reg_opens_at: null, reg_closes_at: null, status: "completed",
       cover_path: `/img/posters/${d.img}.jpg`, poster_path: `/img/posters/${d.img}.jpg`, themes: [], external_url: null, legacy_participants: null, ics_sequence: 0,
       reg_mode: "rsvp", questions: [], team_mode: "none", team_size_min: 1, team_size_max: 1, decision_deadline: null, created_by: null, created_at: iso(start - 20 * DAY),
     };

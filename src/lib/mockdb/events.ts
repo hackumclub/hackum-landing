@@ -8,12 +8,13 @@ export type EventInput = Omit<EventRow, "id" | "status" | "tz" | "approximate_da
 
 /** Changing any of these tells people with a seat (and bumps the calendar invite sequence). */
 export const NOTIFY_FIELDS = ["starts_at", "ends_at", "mode", "venue_name", "venue_address", "online_url"] as const;
-const EDITABLE: (keyof EventInput)[] = ["slug", "kind", "title", "tagline", "description", "starts_at", "ends_at", "mode", "venue_name", "venue_address", "online_url", "audience", "capacity", "waitlist", "reg_opens_at", "reg_closes_at", "cover_path", "poster_path", "themes", "external_url", "reg_mode", "questions", "team_mode", "team_size_min", "team_size_max", "decision_deadline"];
+const EDITABLE: (keyof EventInput)[] = ["slug", "kind", "title", "tagline", "description", "starts_at", "ends_at", "mode", "venue_name", "venue_address", "online_url", "audience", "school_scope", "capacity", "waitlist", "reg_opens_at", "reg_closes_at", "cover_path", "poster_path", "themes", "external_url", "reg_mode", "questions", "team_mode", "team_size_min", "team_size_max", "decision_deadline"];
 
 function valid(i: EventInput): boolean {
   const start = new Date(i.starts_at), end = new Date(i.ends_at);
   if (!/^[a-z0-9-]{3,60}$/.test(i.slug) || !i.title.mn.trim()) return false;
   if (Number.isNaN(+start) || Number.isNaN(+end) || end <= start) return false;
+  if (i.school_scope !== "num" && i.school_scope !== "all") return false;
   if (i.capacity !== null && (!Number.isInteger(i.capacity) || i.capacity < 1 || i.capacity > 5000)) return false;
   if (i.reg_closes_at && new Date(i.reg_closes_at) > start) return false;
   if (i.reg_opens_at && i.reg_closes_at && new Date(i.reg_opens_at) > new Date(i.reg_closes_at)) return false;
@@ -45,14 +46,16 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 const changedNotifyFields = (ev: EventRow, i: EventInput) => NOTIFY_FIELDS.filter((k) => !same(ev[k], i[k]));
 const seated = (ctx: Ctx, ev: EventRow) => ctx.db.registrations.filter((r) => r.event_id === ev.id && r.status === "going" && profileOf(ctx.db, r.profile_id));
 
-export function previewEventChange(ctx: Ctx, id: string, input: EventInput): Result<{ changed: string[]; willNotify: number }> {
+export function previewEventChange(ctx: Ctx, id: string, input: EventInput): Result<{ changed: string[]; willNotify: number; nonNumRegistrants: number }> {
   const staff = requireStaff(ctx);
   if (!staff.ok) return staff;
   const ev = eventOf(ctx.db, id);
   if (!ev) return err("not_found");
   if (!valid(input)) return err("invalid");
   const changed = changedNotifyFields(ev, input);
-  return ok({ changed: [...changed], willNotify: ev.status === "published" && changed.length ? seated(ctx, ev).length : 0 });
+  // Narrowing to NUM keeps existing seats (nobody is silently dropped) but staff should see how many are from other schools.
+  const nonNumRegistrants = input.school_scope === "num" && ev.school_scope !== "num" ? seated(ctx, ev).filter((r) => profileOf(ctx.db, r.profile_id)?.school_id !== "num").length : 0;
+  return ok({ changed: [...changed], willNotify: ev.status === "published" && changed.length ? seated(ctx, ev).length : 0, nonNumRegistrants });
 }
 
 export function updateEvent(ctx: Ctx, id: string, input: EventInput): Result<{ notified: number }> {

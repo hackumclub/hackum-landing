@@ -121,7 +121,7 @@ describe("state ↔ EventInput", () => {
     const row = db.events.find((e) => e.id === made.data.id)!;
     const back = stateFromEvent(row);
     expect(toInput(back, row)).toEqual(input);
-    expect(previewEventChange(ctx(db, "org"), row.id, toInput(back, row))).toEqual({ ok: true, data: { changed: [], willNotify: 0 } });
+    expect(previewEventChange(ctx(db, "org"), row.id, toInput(back, row))).toEqual({ ok: true, data: { changed: [], willNotify: 0, nonNumRegistrants: 0 } });
   });
   it("offline events drop the online link; online events drop the address; unlimited means null capacity", () => {
     const off = toInput(base({ mode: "offline", online_url: "https://stale.example.com", venue_name: "МУИС", venue_address: "x" }), null);
