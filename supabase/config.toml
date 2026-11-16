@@ -1,0 +1,47 @@
+# Local Supabase stack for Hackum (CLI v2.72). Only what the schema needs; everything else keeps CLI defaults.
+# The hosted project settings that cannot live in migrations are listed in supabase/README.md (Dashboard steps).
+project_id = "hackum"
+
+[api]
+enabled = true
+port = 54321
+# `app` holds the rule functions (RPC). It is exposed so supabase-js can call `.schema("app").rpc(...)`; every function in
+# it is revoked from PUBLIC and granted explicitly per role in the migrations. Mirror this in Dashboard -> API settings.
+schemas = ["public", "graphql_public", "app"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17 # hosted default
+
+[db.migrations]
+enabled = true
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[storage]
+enabled = true
+file_size_limit = "10MiB" # global ceiling; each bucket sets its own lower limit in the storage migration
+
+[studio]
+enabled = true
+port = 54323
+
+# Not needed for this schema; off keeps `supabase start` light.
+[realtime]
+enabled = false
+[inbucket]
+enabled = false
+[analytics]
+enabled = false
+[edge_runtime]
+enabled = false
+
+# Clerk is the identity provider in production (Dashboard -> Authentication -> Third-Party Auth). The local stack has no
+# Clerk tenant: the pgTAP tests mint claims by hand and set the issuer in app.settings.
+[auth.third_party.clerk]
+enabled = false

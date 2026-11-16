@@ -1,0 +1,1 @@
+-- Intentionally empty: local dev data comes from the mock seed in the app; pgTAP tests build their own fixtures.
