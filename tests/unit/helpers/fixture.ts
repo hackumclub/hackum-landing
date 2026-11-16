@@ -7,7 +7,7 @@ export const at = (hours: number) => new Date(NOW.getTime() + hours * 3_600_000)
 export const emptyDb = (): Db => ({
   profiles: [], memberships: [], staff_roles: [], seasons: [], events: [], registrations: [], teams: [],
   membership_applications: [], notifications: [], email_daily_usage: {}, email_suppressions: [], subscribers: [],
-  timeline_milestones: [], audit_log: [], profile_semesters: [], auth_codes: [], inbox: [], forms: [], form_submissions: [], avatars: {}, seq: 100,
+  timeline_milestones: [], audit_log: [], profile_semesters: [], auth_codes: [], inbox: [], forms: [], form_submissions: [], avatars: {}, event_feedback: [], polls: [], poll_votes: [], seq: 100,
 });
 
 export function addProfile(db: Db, over: Partial<Profile> & { id: string }): Profile {

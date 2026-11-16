@@ -27,7 +27,7 @@ function days(range: DateRange): string[] {
 }
 
 /** Counts people, biggest first; the "unknown" bucket (not filled in yet) always sorts after real values on ties. */
-function tally<K extends string>(keys: (K | null)[]): { key: K | "unknown"; n: number }[] {
+export function tally<K extends string>(keys: (K | null)[]): { key: K | "unknown"; n: number }[] {
   const m = new Map<K | "unknown", number>();
   for (const k of keys) m.set(k ?? "unknown", (m.get(k ?? "unknown") ?? 0) + 1);
   return [...m.entries()].map(([key, n]) => ({ key, n })).sort((a, b) => b.n - a.n || Number(a.key === "unknown") - Number(b.key === "unknown"));

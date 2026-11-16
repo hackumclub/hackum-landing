@@ -13,7 +13,7 @@ export type RenderedEmail = { subject: string; html: string; text: string; ics?:
 export const ALL_TEMPLATES: readonly TemplateName[] = [
   "welcome", "rsvp_confirmed", "waitlist_promoted", "waitlist_notice", "application_received", "application_accepted",
   "application_rejected", "membership_approved", "membership_rejected", "event_updated", "event_cancelled",
-  "reminder_24h", "announcement",
+  "reminder_24h", "announcement", "feedback_request", "poll_opened",
 ];
 
 const BRAND = "#0085ca";
@@ -239,6 +239,22 @@ function content(t: TemplateName, p: EmailPayload, lang: Locale, ev: Ev): Conten
         facts: true,
         ctas: [page],
       };
+    case "feedback_request":
+      return {
+        subject: L(lang, `Сэтгэгдлээ хуваалцаарай: ${title}`, `How was it? ${title}`),
+        heading: L(lang, "Эвент хэр байсан бэ?", "How was the event?"),
+        paragraphs: [hi, L(lang, `«${title}» эвентэд оролцсонд баярлалаа. Нэг минутын санал асуулгад хариулбал дараагийн эвентүүд илүү сайн болно. Хариулт 14 хоногийн дотор нээлттэй.`, `Thanks for coming to ${title}. A one-minute survey makes the next events better. It stays open for 14 days.`)],
+        ctas: [{ label: L(lang, "Санал өгөх", "Give feedback"), url: `${SITE_URL}/${lang}/me/events/${str(p, "event_slug")}/feedback` }],
+      };
+    case "poll_opened": {
+      const q = pick(p, "poll_title", lang);
+      return {
+        subject: L(lang, `Шинэ санал асуулга: ${q}`, `New poll: ${q}`),
+        heading: L(lang, "Клубийн санал асуулга", "A new club poll"),
+        paragraphs: [hi, L(lang, `«${q}» санал асуулга нээгдлээ. Таны санал чухал: хэдхэн секундэд өгнө үү.`, `The poll “${q}” is open. Your vote matters; it takes a few seconds.`)],
+        ctas: [{ label: L(lang, "Санал өгөх", "Vote"), url: `${SITE_URL}/${lang}/me/polls` }],
+      };
+    }
     case "announcement": {
       const subject = pick(p, "subject", lang) || L(lang, "Hackum-аас мэдээ", "News from Hackum");
       const body = pick(p, "body", lang);

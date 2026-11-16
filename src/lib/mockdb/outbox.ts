@@ -1,5 +1,6 @@
 import { err, ok, type Result } from "@/lib/result";
 import type { Ctx, Db, Notification } from "./types";
+import { enqueueFeedbackRequests } from "./feedback";
 import { audit, enqueue, eventOf, eventPayload, goingCount, iso, notifyStaff, PREF_OF, profileOf, requireStaff, ubDay } from "./core";
 
 export const DAILY_LIMIT = 100; // Resend free tier
@@ -85,7 +86,7 @@ export function retryNotification(ctx: Ctx, input: { id: string }): Result<void>
 
 /** One cron beat: what pg_cron + the dispatch route do in production. */
 export function tick(db: Db, now: Date) {
-  const reminders = enqueueDueReminders(db, now);
+  const reminders = enqueueDueReminders(db, now) + enqueueFeedbackRequests(db, now);
   return { reminders, ...dispatchOutbox(db, now) };
 }
 

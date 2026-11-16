@@ -6,7 +6,7 @@ import type { L, Locale } from "@/i18n/config";
 import type { Answers, Question } from "@/lib/events/questions";
 import type { MemberStatus, RegStatus } from "@/lib/status";
 import type {
-  AuditEntry, Db, EventRow, Form, FormSubmission, InboxItem, Membership, MembershipApplication, Milestone, Notification, Profile, ProfileSemester, Registration, Season,
+  AuditEntry, Db, EventRow, Form, FormSubmission, InboxItem, Membership, MembershipApplication, Milestone, Notification, Poll, Profile, ProfileSemester, Registration, Season,
   StaffRole, Subscriber, Team, TemplateName, Visibility,
 } from "./types";
 
@@ -744,7 +744,7 @@ export function buildSeed(now: Date): Db {
     profiles, memberships, staff_roles, seasons,
     events,
     registrations, teams, membership_applications, notifications, email_daily_usage, email_suppressions, subscribers,
-    timeline_milestones, audit_log, profile_semesters, auth_codes: [], inbox, forms, form_submissions, avatars: {}, seq: seq + 1,
+    timeline_milestones, audit_log, profile_semesters, auth_codes: [], inbox, forms, form_submissions, avatars: {}, event_feedback: [], polls: [], poll_votes: [], seq: seq + 1,
   };
   addRecentPastEvents(db, nowMs);
   return db;
@@ -788,5 +788,53 @@ function addRecentPastEvents(db: Db, nowMs: number) {
       });
     }
   });
+  addFeedbackAndPolls(db, nowMs);
   db.seq += 1; // keep the convention: seq = last id number used + 1
+}
+
+/** Feedback on the recent events (the member persona still owes two: the prompt on Home) and two polls with votes. */
+function addFeedbackAndPolls(db: Db, nowMs: number) {
+  const iso = (ms: number) => new Date(ms).toISOString();
+  const WELL = ["Практик жишээнүүд маш сайн байсан", "Илтгэгч ойлгомжтой тайлбарлалаа", "Баг болж ажилласан нь таалагдлаа", "Great pace and real examples", "Mentors were really helpful", "Хоол, орчин сайхан байлаа"];
+  const IMPROVE = ["Хугацаа арай урт байвал", "Эхлэх цагаа яг барьбал", "Илүү олон дасгал хэрэгтэй", "Slides should be shared before the event", "Дуу чимээ бага зэрэг хөндлөнгөөс орлоо", ""];
+  const anuujin = db.profiles.find((p) => p.handle === "anuujin")?.id;
+  const done = db.events.filter((e) => e.status === "completed" && e.slug.endsWith("-autumn")).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  done.forEach((ev, i) => {
+    const attended = db.registrations.filter((r) => r.event_id === ev.id && r.status === "attended");
+    attended.forEach((r, j) => {
+      const owes = r.profile_id === anuujin && i >= 3; // git night and pitch night are still open for the member persona
+      if (owes || (j + i) % 5 >= 3) return;
+      const end = new Date(ev.ends_at).getTime();
+      const stamp = iso(end + (1 + ((j * 5 + i) % 40)) * HOUR);
+      db.event_feedback.push({
+        id: nextId(db, "fb"), event_id: ev.id, profile_id: r.profile_id, rating: 3 + ((j + i * 2) % 3), nps: 6 + ((j * 3 + i) % 5),
+        went_well: WELL[(j + i) % WELL.length], improve: IMPROVE[(j * 2 + i) % IMPROVE.length], anonymous: (j + i) % 3 === 0, created_at: stamp, updated_at: stamp,
+      });
+    });
+  });
+
+  const members = db.profiles.filter((p) => p.status === "member" && p.clerk_user_id && p.onboarded_at && !p.deleted_at);
+  const opt = (id: string, mn: string, en: string) => ({ id, label: { mn, en } });
+  const open: Poll = {
+    id: nextId(db, "poll"), title: { mn: "Дараагийн workshop-ийн сэдэв?", en: "What should the next workshop be about?" },
+    description: { mn: "Хамгийн их санал авсан сэдвийг дараагийн сард зохион байгуулна.", en: "The most-voted topic becomes next month's workshop." },
+    options: [opt("rag", "RAG ба LLM", "RAG and LLMs"), opt("web", "Вэб гүйцэтгэл", "Web performance"), opt("sec", "Аюулгүй байдал", "Security basics"), opt("cv", "Компьютер хараа", "Computer vision")],
+    multi: true, max_choices: 2, audience: "members", anonymous: true, results: "after_vote", opens_at: iso(nowMs - 2 * DAY), closes_at: iso(nowMs + 5 * DAY),
+    status: "published", created_by: null, created_at: iso(nowMs - 2 * DAY),
+  };
+  const closed: Poll = {
+    id: nextId(db, "poll"), title: { mn: "Долоо хоногийн уулзалтын өдөр?", en: "Best day for the weekly meetup?" }, description: { mn: "", en: "" },
+    options: [opt("tue", "Мягмар", "Tuesday"), opt("wed", "Лхагва", "Wednesday"), opt("thu", "Пүрэв", "Thursday")],
+    multi: false, max_choices: 1, audience: "community", anonymous: false, results: "after_close", opens_at: iso(nowMs - 20 * DAY), closes_at: iso(nowMs - 13 * DAY),
+    status: "closed", created_by: null, created_at: iso(nowMs - 20 * DAY),
+  };
+  db.polls.push(open, closed);
+  members.forEach((m, j) => {
+    if (m.id === anuujin) return; // the member persona still has an open poll to answer
+    if (j % 3 !== 2) {
+      const first = open.options[j % 4].id, second = open.options[(j + 1 + (j % 2)) % 4].id;
+      db.poll_votes.push({ poll_id: open.id, profile_id: m.id, option_ids: j % 2 ? [first] : first === second ? [first] : [first, second], created_at: iso(nowMs - DAY), updated_at: iso(nowMs - DAY) });
+    }
+    if (j % 4 !== 3) db.poll_votes.push({ poll_id: closed.id, profile_id: m.id, option_ids: [closed.options[(j * 2) % 3].id], created_at: iso(nowMs - 15 * DAY), updated_at: iso(nowMs - 15 * DAY) });
+  });
 }

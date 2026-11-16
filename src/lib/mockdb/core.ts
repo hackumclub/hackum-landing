@@ -38,7 +38,7 @@ export function eventPayload(ev: EventRow, p: Profile): Notification["payload"] 
 }
 
 /** Which notification preference silences a template (others are always delivered). Shared by the dispatcher and the inbox. */
-export const PREF_OF: Partial<Record<TemplateName, "reminders" | "updates" | "announcements">> = { reminder_24h: "reminders", event_updated: "updates", announcement: "announcements" };
+export const PREF_OF: Partial<Record<TemplateName, "reminders" | "updates" | "announcements">> = { reminder_24h: "reminders", event_updated: "updates", announcement: "announcements", feedback_request: "reminders", poll_opened: "announcements" };
 
 /** In-app notification. A repeated dedupe key is a no-op, like the outbox. Returns whether a row was added. */
 export function pushInbox(db: Db, now: Date, n: { profileId: string; kind: InboxKind; payload: Notification["payload"]; dedupe: string }): boolean {

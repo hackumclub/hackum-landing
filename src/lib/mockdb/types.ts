@@ -22,7 +22,7 @@ export type NotifPrefs = { reminders: boolean; updates: boolean; announcements: 
 export type TemplateName =
   | "welcome" | "rsvp_confirmed" | "waitlist_promoted" | "waitlist_notice" | "application_received" | "application_accepted"
   | "application_rejected" | "membership_approved" | "membership_rejected" | "event_updated" | "event_cancelled"
-  | "reminder_24h" | "announcement";
+  | "reminder_24h" | "announcement" | "feedback_request" | "poll_opened";
 
 export interface Profile {
   id: string;
@@ -59,6 +59,17 @@ export interface Form { id: "membership_application" | "join"; kind: "membership
 export interface FormSubmission { id: string; form_id: "join"; profile_id: string; answers: Answers; created_at: string }
 /** MOCK ONLY: profile photo bytes (base64). Supabase Storage in production. */
 export type StoredAvatar = { mime: "image/png" | "image/jpeg" | "image/webp"; data: string; etag: string };
+/** One person's feedback on a completed event. `anonymous` hides the author from staff views (the row still dedupes by person). */
+export interface EventFeedback { id: string; event_id: string; profile_id: string; rating: number; nps: number; went_well: string; improve: string; anonymous: boolean; created_at: string; updated_at: string }
+export type PollAudience = "members" | "community" | "everyone";
+export type PollResultsVisibility = "after_vote" | "after_close" | "staff_only";
+export type PollStatus = "draft" | "published" | "closed";
+export interface PollOption { id: string; label: L }
+export interface Poll {
+  id: string; title: L; description: L; options: PollOption[]; multi: boolean; max_choices: number; audience: PollAudience; anonymous: boolean;
+  results: PollResultsVisibility; opens_at: string | null; closes_at: string | null; status: PollStatus; created_by: string | null; created_at: string;
+}
+export interface PollVote { poll_id: string; profile_id: string; option_ids: string[]; created_at: string; updated_at: string }
 /** MOCK ONLY: a one-time sign-in code. Clerk owns this in production, so it is never ported to Supabase. */
 export interface AuthCode { email: string; code: string; attempts: number; created_at: string; expires_at: string; used_at: string | null }
 export interface Membership { profile_id: string; season: number; team: string | null; role_title: L | null }
@@ -172,6 +183,9 @@ export interface Db {
   inbox: InboxItem[];
   forms: Form[];
   avatars: Record<string, StoredAvatar>;
+  event_feedback: EventFeedback[];
+  polls: Poll[];
+  poll_votes: PollVote[];
   form_submissions: FormSubmission[];
   /** Monotonic id counter so generated ids are stable and unique across a persisted session. */
   seq: number;
