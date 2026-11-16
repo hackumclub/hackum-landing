@@ -30,7 +30,7 @@ async function Body({ params }: Props) {
   const card = "grid gap-3 rounded-[var(--radius-md)] border border-line bg-panel p-4 md:p-5";
   return (
     <div className="grid gap-5">
-      <PageHeader title={t.title} />
+      <PageHeader sticker="coffee" title={t.title} />
       <PrefsForm lang={lang} initial={{ prefs: me.notif_prefs, locale: me.locale, visibility: me.visibility }} c={t} />
       <CalendarFeed path={`/api/calendar/${me.calendar_token}.ics`} siteOrigin={SITE_URL} c={t} />
 

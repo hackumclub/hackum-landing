@@ -40,8 +40,8 @@ async function Body({ params, searchParams }: Props) {
   const e = empty[tab];
   return (
     <div className="grid gap-5">
-      <PageHeader title={t.title} />
-      <nav aria-label={t.tabs} className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+      <PageHeader sticker="rsvp" title={t.title} />
+      <nav aria-label={t.tabs} className="-mx-3 overflow-x-auto px-3 md:mx-0 md:px-0">
         <ul className="flex gap-1.5">
           {TABS.map((k) => {
             const active = k === tab;

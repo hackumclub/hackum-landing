@@ -169,7 +169,7 @@ export default function MembersDirectory({ data, lang, c, common, status }: {
         selectLabel={t.selectRow}
         selectAllLabel={t.selectAll}
         onSelectionChange={setSelected}
-        empty={<EmptyState sticker="grumpy" title={t.emptyTitle} line={t.emptyLine} action={filtering ? <Button variant="secondary" onClick={clearFilters}>{t.emptyAction}</Button> : undefined} />}
+        empty={<EmptyState sticker="search" title={t.emptyTitle} line={t.emptyLine} action={filtering ? <Button variant="secondary" onClick={clearFilters}>{t.emptyAction}</Button> : undefined} />}
       />
 
       <MemberDrawer

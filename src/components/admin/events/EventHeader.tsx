@@ -10,6 +10,8 @@ import type { Db, EventRow } from "@/lib/mockdb/types";
 import StatusPill from "@/components/ui/StatusPill";
 import TabNav from "@/components/ui/TabNav";
 import StatusActions from "./StatusActions";
+import Stage from "@/components/ops/Stage";
+import Icon3D from "@/components/Icon3D";
 
 /** Title, status, kind · date, the status actions, and the section tabs. Server-rendered from the store. */
 export default function EventHeader({ db, event, now, lang }: { db: Db; event: EventRow; now: Date; lang: Locale }) {
@@ -26,16 +28,18 @@ export default function EventHeader({ db, event, now, lang }: { db: Db; event: E
       <Link href={href(lang, "/admin/events")} className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-fg-muted hover:text-fg">
         <ArrowLeft aria-hidden="true" size={16} />{t.back}
       </Link>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="grid min-w-0 gap-1.5">
-          <h1 className="font-display text-2xl font-bold break-words text-fg md:text-3xl">{title}</h1>
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
+      <Stage
+        compact
+        title={title}
+        lead={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <StatusPill status={shown} label={d.status[shown]} />
             <span>{fill(t.meta, { kind: d.admin.kinds[event.kind], when: eventWhen(event, lang) })}</span>
-          </p>
-        </div>
-        <StatusActions lang={lang} eventId={event.id} title={title} status={event.status} people={people} />
-      </div>
+          </span>
+        }
+        actions={<StatusActions lang={lang} eventId={event.id} title={title} status={event.status} people={people} />}
+        art={<Icon3D name="calendar" sizes="208px" className="w-24 rotate-3 drop-shadow-[0_18px_22px_rgb(0_30_60/0.45)] md:w-40" />}
+      />
       <TabNav
         label={t.tabsLabel}
         tabs={[

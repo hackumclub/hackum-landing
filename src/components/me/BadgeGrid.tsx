@@ -39,7 +39,7 @@ export default function BadgeGrid({ badges, c }: { badges: Badge[]; c: MeCopy["b
           <li key={b.id} data-badge={b.id} data-earned={b.earned} className={cx("grid content-start justify-items-center gap-2 rounded-[var(--radius-md)] border border-line p-3 text-center", b.earned ? "bg-panel" : "bg-panel-2")}>
             <div className="relative size-20">
               <Ring badge={b} />
-              <Icon3D name={BADGE_ART[b.id]} sizes="56px" className={cx("absolute inset-0 m-auto size-12", !b.earned && "opacity-45 grayscale")} />
+              <Icon3D name={BADGE_ART[b.id]} dir="badges" sizes="56px" className={cx("absolute inset-0 m-auto size-12", !b.earned && "opacity-45 grayscale")} />
             </div>
             <span className="sr-only">{fill(sr, { name: info.name, tier, have: b.progress.have, need: b.progress.need, left })}</span>
             <div aria-hidden="true" className="grid gap-1">

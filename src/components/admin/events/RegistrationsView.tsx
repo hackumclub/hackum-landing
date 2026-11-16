@@ -128,7 +128,7 @@ export default function RegistrationsView({ lang, eventId, slug, published, appl
   if (rows.length === 0) {
     return (
       <EmptyState
-        sticker="sleepy" title={t.empty.title} line={published ? t.empty.linePublished : t.empty.lineDraft}
+        sticker="queue" title={t.empty.title} line={published ? t.empty.linePublished : t.empty.lineDraft}
         action={published
           ? <ButtonLink href={href(lang, `/events/${slug}`)} target="_blank" rel="noopener noreferrer">{t.empty.viewPublic}</ButtonLink>
           : <ButtonLink href={href(lang, `/admin/events/${eventId}`)}>{t.empty.editEvent}</ButtonLink>}
@@ -254,7 +254,7 @@ export default function RegistrationsView({ lang, eventId, slug, published, appl
             onSelectionChange={setSel}
             empty={
               <EmptyState
-                sticker="smug" title={t.noMatch.title} line={t.noMatch.line}
+                sticker="search" title={t.noMatch.title} line={t.noMatch.line}
                 action={filtering ? <Button variant="secondary" onClick={clearFilters}>{t.noMatch.clear}</Button> : undefined}
               />
             }

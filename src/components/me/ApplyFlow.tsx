@@ -313,7 +313,7 @@ function Success({ lang, slug, title, done, deadline, c, headingRef }: { lang: L
   return (
     <div className="grid gap-5">
       <div className="grid justify-items-center gap-2 rounded-[var(--radius-md)] border border-line bg-panel px-6 py-8 text-center">
-        <Sticker name="yell" className="w-24" sizes="96px" />
+        <Sticker name="checkin" className="w-28" sizes="112px" />
         <h1 ref={headingRef} tabIndex={-1} className="font-display text-2xl font-bold text-fg outline-none">{c.successTitle}</h1>
         <p className="max-w-md text-sm text-fg-muted">{fill(c.successLine, { title })}</p>
       </div>

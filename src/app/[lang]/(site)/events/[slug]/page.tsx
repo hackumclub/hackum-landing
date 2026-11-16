@@ -48,10 +48,9 @@ export default async function Page({ params }: PageProps<"/[lang]/events/[slug]"
     <div className="pb-16">
       <div className="relative mx-auto max-w-[1000px] px-6 pt-10">
         <div className="flex items-center justify-between gap-4">
-          <Link href={href(lang, "/events")} className="text-sm font-bold text-brand">← {d.event.back}</Link>
+          <Link href={href(lang, "/events")} className="text-sm font-bold text-brand-dark">← {d.event.back}</Link>
           {showCard ? <LivePill lang={lang} /> : null}
         </div>
-        <h1 className="sr-only">{e.name[lang]}</h1>
         <div className="mt-16"><EventTicket e={e} lang={lang} dict={ticket} size="hero" /></div>
         {e.participants || e.url ? (
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4">

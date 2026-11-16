@@ -21,7 +21,7 @@ export default function TeamBoard({ lang, rows, teams, capacity, teamMin, teamMa
   const live = teams.map((tm) => ({ tm, members: tm.memberIds.map((id) => byId.get(id)).filter((r): r is RegRow => !!r && r.status !== "cancelled") })).filter((x) => x.members.length > 0);
 
   if (live.length === 0) {
-    return <EmptyState sticker="sleepy" title={t.empty.title} line={t.empty.line} />;
+    return <EmptyState sticker="team" title={t.empty.title} line={t.empty.line} />;
   }
   return (
     <div className="grid gap-4">

@@ -64,8 +64,8 @@ function AccountMenu({ lang, t, user }: { lang: Locale; t: MeCopy["nav"]; user: 
 }
 
 /**
- * Member app frame. Phones: glass top bar (brand, live pill, avatar) + a solid bottom tab bar with safe-area padding.
- * ≥768px: the tabs move into the top bar and the content is a centred 48rem column. Onboarding hides the tabs.
+ * Member app frame in the Hackum look: a floating frosted header (brand, pill tabs from 768px, live pill, account) and, on
+ * phones, a floating glass tab bar with a glossy active tab. Onboarding hides the tabs.
  */
 export default function MeShell({ lang, t, skip, extras, user, children }: {
   lang: Locale; t: MeCopy["nav"] & { brand: string }; skip: string; extras?: ReactNode; user: { name: string; avatar: string | null } | null; children: ReactNode;
@@ -76,46 +76,46 @@ export default function MeShell({ lang, t, skip, extras, user, children }: {
   const label = (k: Tab["key"]) => t[k];
   return (
     <ToastProvider>
-    <div className="min-h-dvh bg-canvas">
-      <a href="#main" className="sr-only z-[95] rounded-[var(--radius-sm)] bg-accent px-4 py-2 font-bold text-on-accent focus:not-sr-only focus:fixed focus:top-3 focus:left-3">{skip}</a>
-      <header className="sticky top-0 z-30 border-b border-line bg-[color-mix(in_srgb,var(--ops-canvas)_82%,transparent)] backdrop-blur-xl">
-        <div className="mx-auto flex min-h-14 w-full max-w-3xl items-center gap-2 px-4 md:px-6">
-          <Link href={`/${lang}/me`} className="inline-flex min-h-11 items-center gap-2 font-display text-base font-bold text-fg">
-            <Image src="/img/brand/logo-128.png" alt="" width={28} height={28} className="rounded-md" />
+    <div className="ops-canvas min-h-dvh">
+      <a href="#main" className="sr-only z-[95] rounded-full bg-accent px-4 py-2 font-bold text-on-accent focus:not-sr-only focus:fixed focus:top-3 focus:left-3">{skip}</a>
+      <header className="sticky top-3 z-30 mx-3 mt-3">
+        <div className="mx-auto flex min-h-14 w-full max-w-4xl items-center gap-2 rounded-full border border-white/60 bg-[color-mix(in_srgb,var(--ops-panel)_74%,transparent)] px-3 shadow-[0_14px_34px_-22px_rgb(0_60_100/0.55)] backdrop-blur-xl">
+          <Link href={`/${lang}/me`} className="inline-flex min-h-11 items-center gap-2.5 pl-1 font-display text-lg font-black text-fg">
+            <Image src="/img/brand/logo-128.png" alt="" width={34} height={34} className="rounded-full ring-2 ring-white/70" />
             <span>{t.brand}</span>
           </Link>
+          {!onboarding && (
+            <nav aria-label={t.label} className="mx-auto hidden md:block">
+              <ul className="flex gap-1">
+                {items.map(({ key, path: href, Icon, match }) => {
+                  const active = match(path);
+                  return (
+                    <li key={key}>
+                      <Link href={href} aria-current={active ? "page" : undefined} className={cx("inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-bold transition-colors duration-150", active ? "ops-gloss" : "text-fg-muted hover:bg-neutral-soft hover:text-fg")}>
+                        <Icon aria-hidden="true" size={18} />{label(key)}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+          )}
           <div className="ml-auto flex items-center gap-1">
             {extras}
             <AccountMenu lang={lang} t={t} user={user} />
           </div>
         </div>
-        {!onboarding && (
-          <nav aria-label={t.label} className="mx-auto hidden w-full max-w-3xl px-6 md:block">
-            <ul className="flex gap-1">
-              {items.map(({ key, path: href, Icon, match }) => {
-                const active = match(path);
-                return (
-                  <li key={key}>
-                    <Link href={href} aria-current={active ? "page" : undefined} className={cx("inline-flex min-h-11 items-center gap-2 border-b-2 px-4 text-sm font-semibold", active ? "border-accent text-fg" : "border-transparent text-fg-muted hover:text-fg")}>
-                      <Icon aria-hidden="true" size={18} />{label(key)}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-        )}
       </header>
-      <main id="main" className={cx("mx-auto w-full max-w-3xl px-4 pt-5 md:px-6 md:pb-10", onboarding ? "pb-10" : "pb-28")}>{children}</main>
+      <main id="main" className={cx("mx-auto w-full max-w-4xl px-3 pt-4 md:px-4 md:pb-12", onboarding ? "pb-10" : "pb-32")}>{children}</main>
       {!onboarding && (
-        <nav aria-label={t.label} className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-panel pb-[env(safe-area-inset-bottom)] md:hidden">
+        <nav aria-label={t.label} className="fixed inset-x-3 bottom-3 z-30 rounded-[28px] border border-white/60 bg-[color-mix(in_srgb,var(--ops-panel)_86%,transparent)] pb-[env(safe-area-inset-bottom)] shadow-[0_18px_40px_-18px_rgb(0_60_100/0.6)] backdrop-blur-xl md:hidden">
           <ul className="mx-auto grid max-w-md grid-cols-4">
             {items.map(({ key, path: href, Icon, match }) => {
               const active = match(path);
               return (
                 <li key={key}>
-                  <Link href={href} aria-current={active ? "page" : undefined} className={cx("flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-semibold", active ? "text-accent-fg" : "text-fg-muted")}>
-                    <span className={cx("grid h-7 w-12 place-items-center rounded-full transition-colors duration-150", active && "bg-accent-soft")}><Icon aria-hidden="true" size={20} /></span>
+                  <Link href={href} aria-current={active ? "page" : undefined} className={cx("flex min-h-16 flex-col items-center justify-center gap-0.5 text-xs font-bold", active ? "text-accent-fg" : "text-fg-muted")}>
+                    <span className={cx("grid h-8 w-14 place-items-center rounded-full transition-colors duration-150", active && "ops-gloss")}><Icon aria-hidden="true" size={20} /></span>
                     {label(key)}
                   </Link>
                 </li>

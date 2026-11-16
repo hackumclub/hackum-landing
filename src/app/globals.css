@@ -18,7 +18,7 @@
   --color-fur: #eef4f8;
   --color-paper: #ffffff;
   --color-muted: #47596a;
-  --color-faint: #66788a;
+  --color-faint: #5b6d7f;
   /* Legacy names kept so older markup resolves into the theme. */
   --color-lav: var(--color-brand-tint);
   --color-lav-2: #eef7fc;
@@ -66,8 +66,8 @@
   --color-c3: var(--ops-c3);
   --color-c4: var(--ops-c4);
   --color-c5: var(--ops-c5);
-  --radius-sm: 10px;
-  --radius-md: 14px;
+  --radius-sm: 12px;
+  --radius-md: 20px;
 }
 
 html { scroll-behavior: smooth; }
@@ -279,6 +279,22 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
   --ops-c3: #008a68;
   --ops-c4: #c94d14;
   --ops-c5: #728494;
+  /* The Hackum look: blue "stage" header panels, brand-blue sidebar, glossy primary buttons. Same in light and dark. */
+  --ops-stage-a: #006aa6;
+  --ops-stage-b: #00598b;
+  --ops-stage-c: #00405f;
+  --ops-on-stage: #ffffff;
+  --ops-on-stage-lead: #e6f1f7;
+  --ops-chrome-a: #00598b;
+  --ops-chrome-b: #004a73;
+  --ops-chrome-c: #06263a;
+  --ops-on-chrome: #ffffff;
+  --ops-on-chrome-muted: #d3e6f1;
+  --ops-chrome-active-bg: #ffffff;
+  --ops-chrome-active-fg: #005b8c;
+  --ops-gloss-a: #0078b8;
+  --ops-gloss-b: #005b8c;
+  --ops-on-gloss: #ffffff;
   color-scheme: light;
   background: var(--ops-canvas);
   color: var(--ops-fg);
@@ -351,3 +367,77 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
 }
 .ops :focus-visible { outline-color: var(--ops-accent); }
 .tnum { font-variant-numeric: tabular-nums; }
+
+/* ── Hackum look for /admin, /me and sign-in (mirrors the public site: brand-blue stage, glass, gloss, mascot) ───────── */
+/* Page backdrop: the page colour with soft brand glows, as on the public site. */
+.ops-canvas {
+  background:
+    radial-gradient(60% 45% at 100% 0%, rgb(0 133 202 / 0.16), transparent 70%),
+    radial-gradient(45% 40% at 0% 100%, rgb(0 171 132 / 0.1), transparent 70%),
+    var(--ops-canvas);
+}
+
+/* The big rounded blue header panel every page opens with (the public hero's little sibling). Text sits on the darker
+   left/centre; the bright glow and green accent live on the right where the art is. */
+.ops-stage {
+  position: relative; isolation: isolate; overflow: hidden; border-radius: 32px; color: var(--ops-on-stage);
+  background:
+    radial-gradient(45% 70% at 100% 0%, rgb(19 163 234 / 0.75) 0%, rgb(19 163 234 / 0) 70%),
+    radial-gradient(40% 70% at 92% 108%, rgb(0 171 132 / 0.38) 0%, rgb(0 171 132 / 0) 70%),
+    linear-gradient(135deg, var(--ops-stage-a) 0%, var(--ops-stage-b) 55%, var(--ops-stage-c) 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 28px 60px -34px rgb(0 60 100 / 0.7);
+}
+.ops-stage::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0.07; pointer-events: none;
+  background-image: radial-gradient(circle at center, #fff 1.5px, transparent 2px); background-size: 26px 26px;
+}
+@media (min-width: 768px) {
+  .ops-stage {
+    border-radius: 40px;
+    background:
+      radial-gradient(60% 120% at 100% 0%, rgb(19 163 234 / 0.85) 0%, rgb(19 163 234 / 0) 62%),
+      radial-gradient(50% 90% at 88% 108%, rgb(0 171 132 / 0.42) 0%, rgb(0 171 132 / 0) 62%),
+      linear-gradient(135deg, var(--ops-stage-a) 0%, var(--ops-stage-b) 55%, var(--ops-stage-c) 100%);
+  }
+}
+
+/* Frosted chip / card on a blue surface (stage, sidebar). */
+.ops-glass {
+  color: var(--ops-on-stage);
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.08));
+  border: 1px solid rgb(255 255 255 / 0.26);
+  backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+}
+
+/* Brand-blue sidebar: the footer/join-band gradient, in a column. */
+.ops-chrome {
+  color: var(--ops-on-chrome);
+  background:
+    radial-gradient(90% 38% at 100% 0%, rgb(19 163 234 / 0.38), transparent 70%),
+    linear-gradient(180deg, var(--ops-chrome-a) 0%, var(--ops-chrome-b) 55%, var(--ops-chrome-c) 100%);
+}
+
+/* Glossy primary button (the public .btn-primary, darkened a touch so white text keeps AA). */
+.ops-gloss {
+  position: relative; isolation: isolate; overflow: hidden; color: var(--ops-on-gloss);
+  background: linear-gradient(180deg, var(--ops-gloss-a), var(--ops-gloss-b));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35), inset 0 -2px 4px rgb(0 40 80 / 0.25), 0 10px 22px -10px rgb(0 91 140 / 0.7);
+  transition: box-shadow 0.2s, filter 0.2s;
+}
+.ops-gloss::before { content: ""; position: absolute; inset: 0 0 50% 0; z-index: -1; background: linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0)); }
+.ops-gloss:hover, .ops-gloss:focus-visible { filter: brightness(1.07); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45), inset 0 -2px 4px rgb(0 40 80 / 0.25), 0 14px 26px -10px rgb(0 91 140 / 0.85); }
+.ops-gloss:disabled, .ops-gloss[aria-disabled="true"] { filter: grayscale(0.4) brightness(0.95); }
+
+/* Cards lift off the page a little instead of sitting flat (form controls and buttons excluded). */
+.ops .bg-panel.border:not(input):not(select):not(textarea):not(button):not(label) { box-shadow: 0 10px 28px -20px rgb(7 27 41 / 0.4); }
+
+@media (prefers-reduced-motion: reduce) { .ops-gloss { transition: none; } }
+
+/* On a blue stage the glossy blue primary would vanish: use the public site's white pill instead. */
+.ops-stage .ops-gloss {
+  color: var(--ops-chrome-active-fg); background: #fff;
+  box-shadow: 0 10px 22px -10px rgb(0 30 60 / 0.55);
+}
+.ops-stage .ops-gloss::before { display: none; }
+.ops-stage .ops-gloss:hover, .ops-stage .ops-gloss:focus-visible { filter: none; background: rgb(255 255 255 / 0.9); }

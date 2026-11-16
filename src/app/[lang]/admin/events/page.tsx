@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import Stage from "@/components/ops/Stage";
+import Icon3D from "@/components/Icon3D";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Plus } from "lucide-react";
@@ -46,10 +48,11 @@ export default async function EventsPage({ params, searchParams }: { params: Pro
   const t = copy[lang].list;
   return (
     <div className="grid grid-cols-1 gap-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold text-fg md:text-3xl">{t.title}</h1>
-        <ButtonLink href={href(lang, "/admin/events/new")} icon={<Plus aria-hidden="true" size={16} />}>{t.createEvent}</ButtonLink>
-      </header>
+      <Stage
+        compact title={t.title}
+        actions={<ButtonLink href={href(lang, "/admin/events/new")} icon={<Plus aria-hidden="true" size={16} />}>{t.createEvent}</ButtonLink>}
+        art={<Icon3D name="ticket" sizes="208px" className="w-24 rotate-3 drop-shadow-[0_18px_22px_rgb(0_30_60/0.45)] md:w-44" />}
+      />
       <Suspense fallback={<ListSkeleton label={t.loading} />}>
         <Body lang={lang} searchParams={searchParams} />
       </Suspense>

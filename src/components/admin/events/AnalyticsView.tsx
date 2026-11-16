@@ -40,7 +40,7 @@ export default function AnalyticsView({ a, lang, eventId, slug, published, appli
   if (!a.hasData) {
     return (
       <EmptyState
-        sticker="laptop" title={t.empty.title} line={t.empty.line}
+        sticker="feedback" title={t.empty.title} line={t.empty.line}
         action={published
           ? <ButtonLink href={href(lang, `/events/${slug}`)} target="_blank" rel="noopener noreferrer">{t.empty.viewPublic}</ButtonLink>
           : <ButtonLink href={href(lang, `/admin/events/${eventId}`)}>{t.empty.editEvent}</ButtonLink>}

@@ -82,10 +82,10 @@ export default function Dashboard({ data, lang, d }: { data: Data; lang: Locale;
       <section aria-labelledby="kpis">
         <h2 id="kpis" className="sr-only">{t.kpis}</h2>
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          <KpiCard label={t.activeMembers} value={n.format(kpis.activeMembers90d)} hint={t.activeMembersHint} />
-          <KpiCard label={t.upcomingEvents} value={n.format(kpis.upcomingEvents)} hint={t.upcomingEventsHint} />
-          <KpiCard label={t.rsvps} value={n.format(kpis.rsvps30d)} delta={toDelta(t, kpis.rsvps30d, kpis.rsvpsPrev30d)} hint={fill(t.rsvpsHint, { n: n.format(kpis.rsvpsPrev30d) })} />
-          <KpiCard label={t.people} value={n.format(kpis.membersTotal + kpis.guestsTotal)} hint={fill(t.peopleHint, { members: n.format(kpis.membersTotal), guests: n.format(kpis.guestsTotal) })} />
+          <KpiCard icon="users" tone="blue" label={t.activeMembers} value={n.format(kpis.activeMembers90d)} hint={t.activeMembersHint} />
+          <KpiCard icon="calendar" tone="yellow" label={t.upcomingEvents} value={n.format(kpis.upcomingEvents)} hint={t.upcomingEventsHint} />
+          <KpiCard icon="ticket" tone="green" label={t.rsvps} value={n.format(kpis.rsvps30d)} delta={toDelta(t, kpis.rsvps30d, kpis.rsvpsPrev30d)} hint={fill(t.rsvpsHint, { n: n.format(kpis.rsvpsPrev30d) })} />
+          <KpiCard icon="id" tone="ember" label={t.people} value={n.format(kpis.membersTotal + kpis.guestsTotal)} hint={fill(t.peopleHint, { members: n.format(kpis.membersTotal), guests: n.format(kpis.guestsTotal) })} />
         </div>
       </section>
 
@@ -93,7 +93,7 @@ export default function Dashboard({ data, lang, d }: { data: Data; lang: Locale;
         <SectionCard id="upcoming" className="order-2 xl:order-1" title={t.upcoming} action={eventsReady ? <Link href={`/${lang}/admin/events`} className="text-sm font-semibold text-accent-fg hover:underline">{t.allEvents}</Link> : undefined}>
           {data.upcoming.length === 0 ? (
             <div className="p-4">
-              <EmptyState sticker="laptop" title={t.emptyUpcomingTitle} line={t.emptyUpcomingLine}
+              <EmptyState sticker="rsvp" title={t.emptyUpcomingTitle} line={t.emptyUpcomingLine}
                 action={eventsReady ? <ButtonLink href={`/${lang}/admin/events/new`}>{t.createEvent}</ButtonLink> : undefined} />
             </div>
           ) : (

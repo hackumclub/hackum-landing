@@ -36,7 +36,7 @@ async function Body({ params }: Props) {
 
   return (
     <div className="grid gap-6">
-      <PageHeader title={t.title} />
+      <PageHeader sticker="writing" title={t.title} />
 
       <div className="flex items-start gap-3 rounded-[var(--radius-md)] border border-line bg-panel p-4">
         <CalendarClock aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-accent-fg" />

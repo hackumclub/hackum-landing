@@ -84,7 +84,7 @@ export default async function CommsPage({ params, searchParams }: Props) {
   const c = copy[lang];
   return (
     <div className="grid grid-cols-1 gap-5">
-      <PageHeader title={c.comms.title} lead={c.comms.lead} action={<SendNowButton c={c.comms} common={c.common} />} />
+      <PageHeader title={c.comms.title} lead={c.comms.lead} icon="mail" action={<SendNowButton c={c.comms} common={c.common} />} />
       <Suspense fallback={<div className="grid gap-5"><div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 xl:grid-cols-5"><Skeleton className="h-[170px] rounded-[var(--radius-md)] min-[480px]:col-span-2" />{[0, 1, 2].map((i) => <Skeleton key={i} className="h-[118px] rounded-[var(--radius-md)]" />)}</div><SectionSkeleton label={c.comms.loading} rows={8} /></div>}>
         <Body lang={lang} searchParams={searchParams} />
       </Suspense>

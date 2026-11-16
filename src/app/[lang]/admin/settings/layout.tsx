@@ -11,7 +11,7 @@ async function Gate({ lang, children }: { lang: Locale; children: ReactNode }) {
   const c = copy[lang].settings;
   return (
     <div className="grid grid-cols-1 gap-5">
-      <PageHeader title={c.title} lead={c.lead} />
+      <PageHeader title={c.title} lead={c.lead} icon="shield" />
       <SectionTabs
         label={c.tabsLabel}
         tabs={[

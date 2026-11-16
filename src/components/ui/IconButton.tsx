@@ -9,9 +9,9 @@ export default function IconButton({ label, icon, size = "md", className, type =
       aria-label={label}
       title={label}
       className={cx(
-        "inline-grid cursor-pointer place-items-center rounded-[var(--radius-sm)] text-fg-muted transition-colors duration-150 hover:bg-neutral-soft hover:text-fg disabled:cursor-not-allowed disabled:opacity-50",
-        // sm = 24px, the WCAG 2.2 (2.5.8) minimum target; use only for secondary inline actions.
-        size === "lg" ? "size-11" : size === "sm" ? "size-6" : "size-10",
+        "inline-grid shrink-0 cursor-pointer place-items-center rounded-[var(--radius-sm)] text-fg-muted transition-colors duration-150 hover:bg-neutral-soft hover:text-fg disabled:cursor-not-allowed disabled:opacity-50",
+        // sm = 28px: above the WCAG 2.2 (2.5.8) 24px minimum with headroom, so a 1-2px overlap never drops it below; secondary inline actions only.
+        size === "lg" ? "size-11" : size === "sm" ? "size-7" : "size-10",
         className,
       )}
       {...rest}

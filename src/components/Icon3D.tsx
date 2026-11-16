@@ -8,8 +8,8 @@ type DataAttrs = { [key: `data-${string}`]: string | number | boolean | undefine
  * Lazy by default, which also stops React from adding a <link rel="preload"> for it. data-* attributes pass
  * through (animation hooks such as data-bob).
  */
-export default function Icon3D({ name, className = "", sizes = "112px", style, ...data }: {
-  name: string; className?: string; sizes?: string; style?: React.CSSProperties;
+export default function Icon3D({ name, dir = "icons3d", className = "", sizes = "112px", style, ...data }: {
+  name: string; /** Folder under /img: the 3D icon set (default) or the badge emblems. */ dir?: "icons3d" | "badges"; className?: string; sizes?: string; style?: React.CSSProperties;
 } & DataAttrs) {
-  return <Image src={`/img/icons3d/${name}.png`} alt="" aria-hidden width={400} height={400} sizes={sizes} draggable={false} style={style} className={className} {...data} />;
+  return <Image src={`/img/${dir}/${name}.png`} alt="" aria-hidden width={400} height={400} sizes={sizes} draggable={false} style={style} className={className} {...data} />;
 }

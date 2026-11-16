@@ -70,7 +70,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
               <p className="font-display text-2xl font-black leading-snug">“{d.who.quote}”</p>
               <footer className="mt-2 text-sm text-faint">{d.who.quoteLabel}</footer>
             </blockquote>
-            <Link href={href(lang, "/about")} className="mt-8 inline-block font-bold text-brand underline decoration-2 underline-offset-4 hover:decoration-4">{d.who.more}</Link>
+            <Link href={href(lang, "/about")} className="mt-8 inline-block font-bold text-brand-dark underline decoration-2 underline-offset-4 hover:decoration-4">{d.who.more}</Link>
           </div>
         </div>
       </section>
@@ -84,7 +84,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
       <section className="mx-auto max-w-[1200px] px-6 py-16">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <Split as="h2" className="font-display text-[clamp(30px,4vw,48px)] font-black leading-tight">{d.latest.title}</Split>
-          <Link href={href(lang, "/events")} className="font-bold text-brand underline decoration-2 underline-offset-4 hover:decoration-4">{d.latest.all}</Link>
+          <Link href={href(lang, "/events")} className="font-bold text-brand-dark underline decoration-2 underline-offset-4 hover:decoration-4">{d.latest.all}</Link>
         </div>
         <RevealGroup className="mt-6 grid gap-8 md:grid-cols-3">
           {events.slice(0, 3).map((e, i) => <EventTicket key={e.slug} e={e} lang={lang} dict={ticket} tilt={TILT[i]} />)}

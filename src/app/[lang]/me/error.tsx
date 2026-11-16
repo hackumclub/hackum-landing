@@ -12,7 +12,7 @@ export default function MeError({ retry }: { error: Error & { digest?: string };
   const t = copy[isLocale(lang) ? lang : "mn"].errors;
   return (
     <div role="alert" className="grid justify-items-center gap-3 rounded-[var(--radius-md)] border border-line bg-panel px-6 py-12 text-center">
-      <Sticker name="grumpy" className="w-24" sizes="96px" />
+      <Sticker name="offline" className="w-24" sizes="96px" />
       <h2 className="font-display text-lg font-bold text-fg">{t.title}</h2>
       <p className="max-w-md text-sm text-fg-muted">{t.line}</p>
       <Button size="lg" icon={<RotateCcw aria-hidden="true" size={16} />} onClick={() => retry()}>{t.retry}</Button>

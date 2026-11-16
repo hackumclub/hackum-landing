@@ -28,7 +28,7 @@ export default function CommsView({ rows, lang }: { rows: OutboxRow[]; lang: Loc
   }, [rows]);
   const visible = tab === "all" ? rows : rows.filter((r) => r.status === tab);
 
-  if (rows.length === 0) return <EmptyState sticker="toast" title={t.empty.title} line={t.empty.line} />;
+  if (rows.length === 0) return <EmptyState sticker="mail" title={t.empty.title} line={t.empty.line} />;
 
   const columns: Column<OutboxRow>[] = [
     { key: "template", header: t.cols.template, sortValue: (r) => t.templates[r.template] ?? r.template, cell: (r) => <span className="font-semibold text-fg">{t.templates[r.template] ?? r.template}</span> },
@@ -50,7 +50,7 @@ export default function CommsView({ rows, lang }: { rows: OutboxRow[]; lang: Loc
       <p role="status" className="text-sm font-semibold text-fg-muted">{plural(lang, visible.length, t.results)}</p>
       <DataTable
         rows={visible} columns={columns} getId={(r) => r.id} caption={t.caption}
-        empty={<EmptyState sticker="smug" title={t.noMatch.title} line={t.noMatch.line} action={<Button variant="secondary" onClick={() => setTab("all")}>{t.noMatch.clear}</Button>} />}
+        empty={<EmptyState sticker="search" title={t.noMatch.title} line={t.noMatch.line} action={<Button variant="secondary" onClick={() => setTab("all")}>{t.noMatch.clear}</Button>} />}
       />
     </div>
   );

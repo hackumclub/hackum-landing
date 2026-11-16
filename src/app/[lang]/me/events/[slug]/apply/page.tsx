@@ -40,7 +40,7 @@ async function Body({ params, searchParams }: Props) {
   if (ev.reg_mode !== "application") {
     return (
       <div className="grid justify-items-center gap-3 rounded-[var(--radius-md)] border border-line bg-panel px-6 py-10 text-center">
-        <Sticker name="smug" className="w-24" sizes="96px" />
+        <Sticker name="rsvp" className="w-24" sizes="96px" />
         <h1 className="font-display text-lg font-bold text-fg">{a.notApplication}</h1>
         <p className="max-w-sm text-sm text-fg-muted">{a.notApplicationLine}</p>
         <ButtonLink href={`/${lang}/events/${ev.slug}`} size="lg">{a.eventPage}</ButtonLink>

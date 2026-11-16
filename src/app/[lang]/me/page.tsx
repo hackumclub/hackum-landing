@@ -31,7 +31,7 @@ async function Body({ params }: Props) {
 
   return (
     <div className="grid gap-7">
-      <PageHeader title={first ? fill(h.hi, { name: first }) : h.hiNoName} />
+      <PageHeader sticker="wave" title={first ? fill(h.hi, { name: first }) : h.hiNoName} />
 
       {data.live.length > 0 && (
         <Section title={h.liveTitle} id="live">

@@ -11,14 +11,15 @@ import type { TicketDict } from "@/i18n/areas/public";
  */
 export default function EventTicket({ e, lang, dict, size = "card", tilt = 0 }: { e: Event; lang: Locale; dict: TicketDict; size?: "card" | "hero"; tilt?: number }) {
   const hero = size === "hero";
+  const Title = hero ? "h1" : "h3"; // the event page's own heading is the hero title; list cards sit under a section heading
   const kind = e.themes.map((x) => dict.kinds[x] ?? x).join(" · ");
   const body = (
     <div className={`relative flex overflow-visible rounded-[22px] bg-paper text-ink shadow-card transition-shadow duration-300 group-hover:shadow-[0_24px_50px_-18px_rgb(0_91_140/0.45)] ${hero ? "min-h-[300px]" : "min-h-[220px]"}`}>
       <div className={`relative flex flex-1 flex-col justify-between ${hero ? "p-8 md:p-12" : "p-6"}`}>
         {hero ? <span aria-hidden className="pointer-events-none absolute -top-4 right-3 font-display text-[140px] font-black leading-none tracking-tight text-fur md:-top-8 md:text-[200px]">{e.year}</span> : null}
-        <p className="relative text-sm font-bold text-brand">{kind}</p>
+        <p className="relative text-sm font-bold text-brand-dark">{kind}</p>
         <div className="relative">
-          <h3 className={`font-display font-black leading-[1.05] [overflow-wrap:anywhere] ${hero ? "text-4xl md:text-6xl" : e.name[lang].length > 24 ? "text-[22px]" : "text-[28px]"}`}>{e.name[lang]}</h3>
+          <Title className={`font-display font-black leading-[1.05] [overflow-wrap:anywhere] ${hero ? "text-4xl md:text-6xl" : e.name[lang].length > 24 ? "text-[22px]" : "text-[28px]"}`}>{e.name[lang]}</Title>
           <p className={`mt-2 max-w-md text-muted ${hero ? "text-lg" : "text-sm"}`}>{e.tagline[lang]}</p>
         </div>
       </div>

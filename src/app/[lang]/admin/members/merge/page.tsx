@@ -19,7 +19,7 @@ async function Body({ lang, searchParams }: { lang: Locale; searchParams: Props[
   await previewState(searchParams);
   const c = copy[lang];
   // Organizers can read the Members area but not merge; the tab is disabled for them, and a direct visit explains why.
-  if (session.staffRole !== "admin") return <EmptyState sticker="grumpy" title={c.members.merge.adminOnlyTitle} line={c.members.merge.adminOnlyLine} />;
+  if (session.staffRole !== "admin") return <EmptyState sticker="lock" title={c.members.merge.adminOnlyTitle} line={c.members.merge.adminOnlyLine} />;
   return (
     <div className="grid gap-4">
       <div className="grid gap-1">

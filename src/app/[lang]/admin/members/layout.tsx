@@ -29,7 +29,7 @@ export default async function MembersLayout({ children, params }: { children: Re
   const c = copy[lang].members;
   return (
     <div className="grid grid-cols-1 gap-5">
-      <PageHeader title={c.title} lead={c.lead} />
+      <PageHeader title={c.title} lead={c.lead} icon="users" />
       <Suspense fallback={<Skeleton className="h-10" />}><Tabs lang={lang} /></Suspense>
       {children}
     </div>

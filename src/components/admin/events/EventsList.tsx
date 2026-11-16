@@ -71,7 +71,7 @@ export default function EventsList({ rows, lang }: { rows: ListRow[]; lang: Loca
   if (rows.length === 0) {
     return (
       <EmptyState
-        sticker="wave" title={t.empty.title} line={t.empty.line}
+        sticker="rsvp" title={t.empty.title} line={t.empty.line}
         action={<ButtonLink href={href(lang, "/admin/events/new")}>{t.createEvent}</ButtonLink>}
       />
     );
@@ -141,7 +141,7 @@ export default function EventsList({ rows, lang }: { rows: ListRow[]; lang: Loca
         rows={visible} columns={columns} getId={(r) => r.id} caption={t.caption}
         empty={
           <EmptyState
-            sticker="smug" title={t.noMatch.title} line={t.noMatch.line}
+            sticker="search" title={t.noMatch.title} line={t.noMatch.line}
             action={filtered ? <Button variant="secondary" onClick={clear}>{t.noMatch.clear}</Button> : undefined}
           />
         }

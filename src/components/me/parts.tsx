@@ -1,17 +1,17 @@
 import type { ReactNode } from "react";
 import Skeleton from "@/components/ui/Skeleton";
+import Stage from "@/components/ops/Stage";
+import Sticker from "@/components/Sticker";
+import type { StickerName } from "@/lib/manul";
 import { cx } from "@/components/ui/cx";
 
-/** Page title row. One h1 per screen. */
-export function PageHeader({ title, aside, children }: { title: string; aside?: ReactNode; children?: ReactNode }) {
+/** Page opener: the blue Hackum stage with a Мануул. One h1 per screen. */
+export function PageHeader({ title, aside, sticker, lead }: { title: string; aside?: ReactNode; sticker?: StickerName; lead?: ReactNode }) {
   return (
-    <header className="mb-5 grid gap-1">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold text-fg md:text-3xl">{title}</h1>
-        {aside}
-      </div>
-      {children}
-    </header>
+    <Stage
+      className="mb-5" compact title={title} lead={lead} actions={aside}
+      art={sticker ? <Sticker name={sticker} sizes="176px" className="w-24 -rotate-3 md:w-40" /> : undefined}
+    />
   );
 }
 

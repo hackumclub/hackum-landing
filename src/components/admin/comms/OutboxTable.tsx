@@ -95,8 +95,8 @@ export default function OutboxTable({ rows, now: nowIso, lang, c, common, closeL
         getId={(r) => r.id}
         caption={c.caption}
         empty={filtered
-          ? <EmptyState sticker="sleepy" title={c.emptyTitle} line={c.emptyLine} action={<ButtonLink variant="secondary" href={allHref}>{c.showAll}</ButtonLink>} />
-          : <EmptyState sticker="sleepy" title={c.emptyAll} line={c.emptyAllLine} />}
+          ? <EmptyState sticker="mail" title={c.emptyTitle} line={c.emptyLine} action={<ButtonLink variant="secondary" href={allHref}>{c.showAll}</ButtonLink>} />
+          : <EmptyState sticker="mail" title={c.emptyAll} line={c.emptyAllLine} />}
       />
       <EmailPreviewDrawer id={previewId} title={previewRow ? fill(c.previewOf, { template: label(previewRow), name: previewRow.recipient }) : ""} lang={lang} c={c} common={common} closeLabel={closeLabel} onClose={() => setPreviewId(null)} />
     </div>

@@ -1,6 +1,8 @@
 "use client";
 // Small building blocks shared by the Members, Comms, Settings and Audit screens (this agent's areas only).
 import Link from "next/link";
+import Stage from "@/components/ops/Stage";
+import Icon3D from "@/components/Icon3D";
 import { usePathname } from "next/navigation";
 import { useId, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, TriangleAlert, X } from "lucide-react";
@@ -135,15 +137,13 @@ export function focusFirstInvalid(root: HTMLElement | null) {
   root?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
 }
 
-export function PageHeader({ title, lead, action }: { title: string; lead?: string; action?: ReactNode }) {
+/** Page opener: the blue Hackum stage with a 3D icon (name from /public/img/icons3d). */
+export function PageHeader({ title, lead, action, icon }: { title: string; lead?: string; action?: ReactNode; icon?: string }) {
   return (
-    <header className="flex flex-wrap items-end justify-between gap-3">
-      <div className="grid min-w-0 gap-1">
-        <h1 className="font-display text-2xl font-bold text-fg md:text-3xl">{title}</h1>
-        {lead && <p className="max-w-2xl text-sm text-fg-muted">{lead}</p>}
-      </div>
-      {action}
-    </header>
+    <Stage
+      compact title={title} lead={lead} actions={action}
+      art={icon ? <Icon3D name={icon} sizes="208px" className="w-24 rotate-3 drop-shadow-[0_18px_22px_rgb(0_30_60/0.45)] md:w-44" /> : undefined}
+    />
   );
 }
 

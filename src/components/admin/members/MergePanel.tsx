@@ -123,7 +123,7 @@ export default function MergePanel({ data, lang, c, common, status }: {
           <span className="tnum text-sm text-fg-muted">{plural(lang, suggestions.length, c.suggestionsCount)}</span>
         </div>
         {suggestions.length === 0 ? (
-          <EmptyState sticker="smug" title={c.none} line={c.noneLine} />
+          <EmptyState sticker="checkin" title={c.none} line={c.noneLine} />
         ) : (
           <ul className="overflow-hidden rounded-[var(--radius-md)] border border-line bg-panel">
             {suggestions.map((s) => {

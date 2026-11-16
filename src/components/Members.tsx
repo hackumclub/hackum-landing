@@ -96,7 +96,7 @@ export default function Members({ members, seasons, current, lang, dict, teams, 
               <span className="rounded-full bg-brand-tint px-2.5 py-1 text-[11px] font-bold text-brand-deep">{season(m.season)}</span>
             </div>
             <p className="mt-4 font-display text-lg font-black leading-tight">{m.name[lang]}</p>
-            <p className="mt-1 text-sm font-bold text-brand">{roleLabel(m, lang, dict.roles.member)}</p>
+            <p className="mt-1 text-sm font-bold text-brand-dark">{roleLabel(m, lang, dict.roles.member)}</p>
             {m.team ? <p className="mt-0.5 text-sm text-muted">{teams[m.team] ?? m.team}</p> : null}
           </li>
         ))}

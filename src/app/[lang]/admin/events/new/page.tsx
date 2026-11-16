@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import Stage from "@/components/ops/Stage";
+import Icon3D from "@/components/Icon3D";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { lang as rootLang } from "next/root-params";
@@ -22,7 +24,7 @@ export default async function NewEventPage() {
   const t = copy[lang].form;
   return (
     <div className="grid grid-cols-1 gap-6">
-      <h1 className="font-display text-2xl font-bold text-fg md:text-3xl">{t.newTitle}</h1>
+      <Stage compact title={t.newTitle} art={<Icon3D name="flag" sizes="208px" className="w-24 rotate-3 drop-shadow-[0_18px_22px_rgb(0_30_60/0.45)] md:w-44" />} />
       <Suspense fallback={<FormSkeleton label={copy[lang].list.loading} />}>
         <Body lang={lang} />
       </Suspense>

@@ -25,7 +25,8 @@ export type PanelProps = {
   links: PanelLinks;
 };
 
-const AVATAR = ["bg-brand text-white", "bg-leaf text-white", "bg-sun text-ink"];
+// Initials must read at 12px: white on brand-dark (5.8:1), ink on leaf (6.0:1) and on sun (9.8:1).
+const AVATAR = ["bg-brand-dark text-white", "bg-leaf text-ink", "bg-sun text-ink"];
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase();
 const primary = "btn-primary inline-flex min-h-[48px] items-center justify-center rounded-full px-7 py-3 text-center disabled:cursor-wait";
 const secondary = "btn-glass-light inline-flex min-h-[44px] items-center justify-center rounded-full px-5 py-2.5 text-sm font-bold text-ink hover:text-brand";

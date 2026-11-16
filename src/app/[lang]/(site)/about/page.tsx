@@ -34,7 +34,7 @@ export default async function Page({ params }: PageProps<"/[lang]/about">) {
     <div className="mx-auto max-w-[1100px] px-6 pb-8 pt-14">
       <header className="grid items-end gap-10 md:grid-cols-[1.4fr_1fr]">
         <div>
-          <p className="text-lg font-bold text-brand">{a.kicker}</p>
+          <p className="text-lg font-bold text-brand-dark">{a.kicker}</p>
           <Split as="h1" mode="lines" hero className="mt-2 font-display text-[clamp(44px,7vw,84px)] font-black leading-none">{a.title}</Split>
           <Split mode="fade" className="mt-6 max-w-[60ch] text-lg leading-relaxed text-muted">{fill(a.story, nums)}</Split>
         </div>
@@ -62,7 +62,7 @@ export default async function Page({ params }: PageProps<"/[lang]/about">) {
         <RevealGroup as="ol" className="mt-12 grid gap-8 md:grid-cols-3">
           {a.goals.map(([t, desc], i) => (
             <li key={t}><TiltCard className="h-full rounded-[26px]"><div className="group relative h-full rounded-[26px] bg-paper p-7 shadow-soft ring-1 ring-ink/5 transition-shadow duration-300 hover:shadow-card">
-              <span className="font-display text-sm font-black text-brand">0{i + 1}</span>
+              <span className="font-display text-sm font-black text-brand-dark">0{i + 1}</span>
               <Icon3D name={GOAL_ICON[i % GOAL_ICON.length]} className="drop-shadow-[0_14px_18px_rgb(0_60_100/0.25)] pointer-events-none absolute -right-5 -top-9 z-10 h-28 w-28 rotate-6 transition-transform duration-500 group-hover:-rotate-6 group-hover:scale-110" />
               <h3 className="mt-10 font-display text-xl font-black">{t}</h3>
               <p className="mt-2 text-muted">{desc}</p>

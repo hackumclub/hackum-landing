@@ -60,3 +60,22 @@ it("dark theme also applies under prefers-color-scheme unless light is forced", 
   // The two dark blocks are written out twice (CSS has no mixins); they must never drift apart.
   expect(block(css, '.ops:not([data-theme="light"])')).toEqual(THEMES.dark);
 });
+
+// The Hackum "stage" (big blue header panel) and the brand-blue sidebar look the same in light and dark, so they live
+// once in the .ops block. Text on them must still meet AA.
+describe("brand stage and chrome (identical in both themes)", () => {
+  const t = THEMES.light;
+  const PAIRS: [string, string][] = [
+    ["on-stage", "stage-a"], ["on-stage", "stage-b"], ["on-stage", "stage-c"],
+    ["on-stage-lead", "stage-a"], ["on-stage-lead", "stage-b"],
+    ["on-chrome", "chrome-a"], ["on-chrome", "chrome-b"], ["on-chrome", "chrome-c"],
+    ["on-chrome-muted", "chrome-a"], ["on-chrome-muted", "chrome-b"], ["on-chrome-muted", "chrome-c"],
+    ["on-gloss", "gloss-a"], ["on-gloss", "gloss-b"],
+    ["chrome-active-fg", "chrome-active-bg"],
+  ];
+  it.each(PAIRS)("text %s on %s ≥ 4.5:1", (fg, bg) => {
+    expect(t[fg], fg).toBeDefined();
+    expect(t[bg], bg).toBeDefined();
+    expect(ratio(t[fg], t[bg])).toBeGreaterThanOrEqual(4.5);
+  });
+});

@@ -12,6 +12,20 @@ export const STICKERS = {
   torch: { src: `${S}/torch.png`, w: 620, h: 679, alt: { mn: "Бамбар барьсан Мануул", en: "Manul holding a torch" } },
   wave: { src: `${S}/wave.png`, w: 608, h: 690, alt: { mn: "Гар даллаж буй Мануул", en: "Manul waving" } },
   yell: { src: `${S}/yell.png`, w: 596, h: 674, alt: { mn: "Баярлан хашгирч буй Мануул", en: "Manul cheering" } },
+  build: { src: `${S}/build.png`, w: 1024, h: 1011, alt: { mn: "Каск өмсөж, түлхүүр барьсан Мануул", en: "Manul in a hard hat holding a wrench" } },
+  checkin: { src: `${S}/checkin.png`, w: 1024, h: 973, alt: { mn: "Утсан дээрээ ногоон тэмдэг харуулж буй Мануул", en: "Manul showing a green check mark on a phone" } },
+  comfort: { src: `${S}/comfort.png`, w: 806, h: 1024, alt: { mn: "Зүрх барьж тайвшруулж буй Мануул", en: "Manul offering a comforting heart" } },
+  feedback: { src: `${S}/feedback.png`, w: 1002, h: 1024, alt: { mn: "Одтой самбар барьсан Мануул", en: "Manul holding a clipboard with a star" } },
+  grad: { src: `${S}/grad.png`, w: 925, h: 1024, alt: { mn: "Төгсөгчийн малгайтай Мануул", en: "Manul in a graduation cap" } },
+  lock: { src: `${S}/lock.png`, w: 1024, h: 987, alt: { mn: "Хаалга хамгаалж буй Мануул", en: "Manul guarding a closed gate" } },
+  mail: { src: `${S}/mail.png`, w: 819, h: 1024, alt: { mn: "Дугтуй тэврэсэн Мануул", en: "Manul hugging an envelope" } },
+  offline: { src: `${S}/offline.png`, w: 881, h: 1024, alt: { mn: "Утсанд ороолдсон, толгой эргэсэн Мануул", en: "Manul tangled in a cable" } },
+  queue: { src: `${S}/queue.png`, w: 884, h: 1024, alt: { mn: "Дугаарын билет барьсан Мануул", en: "Manul holding a queue ticket" } },
+  rsvp: { src: `${S}/rsvp.png`, w: 929, h: 1024, alt: { mn: "Баярын малгайтай Мануул", en: "Manul in a party hat" } },
+  search: { src: `${S}/search.png`, w: 842, h: 1024, alt: { mn: "Томруулдаг шилээр ширтэж буй Мануул", en: "Manul peering through a magnifying glass" } },
+  team: { src: `${S}/team.png`, w: 1024, h: 724, alt: { mn: "Хоёр Мануул гар ташиж буй", en: "Two Manuls high-fiving" } },
+  trophy: { src: `${S}/trophy.png`, w: 725, h: 1024, alt: { mn: "Цом өргөсөн Мануул", en: "Manul lifting a trophy" } },
+  writing: { src: `${S}/writing.png`, w: 916, h: 1024, alt: { mn: "Бичиж буй Мануул", en: "Manul writing" } },
 } as const;
 
 export type StickerName = keyof typeof STICKERS;

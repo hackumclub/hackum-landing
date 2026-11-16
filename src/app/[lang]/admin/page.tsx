@@ -7,6 +7,8 @@ import { formatUb } from "@/lib/time";
 import { getDashboard, type Scenario } from "@/lib/admin/dashboard";
 import Dashboard, { DashboardSkeleton } from "@/components/admin/Dashboard";
 import DemoPill from "@/components/admin/DemoPill";
+import Stage from "@/components/ops/Stage";
+import Icon3D from "@/components/Icon3D";
 import { mockEnabled } from "@/lib/mockdb/store";
 
 const SCENARIOS: Scenario[] = ["default", "empty", "error", "slow"];
@@ -26,13 +28,13 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   const t = getDictionary(lang).admin.dashboard;
   return (
     <div className="grid grid-cols-1 gap-6">
-      <header className="grid grid-cols-1 gap-1">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h1 className="font-display text-2xl font-bold text-fg md:text-3xl">{t.title}</h1>
-          {mockEnabled() && <DemoPill title={getDictionary(lang).admin.sample.title} text={getDictionary(lang).admin.sample.text} />}
-        </div>
-        <Suspense fallback={<p className="h-5" />}><Today lang={lang} /></Suspense>
-      </header>
+      <Stage
+        compact
+        title={t.title}
+        lead={<Suspense fallback={<span className="inline-block h-5 w-48" />}><Today lang={lang} /></Suspense>}
+        actions={mockEnabled() ? <DemoPill title={getDictionary(lang).admin.sample.title} text={getDictionary(lang).admin.sample.text} /> : undefined}
+        art={<Icon3D name="chart" sizes="224px" className="w-24 rotate-3 drop-shadow-[0_18px_22px_rgb(0_30_60/0.45)] md:w-52" />}
+      />
       <Suspense fallback={<DashboardSkeleton label={t.loading} />}>
         <Body lang={lang} searchParams={searchParams} />
       </Suspense>
@@ -42,5 +44,5 @@ export default async function DashboardPage({ params, searchParams }: { params: 
 
 async function Today({ lang }: { lang: Locale }) {
   await connection(); // "today" is request-time, not build-time
-  return <p className="text-sm text-fg-muted">{formatUb(new Date(), lang, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>;
+  return <span>{formatUb(new Date(), lang, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>;
 }

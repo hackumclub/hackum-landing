@@ -86,7 +86,7 @@ export default function SeasonsManager({ seasons, lang, c, common, tz, closeLabe
       </div>
       <NoticeBanner notice={notice} onDismiss={() => setNotice(null)} dismissLabel={common.dismiss} />
       <DataTable<SeasonDto> rows={seasons} columns={columns} getId={(s) => String(s.year)} caption={c.caption}
-        empty={<EmptyState sticker="sleepy" title={c.emptyTitle} line={c.emptyLine} action={<Button onClick={openNew}>{c.create}</Button>} />} />
+        empty={<EmptyState sticker="build" title={c.emptyTitle} line={c.emptyLine} action={<Button onClick={openNew}>{c.create}</Button>} />} />
 
       <Drawer open={mode !== null} onOpenChange={(o) => { if (!o) setMode(null); }} title={editing ? c.drawerTitleEdit : c.drawerTitleNew} description={c.drawerDescription} closeLabel={closeLabel}>
         <form ref={formRef} onSubmit={submit} noValidate className="grid gap-4">

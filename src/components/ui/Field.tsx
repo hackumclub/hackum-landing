@@ -16,7 +16,7 @@ export default function Field({ label, labelAction, hint, error, required, class
   return (
     <div className={cx("grid content-start gap-1.5", className)}>
       {/* Fixed-height label row so sibling fields line up whether or not one has an action. */}
-      <div className="flex min-h-6 items-center justify-between gap-2">
+      <div className="flex min-h-7 items-center justify-between gap-2">
         <label htmlFor={id} className="text-sm font-semibold text-fg">
           {label}
           {required && <span aria-hidden="true" className="text-danger-fg"> *</span>}

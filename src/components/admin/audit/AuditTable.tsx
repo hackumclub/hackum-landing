@@ -38,7 +38,7 @@ export default function AuditTable({ rows, total, now: nowIso, lang, c, common, 
     <div className="grid gap-3">
       <p aria-live="polite" className="tnum text-sm font-semibold text-fg-muted">{plural(lang, total, common.results)}</p>
       <DataTable<AuditRowDto> rows={rows} columns={columns} getId={(r) => r.id} caption={c.caption}
-        empty={<EmptyState sticker="sleepy" title={c.emptyTitle} line={c.emptyLine} action={filtered ? <ButtonLink variant="secondary" href={clearHref}>{c.emptyAction}</ButtonLink> : undefined} />} />
+        empty={<EmptyState sticker="search" title={c.emptyTitle} line={c.emptyLine} action={filtered ? <ButtonLink variant="secondary" href={clearHref}>{c.emptyAction}</ButtonLink> : undefined} />} />
 
       <Drawer open={open !== null} onOpenChange={(o) => { if (!o) setOpenId(null); }} title={c.drawer.title} description={c.drawer.description} closeLabel={closeLabel}>
         {open && (

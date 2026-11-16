@@ -33,7 +33,7 @@ describe("badge art", () => {
     const db = emptyDb(); addProfile(db, { id: "p" });
     for (const b of computeBadges(db, "p", NOW)) {
       expect(BADGE_ART[b.id], b.id).toBeTruthy();
-      expect(existsSync(path.join(process.cwd(), "public/img/icons3d", `${BADGE_ART[b.id]}.png`)), b.id).toBe(true);
+      expect(existsSync(path.join(process.cwd(), "public/img/badges", `${BADGE_ART[b.id]}.png`)), b.id).toBe(true);
       expect(copy.mn.badges.items[b.id].name).toBeTruthy();
     }
   });

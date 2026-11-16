@@ -42,7 +42,7 @@ export default async function AuditPage({ params, searchParams }: Props) {
   const c = copy[lang];
   return (
     <div className="grid grid-cols-1 gap-5">
-      <PageHeader title={c.audit.title} lead={c.audit.lead} />
+      <PageHeader title={c.audit.title} lead={c.audit.lead} icon="clock" />
       <Suspense fallback={<SectionSkeleton label={c.audit.loading} rows={8} />}>
         <Body lang={lang} searchParams={searchParams} />
       </Suspense>
