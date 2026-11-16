@@ -8,6 +8,9 @@ import ResetDemo from "@/components/admin/settings/ResetDemo";
 import { previewState } from "@/components/admin/members/preview";
 import { SectionSkeleton } from "@/components/admin/members/shared";
 import { requireStaffPage } from "@/lib/server/session";
+import { adminMeta, type AdminMetaProps } from "@/lib/admin/meta";
+
+export const generateMetadata = ({ params }: AdminMetaProps) => adminMeta(params, "integrations");
 
 type Props = { params: Promise<{ lang: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 

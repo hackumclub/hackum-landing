@@ -8,6 +8,9 @@ import EventSearch from "@/components/EventSearch";
 import LiveRefresh from "@/components/live/LiveRefresh";
 import Sticker from "@/components/Sticker";
 
+// Prerendered per locale from cached readers; nothing here is per-request, so this route may block (Next docs: instant.md, "Disabling instant").
+export const instant = false;
+
 export async function generateMetadata({ params }: PageProps<"/[lang]/events">): Promise<Metadata> {
   const { lang } = await params;
   return isLocale(lang) ? { title: getDictionary(lang).meta.events } : {};

@@ -43,6 +43,13 @@ export async function completeOnboardingAction(input: { name: { mn: string; en: 
 export async function updatePrefsAction(input: { notif_prefs: NotifPrefs; locale: Locale; visibility: Visibility }): Promise<Result<void>> {
   return act((ctx) => updatePrefs(ctx, input));
 }
-export async function applyForMembershipAction(input: { motivation: string; team_interest: string[] }): Promise<Result<{ id: string }>> {
-  return act((ctx) => applyForMembership(ctx, input));
+/** Like Result, plus per-question error codes keyed by question id when the club's own questions are not answered properly. */
+export type MembershipResult = Result<{ id: string }> | { ok: false; error: "invalid"; fields: Record<string, string> };
+
+/** The club's membership questions (staff edit them under Forms) are validated here for per-field errors, then again inside the rule. */
+export async function applyForMembershipAction(input: { motivation: string; team_interest: string[]; answers?: unknown }): Promise<MembershipResult> {
+  const questions = getStore().read().forms.find((f) => f.id === "membership_application")?.questions ?? [];
+  const parsed = parseAnswers(questions, input.answers ?? {});
+  if (!parsed.ok) return { ok: false, error: "invalid", fields: parsed.errors };
+  return act((ctx) => applyForMembership(ctx, { motivation: input.motivation, team_interest: input.team_interest, answers: parsed.data }));
 }

@@ -1,18 +1,18 @@
 "use client";
-import * as Tabs from "@radix-ui/react-tabs";
 import { useEffect, useState } from "react";
 import Drawer from "@/components/ui/Drawer";
-import Field, { Select } from "@/components/ui/Field";
+import SegmentedChoice from "@/components/ui/SegmentedChoice";
+import SegmentedTabs from "@/components/ui/SegmentedTabs";
 import Skeleton from "@/components/ui/Skeleton";
 import Button from "@/components/ui/Button";
 import type { Locale } from "@/i18n/config";
 import type { AreaCopy } from "@/i18n/areas/admin-members";
 import { previewNotificationAction, type EmailPreview } from "@/lib/members/actions";
-import { formatUb } from "@/lib/time";
+import { formatUbStable } from "@/lib/time";
 import { errorText } from "@/components/admin/members/shared";
 
 type State = { kind: "loading" } | { kind: "error"; text: string } | { kind: "ready"; data: EmailPreview };
-const TAB = "inline-flex min-h-9 cursor-pointer items-center border-b-2 px-3 text-sm font-semibold whitespace-nowrap border-transparent text-fg-muted hover:text-fg data-[state=active]:border-accent data-[state=active]:text-fg";
+type Tab = "email" | "text" | "invite";
 
 type Common = AreaCopy["common"];
 type Shared = { lang: Locale; c: AreaCopy["comms"]; common: Common };
@@ -36,6 +36,7 @@ function PreviewBody({ id, lang, c, common }: Shared & { id: string }) {
   const t = c.drawer;
   const [state, setState] = useState<State>({ kind: "loading" });
   const [previewLang, setPreviewLang] = useState<Locale | null>(null);
+  const [tab, setTab] = useState<Tab>("email");
   // Each change of `request` (first open, language switch, retry) triggers exactly one fetch below.
   const [request, setRequest] = useState<{ n: number; lang: Locale | null }>({ n: 0, lang: null });
   const reload = (chosen: Locale | null) => { setState({ kind: "loading" }); setRequest((r) => ({ n: r.n + 1, lang: chosen })); };
@@ -53,21 +54,24 @@ function PreviewBody({ id, lang, c, common }: Shared & { id: string }) {
   }, [id, request, common.errors, t.failed]);
 
   const data = state.kind === "ready" ? state.data : null;
-  const fmt = (iso: string) => formatUb(new Date(iso), lang, { dateStyle: "medium", timeStyle: "short" });
+  const fmt = (iso: string) => formatUbStable(new Date(iso), lang, "datetime");
 
   return (
     <div className="grid gap-4">
-      <Field label={t.language}>
-        {(ctl) => (
-          <Select {...ctl} value={previewLang ?? lang} onChange={(e) => { const l = e.target.value === "en" ? "en" : "mn"; setPreviewLang(l); reload(l); }} className="max-w-48">
-            <option value="mn">Монгол</option>
-            <option value="en">English</option>
-          </Select>
-        )}
-      </Field>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SegmentedChoice
+          name="preview-language" ariaLabel={t.language} value={previewLang ?? lang}
+          onChange={(l) => { setPreviewLang(l); reload(l); }}
+          options={[{ value: "mn", label: "Монгол" }, { value: "en", label: "English" }]}
+        />
+        <SegmentedTabs
+          ariaLabel={t.tabs.label} value={tab} onChange={(k) => setTab(k as Tab)} className="max-w-full"
+          items={[{ key: "email", label: t.tabs.email }, { key: "text", label: t.tabs.text }, { key: "invite", label: t.tabs.invite }]}
+        />
+      </div>
 
       {state.kind === "loading" && (
-        <div role="status" className="grid gap-2"><span className="sr-only">{t.loading}</span><Skeleton className="h-6 w-2/3" /><Skeleton className="h-72" /></div>
+        <div role="status" className="grid gap-2"><span className="sr-only">{t.loading}</span><Skeleton className="h-16" /><Skeleton className="h-[60dvh]" /></div>
       )}
       {state.kind === "error" && (
         <div role="alert" className="grid justify-items-start gap-2 rounded-[var(--radius-md)] border border-line bg-danger-soft p-3 text-sm text-danger-fg">
@@ -77,42 +81,39 @@ function PreviewBody({ id, lang, c, common }: Shared & { id: string }) {
       )}
       {data && (
         <>
-          <dl className="grid gap-1 text-sm">
-            <div className="grid grid-cols-[6rem_minmax(0,1fr)] gap-2"><dt className="text-fg-muted">{t.subject}</dt><dd data-testid="preview-subject" className="font-semibold break-words text-fg">{data.subject}</dd></div>
-            <div className="grid grid-cols-[6rem_minmax(0,1fr)] gap-2"><dt className="text-fg-muted">{t.recipient}</dt><dd className="break-words text-fg">{data.recipient || common.empty}</dd></div>
+          <dl className="grid gap-x-6 gap-y-3 rounded-[var(--radius-sm)] bg-panel-2 p-3 text-sm sm:grid-cols-2">
+            <div className="grid min-w-0 gap-0.5"><dt className="text-xs font-semibold text-fg-muted">{t.subject}</dt><dd data-testid="preview-subject" className="font-semibold break-words text-fg">{data.subject}</dd></div>
+            <div className="grid min-w-0 gap-0.5"><dt className="text-xs font-semibold text-fg-muted">{t.recipient}</dt><dd className="break-words text-fg">{data.recipient || common.empty}</dd></div>
           </dl>
-          <Tabs.Root defaultValue="email" className="grid gap-3">
-            <Tabs.List aria-label={t.tabs.label} className="flex gap-1 border-b border-line">
-              <Tabs.Trigger value="email" className={TAB}>{t.tabs.email}</Tabs.Trigger>
-              <Tabs.Trigger value="text" className={TAB}>{t.tabs.text}</Tabs.Trigger>
-              <Tabs.Trigger value="invite" className={TAB}>{t.tabs.invite}</Tabs.Trigger>
-            </Tabs.List>
-            <Tabs.Content value="email">
-              <iframe title={t.frame} sandbox="" srcDoc={data.html} className="h-[32rem] w-full rounded-[var(--radius-sm)] border border-line bg-panel" />
-            </Tabs.Content>
-            <Tabs.Content value="text">
-              <pre className="max-h-[32rem] overflow-auto rounded-[var(--radius-sm)] border border-line bg-panel-2 p-3 font-sans text-sm leading-relaxed break-words whitespace-pre-wrap text-fg">{data.text}</pre>
-            </Tabs.Content>
-            <Tabs.Content value="invite" className="grid gap-2">
-              {data.invite ? (
-                <>
-                  <p className="text-sm text-fg-muted">{t.inviteLead}</p>
-                  <dl className="grid gap-1.5 text-sm">
-                    {([
-                      [t.inviteMethod, t.methods[data.invite.method]],
-                      [t.inviteTitle, data.invite.title],
-                      [t.inviteStarts, fmt(data.invite.start)],
-                      [t.inviteEnds, fmt(data.invite.end)],
-                      [t.inviteLocation, data.invite.location || common.empty],
-                      [t.inviteSequence, String(data.invite.sequence)],
-                    ] as const).map(([k, v]) => (
-                      <div key={k} className="grid grid-cols-[6rem_minmax(0,1fr)] gap-2"><dt className="text-fg-muted">{k}</dt><dd className="break-words text-fg">{v}</dd></div>
-                    ))}
-                  </dl>
-                </>
-              ) : <p className="text-sm text-fg-muted">{t.noInvite}</p>}
-            </Tabs.Content>
-          </Tabs.Root>
+          <div role="tabpanel" aria-label={t.tabs[tab]}>
+            {tab === "email" && (
+              <iframe title={t.frame} sandbox="" srcDoc={data.html} className="block h-[min(36rem,70dvh)] min-h-[60dvh] w-full rounded-[var(--radius-md)] border border-line bg-[#f3f5f8] sm:h-[34rem] sm:min-h-0" />
+            )}
+            {tab === "text" && (
+              <pre className="max-h-[min(40rem,70dvh)] overflow-auto rounded-[var(--radius-sm)] border border-line bg-panel-2 p-4 font-sans text-sm leading-relaxed break-words whitespace-pre-wrap text-fg">{data.text}</pre>
+            )}
+            {tab === "invite" && (
+              <div className="grid gap-3">
+                {data.invite ? (
+                  <>
+                    <p className="text-sm text-fg-muted">{t.inviteLead}</p>
+                    <dl className="grid gap-x-6 gap-y-3 rounded-[var(--radius-sm)] bg-panel-2 p-3 text-sm sm:grid-cols-2">
+                      {([
+                        [t.inviteMethod, t.methods[data.invite.method]],
+                        [t.inviteTitle, data.invite.title],
+                        [t.inviteStarts, fmt(data.invite.start)],
+                        [t.inviteEnds, fmt(data.invite.end)],
+                        [t.inviteLocation, data.invite.location || common.empty],
+                        [t.inviteSequence, String(data.invite.sequence)],
+                      ] as const).map(([k, v]) => (
+                        <div key={k} className="grid min-w-0 gap-0.5"><dt className="text-xs font-semibold text-fg-muted">{k}</dt><dd className="break-words text-fg">{v}</dd></div>
+                      ))}
+                    </dl>
+                  </>
+                ) : <p className="text-sm text-fg-muted">{t.noInvite}</p>}
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>

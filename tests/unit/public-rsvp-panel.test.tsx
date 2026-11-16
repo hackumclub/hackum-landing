@@ -12,9 +12,9 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
 const { default: RsvpPanel } = await import("@/components/public/RsvpPanel");
 const c = copy.en.rsvp;
-const links = { signIn: "/en/sign-in?next=%2Fen%2Fevents%2Fx", onboarding: "/en/me/onboarding", myEvents: "/en/me/events", apply: "/en/me/events/x/apply", join: "/en/join", ics: "/api/events/x/ics" };
+const links = { signIn: "/en/sign-in?next=%2Fen%2Fevents%2Fx", onboarding: "/en/me/onboarding", myEvents: "/en/me/events", apply: "/en/me/events/x/apply", join: "/en/join", membership: "/en/me/membership", browse: "/en/events", ics: "/api/events/x/ics" };
 const base = (over: Partial<PanelProps>): PanelProps => ({
-  copy: c, eventId: "e1", name: "Knowledge Day", view: { kind: "rsvp", waitlist: false }, seats: { going: 10, waitlisted: 0, capacity: 60, left: 50, full: false },
+  copy: c, eventId: "e1", name: "Knowledge Day", scope: "all", lang: "en", view: { kind: "rsvp", waitlist: false }, seats: { going: 10, waitlisted: 0, capacity: 60, left: 50, full: false },
   dates: {}, attendees: { shown: [], more: 0 }, ordinal: "", links, ...over,
 });
 beforeEach(() => { rsvp.mockReset(); cancelRsvp.mockReset(); refresh.mockReset(); });
@@ -116,5 +116,37 @@ describe("ordinal", () => {
   it("English 1st/2nd/3rd/4th/11th/12th/13th/21st/22nd; Mongolian n-р", () => {
     expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 103].map((n) => ordinal("en", n))).toEqual(["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "103rd"]);
     expect(ordinal("mn", 3)).toBe("3-р");
+  });
+});
+
+describe("RsvpPanel: who may register (F-12)", () => {
+  it("a student from another school on a members-only event reads 'NUM students only' with links to the membership explanation and open events, never to /join", () => {
+    render(<RsvpPanel {...base({ view: { kind: "blocked", reason: "members", numOnly: true } })} />);
+    expect(screen.getByText(c.numOnly)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: c.numOnlyMembership })).toHaveAttribute("href", "/en/me/membership");
+    expect(screen.getByRole("link", { name: c.browseOpen })).toHaveAttribute("href", "/en/events");
+    expect(screen.queryByRole("link", { name: c.membersCta })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+  it("a NUM-only event for another school's student says the same, without a dead end", () => {
+    render(<RsvpPanel {...base({ view: { kind: "blocked", reason: "school" }, scope: "num" })} />);
+    expect(screen.getByText(c.numOnly)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: c.browseOpen })).toBeInTheDocument();
+  });
+  it("a NUM guest on a members-only event is sent to the membership page to apply (not the newsletter)", () => {
+    render(<RsvpPanel {...base({ view: { kind: "blocked", reason: "members" } })} />);
+    expect(screen.getByText(c.members)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: c.membersCta })).toHaveAttribute("href", "/en/me/membership");
+  });
+  it("signed out: sign in first, create account second", () => {
+    render(<RsvpPanel {...base({ view: { kind: "signed_out", apply: false } })} />);
+    expect(screen.getByRole("link", { name: c.signInRsvp })).toHaveAttribute("href", links.signIn);
+    expect(screen.getByRole("link", { name: c.createAccountCta })).toHaveAttribute("href", "/en/join");
+  });
+  it("shows the school scope as a tag", () => {
+    const { rerender } = render(<RsvpPanel {...base({ scope: "num" })} />);
+    expect(screen.getByText("МУИС")).toBeInTheDocument();
+    rerender(<RsvpPanel {...base({ scope: "all" })} />);
+    expect(screen.getByText("All schools")).toBeInTheDocument();
   });
 });

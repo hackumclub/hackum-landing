@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { fromUbInput, toUbInput } from "@/lib/time";
@@ -27,13 +27,26 @@ describe("UB time conversion", () => {
 });
 
 describe("DateTimeField", () => {
-  it("emits the UTC instant for a UB wall-clock entry and shows the UTC+8 label", () => {
+  it("emits the UTC instant for a UB wall-clock entry (date from the calendar box, time as HH:mm) and shows the UTC+8 label", async () => {
     const onChange = vi.fn();
     render(<DateTimeField name="starts_at" label="Starts" tzLabel="UTC+8 · Улаанбаатар" value={null} onChange={onChange} />);
-    fireEvent.change(screen.getByLabelText("Starts"), { target: { value: "2026-12-01T18:00" } });
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect((onChange.mock.calls[0][0] as Date).toISOString()).toBe("2026-12-01T10:00:00.000Z");
+    await userEvent.click(screen.getByLabelText("Starts"));
+    await userEvent.type(screen.getByLabelText(/Date \(YYYY-MM-DD\)/), "2026-12-01{Enter}");
+    // Picking a date first fills 09:00 (UB) = 01:00 UTC.
+    expect((onChange.mock.calls.at(-1)![0] as Date).toISOString()).toBe("2026-12-01T01:00:00.000Z");
     expect(screen.getByText("UTC+8 · Улаанбаатар")).toBeInTheDocument();
+  });
+  it("shows a stored instant on the UB clock and re-emits it when the time changes", async () => {
+    const onChange = vi.fn();
+    render(<DateTimeField name="starts_at" label="Starts" tzLabel="UTC+8" value={new Date("2026-12-01T10:00:00Z")} onChange={onChange} />);
+    const time = screen.getByLabelText(/Starts: Time/);
+    expect(time).toHaveValue("18:00");
+    expect(screen.getByLabelText("Starts")).toHaveTextContent("Dec 1, 2026");
+    await userEvent.clear(time);
+    await userEvent.type(time, "1930");
+    await userEvent.tab();
+    expect((onChange.mock.calls.at(-1)![0] as Date).toISOString()).toBe("2026-12-01T11:30:00.000Z");
+    expect(document.querySelector('input[type="hidden"][name="starts_at"]')).toHaveValue("2026-12-01T10:00:00.000Z");
   });
 });
 

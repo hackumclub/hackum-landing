@@ -9,7 +9,7 @@ import { copy } from "@/i18n/areas/admin-events";
 import { plural } from "@/i18n/plural";
 import { createEventAction, previewEventChangeAction, updateEventAction } from "@/lib/events/actions";
 import {
-  AUDIENCES, changedFields, defaultState, KINDS, MODES, REG_MODES, slugify, stateFromEvent, TEAM_MODES, toInput, validate, type FieldChange, type FormErrors, type FormState,
+  AUDIENCES, changedFields, SCOPES, defaultState, KINDS, MODES, REG_MODES, slugify, stateFromEvent, TEAM_MODES, toInput, validate, type FieldChange, type FormErrors, type FormState,
 } from "@/lib/events/admin-form";
 import type { EventInput } from "@/lib/mockdb/events";
 import type { EventRow } from "@/lib/mockdb/types";
@@ -17,7 +17,8 @@ import BilingualField from "@/components/ui/BilingualField";
 import Button, { buttonClass } from "@/components/ui/Button";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import DateTimeField from "@/components/ui/DateTimeField";
-import Field, { Input, Select } from "@/components/ui/Field";
+import Field, { Input } from "@/components/ui/Field";
+import Select from "@/components/ui/Select";
 import { posterSrc, POSTER_LIBRARY } from "@/lib/events/posters";
 import Poster from "./Poster";
 import QuestionBuilder from "./QuestionBuilder";
@@ -31,11 +32,12 @@ const DAY = 86_400_000;
 function Section({ icon: Icon, title, hint, children }: { icon: LucideIcon; title: string; hint?: string; children: ReactNode }) {
   const id = `sec-${title.replace(/\W+/g, "-")}`;
   return (
-    <section aria-labelledby={id} className="grid gap-4 rounded-[var(--radius-md)] border border-line bg-panel p-4 md:p-5">
-      <div className="flex items-start gap-3">
-        <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent-fg"><Icon size={18} /></span>
+    // Section anatomy: icon tile (rounded 12) + title + helper line, a hairline, then the controls on an 8/16/20 rhythm.
+    <section aria-labelledby={id} className="grid gap-5 rounded-[var(--radius-md)] border border-line bg-panel p-4 md:p-6">
+      <div className="flex items-start gap-3 border-b border-line pb-4">
+        <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-sm)] bg-accent-soft text-accent-fg"><Icon size={20} /></span>
         <div className="grid min-w-0 gap-0.5">
-          <h2 id={id} className="font-display text-lg font-bold text-fg">{title}</h2>
+          <h2 id={id} className="font-display text-lg leading-6 font-bold text-fg">{title}</h2>
           {hint && <p className="text-sm text-fg-muted">{hint}</p>}
         </div>
       </div>
@@ -65,7 +67,7 @@ export default function EventForm({ lang, event, takenSlugs, answered, nowIso }:
   const [tick, setTick] = useState(0);
   const [serverSlug, setServerSlug] = useState<string | null>(null);
   const [posterBroken, setPosterBroken] = useState(false);
-  const [staged, setStaged] = useState<{ input: EventInput; snapshot: string; changes: FieldChange[]; willNotify: number } | null>(null);
+  const [staged, setStaged] = useState<{ input: EventInput; snapshot: string; changes: FieldChange[]; willNotify: number; nonNum: number } | null>(null);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setS((p) => ({ ...p, [key]: value }));
   const setTitle = (title: L) => setS((p) => ({ ...p, title, slug: p.slugTouched ? p.slug : slugify(title) }));
@@ -117,7 +119,8 @@ export default function EventForm({ lang, event, takenSlugs, answered, nowIso }:
       if (event?.status === "published") {
         const p = await previewEventChangeAction(event.id, input);
         if (!p.ok) return fail(p.error);
-        if (p.data.willNotify > 0) { setStaged({ input, snapshot, changes: changedFields(event, input), willNotify: p.data.willNotify }); return; }
+        // Narrowing to МУИС with people from other schools already seated also needs a look: they keep their seats.
+        if (p.data.willNotify > 0 || p.data.nonNumRegistrants > 0) { setStaged({ input, snapshot, changes: changedFields(event, input), willNotify: p.data.willNotify, nonNum: p.data.nonNumRegistrants }); return; }
       }
       await save(input, snapshot);
     });
@@ -137,7 +140,7 @@ export default function EventForm({ lang, event, takenSlugs, answered, nowIso }:
       <form ref={formRef} noValidate onSubmit={onSubmit} className="grid min-w-0 gap-4">
         <Section icon={FileText} title={t.sections.basics}>
           <Field label={t.kind}>
-            {(c) => <Select {...c} value={s.kind} onChange={(e) => set("kind", e.target.value as FormState["kind"])}>{KINDS.map((k) => <option key={k} value={k}>{d.admin.kinds[k]}</option>)}</Select>}
+            {(c) => <Select {...c} value={s.kind} onValueChange={(v) => set("kind", v as FormState["kind"])} options={KINDS.map((k) => ({ value: k, label: d.admin.kinds[k] }))} />}
           </Field>
           <BilingualField name="title" label={t.title} value={s.title} onChange={setTitle} labels={d.ui.bilingual} error={err("title")} />
           <BilingualField name="tagline" label={t.tagline} value={s.tagline} onChange={(v) => set("tagline", v)} labels={d.ui.bilingual} required="none" />
@@ -146,8 +149,8 @@ export default function EventForm({ lang, event, takenSlugs, answered, nowIso }:
 
         <Section icon={CalendarClock} title={t.sections.whenWhere}>
           <div className="grid gap-4 md:grid-cols-2">
-            <DateTimeField name="starts_at" label={t.starts} tzLabel={d.ui.tz} value={s.starts_at} onChange={(v) => set("starts_at", v)} error={err("starts_at")} required />
-            <DateTimeField name="ends_at" label={t.ends} tzLabel={d.ui.tz} value={s.ends_at} onChange={(v) => set("ends_at", v)} error={err("ends_at")} required />
+            <DateTimeField lang={lang} name="starts_at" label={t.starts} tzLabel={d.ui.tz} value={s.starts_at} onChange={(v) => set("starts_at", v)} error={err("starts_at")} required />
+            <DateTimeField lang={lang} name="ends_at" label={t.ends} tzLabel={d.ui.tz} value={s.ends_at} onChange={(v) => set("ends_at", v)} error={err("ends_at")} required />
           </div>
           <Segmented legend={t.mode} name="mode" value={s.mode} onChange={(v) => set("mode", v)} options={MODES.map((m) => ({ value: m, label: t.modes[m] }))} />
           {showVenue && (
@@ -165,8 +168,12 @@ export default function EventForm({ lang, event, takenSlugs, answered, nowIso }:
 
         <Section icon={Ticket} title={t.sections.registration}>
           <Field label={t.audience} className="md:max-w-xs">
-            {(c) => <Select {...c} value={s.audience} onChange={(e) => set("audience", e.target.value as FormState["audience"])}>{AUDIENCES.map((a) => <option key={a} value={a}>{t.audiences[a]}</option>)}</Select>}
+            {(c) => <Select {...c} value={s.audience} onValueChange={(v) => set("audience", v as FormState["audience"])} options={AUDIENCES.map((a) => ({ value: a, label: t.audiences[a] }))} />}
           </Field>
+          <Segmented
+            legend={t.scope} name="school_scope" value={s.school_scope} onChange={(v) => set("school_scope", v)} hint={t.scopeHint}
+            options={SCOPES.map((x) => ({ value: x, label: t.scopes[x] }))}
+          />
           <div className="grid items-start gap-4 md:grid-cols-2">
             <Field label={t.capacity} error={err("capacity")}>
               {(c) => (
@@ -175,25 +182,25 @@ export default function EventForm({ lang, event, takenSlugs, answered, nowIso }:
             </Field>
             <div className="grid gap-2 md:pt-7">
               <label className="flex min-h-10 items-center gap-2 text-sm font-semibold text-fg">
-                <input type="checkbox" checked={s.unlimited} onChange={(e) => setS((p) => ({ ...p, unlimited: e.target.checked, capacity: !e.target.checked && p.capacity.trim() === "" ? "50" : p.capacity }))} className="size-4 accent-[var(--ops-accent)]" />
+                <input type="checkbox" checked={s.unlimited} onChange={(e) => setS((p) => ({ ...p, unlimited: e.target.checked, capacity: !e.target.checked && p.capacity.trim() === "" ? "50" : p.capacity }))} className="size-5 accent-[var(--ops-accent)]" />
                 {t.unlimited}
               </label>
               <label className="flex min-h-10 items-center gap-2 text-sm font-semibold text-fg">
-                <input type="checkbox" checked={s.waitlist} disabled={s.unlimited} onChange={(e) => set("waitlist", e.target.checked)} className="size-4 accent-[var(--ops-accent)]" />
+                <input type="checkbox" checked={s.waitlist} disabled={s.unlimited} onChange={(e) => set("waitlist", e.target.checked)} className="size-5 accent-[var(--ops-accent)]" />
                 {t.waitlist}
               </label>
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <DateTimeField name="reg_opens_at" label={t.regOpens} tzLabel={d.ui.tz} hint={t.optional} value={s.reg_opens_at} onChange={(v) => set("reg_opens_at", v)} error={err("reg_opens_at")} />
-            <DateTimeField name="reg_closes_at" label={t.regCloses} tzLabel={d.ui.tz} hint={t.optional} value={s.reg_closes_at} onChange={(v) => set("reg_closes_at", v)} error={err("reg_closes_at")} />
+            <DateTimeField lang={lang} name="reg_opens_at" label={t.regOpens} tzLabel={d.ui.tz} hint={t.optional} value={s.reg_opens_at} onChange={(v) => set("reg_opens_at", v)} error={err("reg_opens_at")} />
+            <DateTimeField lang={lang} name="reg_closes_at" label={t.regCloses} tzLabel={d.ui.tz} hint={t.optional} value={s.reg_closes_at} onChange={(v) => set("reg_closes_at", v)} error={err("reg_closes_at")} />
           </div>
           <Segmented
             cards legend={t.regMode} name="reg_mode" value={s.reg_mode} onChange={setRegMode}
             options={REG_MODES.map((m) => ({ value: m, label: t.regModes[m], hint: t.regModeHints[m] }))}
           />
           {application && (
-            <DateTimeField name="decision_deadline" label={t.decision} tzLabel={d.ui.tz} hint={t.decisionHint} value={s.decision_deadline} onChange={(v) => set("decision_deadline", v)} error={err("decision_deadline")} required />
+            <DateTimeField lang={lang} name="decision_deadline" label={t.decision} tzLabel={d.ui.tz} hint={t.decisionHint} value={s.decision_deadline} onChange={(v) => set("decision_deadline", v)} error={err("decision_deadline")} required />
           )}
         </Section>
 
@@ -249,7 +256,7 @@ export default function EventForm({ lang, event, takenSlugs, answered, nowIso }:
                     <button
                       key={p.id} type="button" aria-pressed={on} aria-label={fill(t.publishing.posterPick, { name: p.name })}
                       onClick={() => { setPosterBroken(false); set("cover_path", on ? "" : p.path); }}
-                      className={`cursor-pointer rounded-[var(--radius-sm)] p-0.5 ${on ? "ring-2 ring-accent" : "ring-1 ring-line hover:ring-line-strong"}`}
+                      className={`cursor-pointer rounded-[var(--radius-sm)] p-0.5 ${on ? "ring-2 ring-accent" : "ring-1 ring-line hover:ring-accent/40"}`}
                     >
                       <Poster path={p.path} sizes="64px" className="aspect-[4/5] w-12" />
                     </button>
@@ -260,7 +267,7 @@ export default function EventForm({ lang, event, takenSlugs, answered, nowIso }:
           </div>
         </Section>
 
-        <div data-testid="form-bar" className="sticky bottom-3 z-20 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-[var(--radius-md)] border border-line-strong bg-panel p-3 shadow-[var(--shadow-card)]">
+        <div data-testid="form-bar" className="sticky bottom-3 z-20 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-[var(--radius-md)] border border-line bg-panel p-3 shadow-[var(--shadow-float)]">
           <div className="grid min-w-0 gap-0.5">
             <p role="status" className="text-sm font-semibold text-danger-fg">{attempted && errorCount > 0 ? plural(lang, errorCount, t.errorSummary) : ""}</p>
             {!(attempted && errorCount > 0) && (
@@ -292,7 +299,7 @@ export default function EventForm({ lang, event, takenSlugs, answered, nowIso }:
 
       {staged && event && (
         <StagedChangeDialog
-          open onOpenChange={(o) => { if (!o) setStaged(null); }} lang={lang} title={title} willNotify={staged.willNotify} changes={staged.changes}
+          open onOpenChange={(o) => { if (!o) setStaged(null); }} lang={lang} title={title} willNotify={staged.willNotify} nonNumRegistrants={staged.nonNum} changes={staged.changes}
           onConfirm={() => { const { input, snapshot } = staged; setStaged(null); start(() => save(input, snapshot)); }}
         />
       )}

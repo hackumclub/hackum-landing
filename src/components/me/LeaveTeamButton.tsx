@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { LogOut } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { pill } from "./pill";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { leaveTeamAction } from "@/lib/me/actions";
 import { useToast } from "./Toast";
@@ -25,7 +25,7 @@ export default function LeaveTeamButton({ teamId, backHref, trigger, title, body
   }
   return (
     <div className="grid gap-1.5">
-      <ConfirmDialog trigger={<Button variant="secondary" size="lg" disabled={pending} icon={<LogOut aria-hidden="true" size={16} />}>{trigger}</Button>} title={title} body={body} confirmLabel={confirm} cancelLabel={keep} tone="danger" onConfirm={run} />
+      <ConfirmDialog trigger={<button type="button" disabled={pending} className={pill.soft}><LogOut aria-hidden="true" size={16} />{trigger}</button>} title={title} body={body} confirmLabel={confirm} cancelLabel={keep} tone="danger" onConfirm={run} />
       <p role="alert" className="text-sm font-semibold text-danger-fg empty:hidden">{error}</p>
     </div>
   );

@@ -9,6 +9,9 @@ import { requireStaffPage } from "@/lib/server/session";
 import RegistrationsView from "@/components/admin/events/RegistrationsView";
 import { RegistrationsSkeleton } from "@/components/admin/events/Skeletons";
 import { loadEvent } from "@/components/admin/events/load";
+import { adminMeta, type AdminMetaProps } from "@/lib/admin/meta";
+
+export const generateMetadata = ({ params }: AdminMetaProps) => adminMeta(params, "registrations");
 
 type Params = Promise<{ lang: string; id: string }>;
 
@@ -17,7 +20,20 @@ async function Body({ lang, params }: { lang: Locale; params: Params }) {
   await requireStaffPage();
   await connection();
   const { db, event } = loadEvent(id);
-  const { rows, teams } = buildRegistrations(db, id);
+  const built = buildRegistrations(db, id);
+  const handles = new Map(db.profiles.map((p) => [p.id, p.handle]));
+  const titles = new Map(db.events.map((e) => [e.id, e]));
+  // What the drawer links to: the person's handle (→ Members) and their registrations for other events.
+  const rows = built.rows.map((r) => ({
+    ...r,
+    handle: handles.get(r.profileId) ?? "",
+    others: db.registrations
+      .filter((o) => o.profile_id === r.profileId && o.event_id !== id && titles.has(o.event_id))
+      .map((o) => ({ id: o.id, eventId: o.event_id, title: titles.get(o.event_id)!.title, startsAt: titles.get(o.event_id)!.starts_at, status: o.status }))
+      .sort((a, b) => b.startsAt.localeCompare(a.startsAt))
+      .slice(0, 6),
+  }));
+  const { teams } = built;
   return (
     <RegistrationsView
       lang={lang} eventId={event.id} slug={event.slug} published={event.status !== "draft"} application={event.reg_mode === "application"} capacity={event.capacity}

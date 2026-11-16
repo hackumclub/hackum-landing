@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { signInAs } from "./helpers/as";
+import { chooseOption } from "./helpers/pickers";
 
 test.setTimeout(120_000);
 const WIDTHS = [360, 768, 1280];
@@ -39,7 +40,9 @@ test.describe("access", () => {
 
   test("signed-out visitors get a 404 for the CSV export, an organizer is let in", async ({ page }) => {
     await signInAs(page, null);
-    expect((await page.request.get("/en/admin/events/e_1/registrations/export")).status()).toBe(404);
+    // Signed out is sent to sign-in (proxy 307); either way no CSV comes back.
+    const res = await page.request.get("/en/admin/events/e_1/registrations/export");
+    expect(res.headers()["content-type"] ?? "").not.toContain("csv");
     await signInAs(page, "dev-organizer");
     await page.goto("/en/admin/events");
     await expect(page.getByRole("heading", { level: 1, name: "Events" })).toBeVisible();
@@ -62,7 +65,7 @@ test.describe("list", () => {
     await expect(archived).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByText(/participants \(past\)/).locator("visible=true").first()).toBeVisible(); // legacy count instead of capacity
 
-    await page.getByRole("button", { name: /^All \d+$/ }).click();
+    await page.getByRole("button", { name: "Clear filters" }).first().click();
     await page.getByRole("searchbox", { name: "Search events" }).fill("devhack");
     await expect(page.getByRole("link", { name: /Open: DevHack 2027/ })).toBeVisible();
     await expect(page.getByText(/\d+ applications? · \d+ accepted/).locator("visible=true")).toBeVisible();
@@ -70,7 +73,7 @@ test.describe("list", () => {
 
     await page.getByRole("searchbox", { name: "Search events" }).fill("zzzz-no-such-event");
     await expect(page.getByRole("heading", { name: "No events match" })).toBeVisible();
-    await page.getByRole("button", { name: "Clear filters" }).click();
+    await page.getByRole("button", { name: "Clear filters" }).first().click();
     await expect(page.getByRole("link", { name: /Open: DevHack 2027/ })).toBeVisible();
   });
 
@@ -134,7 +137,8 @@ test.describe("create and edit", () => {
     await page.getByRole("button", { name: "Add question" }).click();
     await expect(page.getByRole("heading", { name: "Question 2" })).toBeVisible();
     await page.getByRole("button", { name: "Move up" }).nth(1).click(); // reorder: second becomes first
-    await page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: "Question 1" }) }).getByRole("combobox", { name: "Type" }).selectOption("select");
+    const qType = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: "Question 1" }) }).getByRole("combobox", { name: "Type" });
+    await chooseOption(page, qType, "Choose one");
     await expect(page.getByRole("group", { name: "Options" })).toBeVisible();
     await page.getByRole("button", { name: "Create event" }).click();
     await expect(page.getByText("Fill in at least 2 options")).toBeVisible();
@@ -152,15 +156,15 @@ test.describe("create and edit", () => {
 
     await page.getByRole("link", { name: /^Registrations/ }).click();
     await expect(page.getByRole("heading", { name: "No registrations yet" })).toBeVisible();
-    await page.getByRole("link", { name: /^Analytics/ }).click();
+    await page.getByRole("navigation", { name: "Event sections" }).getByRole("link", { name: /^Analytics/ }).click();
     await expect(page.getByRole("heading", { name: "Nothing to chart yet" })).toBeVisible();
     await page.locator('a[href*="/admin/events/"][href$="/comms"]').click(); // the event tab, not the sidebar item
     await expect(page.getByRole("heading", { name: "No emails for this event yet" })).toBeVisible();
 
     // publish via a dialog that names the event
     await page.getByRole("button", { name: "Publish" }).click();
-    await expect(page.getByRole("alertdialog")).toContainText(`Publish “${title}”?`);
-    await page.getByRole("alertdialog").getByRole("button", { name: "Publish" }).click();
+    await expect(page.getByRole("alertdialog")).toContainText(`Publish “${title}”`); // a bare draft: the dialog lists the gaps
+    await page.getByRole("alertdialog").getByRole("button", { name: "Publish anyway" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Published" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Mark completed" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Back to draft" })).toBeVisible(); // nobody registered yet
@@ -202,7 +206,7 @@ test.describe("create and edit", () => {
     const title = `E2E Pub ${stamp()}`;
     await createDraft(page, title);
     await page.getByRole("button", { name: "Publish" }).click();
-    await page.getByRole("alertdialog").getByRole("button", { name: "Publish" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Publish anyway" }).click();
     await expect(page.getByRole("button", { name: "Mark completed" })).toBeVisible();
     await page.getByRole("link", { name: "Overview" }).click();
     await page.locator('input[name="tagline.mn"]:visible').fill("Шинэ уриа үг");
@@ -240,7 +244,7 @@ test.describe("registrations", () => {
 
     await page.getByRole("searchbox", { name: "Search registrations" }).fill("zzzz-nobody");
     await expect(page.getByRole("heading", { name: "No registrations match" })).toBeVisible();
-    await page.getByRole("button", { name: "Clear filters" }).click();
+    await page.getByRole("button", { name: "Clear filters" }).first().click();
 
     // drawer: all answers + profile summary, never an email address
     await page.getByRole("button", { name: /: details$/ }).first().click();
@@ -435,7 +439,7 @@ test.describe("polish: phone flow", () => {
     await page.mouse.wheel(0, 1500);
     expect(await inViewport()).toBe(true); // still reachable after scrolling
 
-    await bar.getByRole("button", { name: "Cancel" }).click();
+    await bar.getByRole("button", { name: "Discard changes" }).click();
     const dialog = page.getByRole("alertdialog");
     await expect(dialog).toContainText("Discard unsaved changes?");
     await expect(dialog).toContainText("DevHack 2027");
@@ -455,7 +459,7 @@ test.describe("polish: phone flow", () => {
     await expect(page.getByText("No image found at this path")).toBeVisible();
   });
 
-  test("registrations: filters fold, only name + status in the table, selection bar sticks to the bottom", async ({ page }) => {
+  test("registrations: filters fold, rows are cards, selection bar sticks to the bottom", async ({ page }) => {
     const id = await eventId(page, "DevHack 2027");
     await page.goto(`/en/admin/events/${id}/registrations`);
     await expect(page.getByRole("heading", { name: "At a glance" })).toBeVisible();
@@ -467,10 +471,10 @@ test.describe("polish: phone flow", () => {
     await solo.click();
     await expect(page.getByRole("button", { name: /^Filters 1/ })).toBeVisible();
 
-    const headers = page.getByRole("columnheader");
-    const visible: string[] = [];
-    for (const h of await headers.all()) if (await h.isVisible()) visible.push(((await h.innerText()) || "").trim());
-    expect(visible.filter(Boolean)).toEqual(["Name", "Status"]); // checkbox column has no text
+    // Phones show one card per registration (name first, then labelled School / Status / Applied), not a wide table.
+    await expect(page.getByRole("table")).toHaveCSS("display", "block");
+    const firstCard = page.getByRole("row").nth(1);
+    await expect(firstCard.getByText(/^(Applied|Accepted|Waitlisted|Rejected)$/).first()).toBeVisible();
 
     await page.getByRole("checkbox", { name: "Select row" }).first().check();
     const bar = page.getByTestId("bulk-bar");
@@ -511,5 +515,92 @@ test.describe("polish: desktop", () => {
     await page.locator('a[href*="/admin/events/"][href$="/comms"]').click();
     await page.getByRole("link", { name: "Open registrations" }).click();
     await expect(page.getByRole("heading", { name: "No registrations yet" })).toBeVisible();
+  });
+});
+
+test.describe("D1: scope, publish readiness, labels, toast link", () => {
+  test.beforeEach(async ({ page }) => signInAs(page, "dev-organizer"));
+
+  test("МУИС-only: the control saves, the list shows a МУИС tag, the helper text is linked to the group", async ({ page }) => {
+    const title = `D1-scope ${stamp()}`;
+    await page.goto("/en/admin/events/new");
+    await page.locator('input[name="title.mn"]:visible').fill(title);
+    await page.locator('input[name="title.en"]:visible').fill(title);
+    const group = page.getByRole("group", { name: "Which students can register" });
+    await expect(group.getByText("All schools")).toBeVisible();
+    await expect(group).toHaveAccessibleDescription("МУИС only: students from other schools see the event but cannot register.");
+    await group.getByText("МУИС only", { exact: true }).click();
+    await page.getByRole("button", { name: "Create event" }).click();
+    await page.waitForURL(/\/admin\/events\/e_\d+\?created=1/);
+    await expect(page.getByRole("group", { name: "Which students can register" }).getByRole("radio", { name: "МУИС only" })).toBeChecked();
+
+    await page.goto("/en/admin/events");
+    await page.getByRole("searchbox", { name: "Search events" }).fill(title);
+    const row = page.getByRole("row").filter({ hasText: title });
+    await expect(row.getByText("МУИС", { exact: true })).toBeVisible();
+  });
+
+  test("publish checklist: a bare draft lists what is missing; Fix first closes; a complete event gets the plain confirm", async ({ page }) => {
+    const title = `D1-ready ${stamp()}`;
+    await createDraft(page, title);
+    await page.getByRole("button", { name: "Publish", exact: true }).click();
+    const dialog = page.getByRole("alertdialog");
+    for (const line of ["No description", "No venue", "No cover image"]) await expect(dialog).toContainText(line);
+    await expect(dialog).not.toContainText("No English text"); // title has English, description is empty: reported once
+    await dialog.getByRole("button", { name: "Fix first" }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Publish", exact: true })).toBeVisible(); // still a draft
+
+    // fill the gaps through the form
+    await page.locator('textarea[name="description.mn"]:visible').fill("Тайлбар");
+    await page.locator('textarea[name="description.en"]:visible').fill("A description");
+    await page.locator('input[name="venue_name"]:visible').fill("Room 1");
+    await page.getByRole("button", { name: /^Use poster|Pick poster/i }).first().click();
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+    await page.reload();
+    await page.getByRole("button", { name: "Publish", exact: true }).click();
+    await expect(page.getByRole("alertdialog")).toContainText(`Publish “${title}”?`);
+    await expect(page.getByRole("alertdialog")).not.toContainText("Publish anyway");
+    await page.getByRole("alertdialog").getByRole("button", { name: "Cancel" }).click();
+  });
+
+  test("seats that are not a number get a visible message tied to the field", async ({ page }) => {
+    await page.goto("/en/admin/events/new");
+    await page.locator('input[name="title.mn"]:visible').fill(`D1-seats ${stamp()}`);
+    await page.getByRole("checkbox", { name: "Unlimited" }).uncheck();
+    const seats = page.locator('input[name="capacity"]');
+    await seats.fill("abc");
+    await page.getByRole("button", { name: "Create event" }).click();
+    const msg = page.getByText("Seats must be a number, for example 50");
+    await expect(msg).toBeVisible();
+    await expect(seats).toHaveAttribute("aria-invalid", "true");
+    const id = await msg.getAttribute("id");
+    expect(await seats.getAttribute("aria-describedby")).toContain(id!);
+  });
+
+  test("the sticky bar says Discard changes, the header keeps Cancel event", async ({ page }) => {
+    const id = await eventId(page, "DevHack 2027");
+    await page.goto(`/en/admin/events/${id}`);
+    const bar = page.getByTestId("form-bar");
+    await expect(bar.getByRole("link", { name: "Discard changes" }).or(bar.getByRole("button", { name: "Discard changes" }))).toBeVisible();
+    await expect(bar.getByText("Cancel", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Cancel event" })).toBeVisible();
+  });
+
+  test("Send decisions: the toast offers View in Comms", async ({ page }) => {
+    const id = await eventId(page, "DevHack 2027");
+    await page.goto(`/en/admin/events/${id}/registrations`);
+    await page.getByRole("button", { name: /^Applied \d+$/ }).click();
+    await page.getByRole("checkbox", { name: "Select row" }).first().check();
+    await page.getByRole("group", { name: "Actions for the selected registrations" }).getByRole("button", { name: "Waitlist" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Waitlisted" })).toBeVisible();
+    await page.getByRole("button", { name: "Send decisions" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: /^Send/ }).last().click();
+    const link = page.getByRole("link", { name: "View in Comms" });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute("href", `/en/admin/events/${id}/comms`);
+    await link.click();
+    await expect(page).toHaveURL(new RegExp(`/admin/events/${id}/comms$`));
   });
 });

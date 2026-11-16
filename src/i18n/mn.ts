@@ -111,6 +111,8 @@ export const mn = {
     participants: "{n}+ оролцогч",
     tabs: ["Тойм", "Шагнал", "Хугацаа"],
     overview: "{name} бол Hackum Students Club-ийн {year} онд зохион байгуулсан {mode} эвент. Зураг, үр дүнг манай Instagram хуудсаас үзээрэй.",
+    overviewUpcoming: "{name} бол Hackum Students Club-ээс {date} өдөр зохион байгуулах {mode} эвент. Шинэ мэдээг манай Instagram хуудаснаас дагаарай.",
+    overviewUpcomingYear: "{name} бол Hackum Students Club-ээс {year} онд зохион байгуулах {mode} эвент. Шинэ мэдээг манай Instagram хуудаснаас дагаарай.",
     online: "онлайн",
     offline: "танхимын",
     prizes: "Шагналын мэдээллийг эвент бүрийн зарлалд нийтэлдэг.",

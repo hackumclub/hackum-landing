@@ -44,7 +44,7 @@ export default function TeamBoard({ lang, rows, teams, capacity, teamMin, teamMa
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {mix.map(([status, n]) => <StatusPill key={status} status={status} label={`${statusLabel(status)} · ${n}`} />)}
-                {tm.locked && <span className="inline-flex items-center gap-1 rounded-full bg-neutral-soft px-2.5 py-0.5 text-xs font-bold text-fg"><Lock aria-hidden="true" size={12} />{t.locked}</span>}
+                {tm.locked && <Tag icon={Lock}>{t.locked}</Tag>}
               </div>
               {members.length < teamMin && (
                 <p className="flex items-center gap-1.5 text-sm font-semibold text-warn-fg"><TriangleAlert aria-hidden="true" size={14} />{fill(t.belowMin, { min: teamMin })}</p>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
@@ -6,11 +7,13 @@ import { fill, isLocale, tf } from "@/i18n/config";
 import { cardVm } from "@/lib/me/queries";
 import { eventForViewer } from "@/lib/mockdb/queries";
 import { formatUb } from "@/lib/time";
+import { pill } from "@/components/me/pill";
 import { ButtonLink } from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import ApplyFlow from "@/components/me/ApplyFlow";
 import ApplicationStatus from "@/components/me/ApplicationStatus";
-import { PageHeader, PageSkeleton } from "@/components/me/parts";
+import { PageHeader } from "@/components/me/parts";
+import RouteSkeleton from "@/components/me/RouteSkeleton";
 import { meContext } from "@/components/me/context";
 
 type Props = { params: Promise<{ lang: string; slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -59,8 +62,9 @@ async function Body({ params, searchParams }: Props) {
           sticker="lock" title={a.blocked[r]} line={fill(a.blocked[`${r}Line`], { date: vm.elig.at ? formatUb(new Date(vm.elig.at), lang, { month: "long", day: "numeric" }) : "" })}
           action={
             <div className="flex flex-wrap justify-center gap-2">
-              <ButtonLink href={`/${lang}/me/events`} size="lg">{c.nav.events}</ButtonLink>
-              {r === "members" && <ButtonLink href={`/${lang}/me/membership`} size="lg" variant="secondary">{c.membership.title}</ButtonLink>}
+              <ButtonLink href={`/${lang}/me/events${r === "school" ? "?tab=upcoming&show=open" : ""}`} size="lg">{r === "school" ? c.event.browseOpen : c.nav.events}</ButtonLink>
+              {r === "members" && <Link href={`/${lang}/me/membership`} className={pill.soft}>{c.membership.title}</Link>}
+              {r === "school" && <Link href={`/${lang}/me/profile#school`} className={pill.soft}>{c.membership.fixProfile}</Link>}
             </div>
           }
         />
@@ -77,12 +81,17 @@ async function Body({ params, searchParams }: Props) {
   );
 }
 
-export default async function ApplyPage(props: Props) {
+/** Awaiting `params` (it carries the dynamic segment) must happen inside <Suspense>, so the guard lives in here. */
+async function Guard(props: Props) {
   const { lang } = await props.params;
   if (!isLocale(lang)) notFound();
+  return <Body {...props} />;
+}
+
+export default function ApplyPage(props: Props) {
   return (
-    <Suspense fallback={<PageSkeleton label={copy[lang].loading} cards={2} />}>
-      <Body {...props} />
+    <Suspense fallback={<RouteSkeleton cards={2} />}>
+      <Guard {...props} />
     </Suspense>
   );
 }

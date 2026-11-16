@@ -1,22 +1,29 @@
 "use client";
-import { fill, tf, type Locale } from "@/i18n/config";
+import Link from "next/link";
+import { fill, href, tf, type L, type Locale } from "@/i18n/config";
+import { copy as listsCopy } from "@/i18n/areas/admin-members";
+import type { RegStatus } from "@/lib/status";
+import { ButtonLink } from "@/components/ui/Button";
 import { getDictionary } from "@/i18n";
 import { copy } from "@/i18n/areas/admin-events";
 import { plural } from "@/i18n/plural";
 import { answerText } from "@/lib/events/format";
 import type { Question } from "@/lib/events/questions";
 import type { RegRow } from "@/lib/events/admin-registrations";
-import { formatUb } from "@/lib/time";
+import { formatUbStable } from "@/lib/time";
 import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import Drawer from "@/components/ui/Drawer";
 import StatusPill from "@/components/ui/StatusPill";
 
-const when = (iso: string, lang: Locale) => formatUb(new Date(iso), lang, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const when = (iso: string, lang: Locale) => formatUbStable(new Date(iso), lang, "datetime");
+
+/** One of the person's registrations for another event (the page reads it from the store). */
+export type OtherRegistration = { id: string; eventId: string; title: L; startsAt: string; status: RegStatus };
 
 /** Everything the person told us plus a profile summary: no email address, by design. */
 export default function RegistrationDrawer({ lang, row, teamName, questions, application, statusLabel, wholeTeamPossible, pending, onClose, onDecide }: {
-  lang: Locale; row: RegRow | null; teamName: string | null; questions: Question[]; application: boolean; statusLabel: string;
+  lang: Locale; row: (RegRow & { handle?: string; others?: OtherRegistration[] }) | null; teamName: string | null; questions: Question[]; application: boolean; statusLabel: string;
   wholeTeamPossible: boolean; pending: boolean; onClose: () => void; onDecide: (d: "accept" | "reject" | "waitlist", scope: "individual" | "team") => void;
 }) {
   const d = getDictionary(lang);
@@ -25,6 +32,7 @@ export default function RegistrationDrawer({ lang, row, teamName, questions, app
   const name = row ? tf(row.name, lang) : "";
   const decisionLine = !row ? "" : row.decidedAt ? `${fill(x.decidedAt, { when: when(row.decidedAt, lang) })} · ${row.notified ? x.notified : x.notNotified}` : x.undecided;
   const yesNo = { yes: x.yes, no: x.no };
+  const lr = listsCopy[lang].lists.regs;
   return (
     <Drawer open={row !== null} onOpenChange={(o) => { if (!o) onClose(); }} title={name} description={row?.school ?? undefined} closeLabel={d.ui.close}>
       {row && (
@@ -63,6 +71,23 @@ export default function RegistrationDrawer({ lang, row, teamName, questions, app
               {teamName && (<><dt className="text-fg-muted">{x.team}</dt><dd className="font-semibold text-fg">{teamName}</dd></>)}
             </dl>
           </section>
+
+          {row.handle && (
+            <section aria-labelledby="drawer-member" className="grid gap-3">
+              <h3 id="drawer-member" className="text-sm font-bold text-fg">{lr.otherRegs}</h3>
+              {(row.others ?? []).length === 0 ? <p className="text-sm text-fg-muted">{lr.noOtherRegs}</p> : (
+                <ul className="grid gap-2">
+                  {(row.others ?? []).map((o) => (
+                    <li key={o.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] bg-panel-2 px-3 py-2 text-sm">
+                      <Link href={href(lang, `/admin/events/${o.eventId}/registrations?q=${encodeURIComponent(name)}`)} className="min-w-0 font-semibold [overflow-wrap:anywhere] text-fg underline-offset-2 hover:text-accent-fg hover:underline">{tf(o.title, lang)}</Link>
+                      <StatusPill status={o.status} label={d.status[o.status]} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div><ButtonLink variant="secondary" size="sm" href={href(lang, `/admin/members?q=${encodeURIComponent(row.handle)}`)}>{lr.memberLink}</ButtonLink></div>
+            </section>
+          )}
 
           {questions.length > 0 && (
             <section aria-labelledby="drawer-answers" className="grid gap-3">

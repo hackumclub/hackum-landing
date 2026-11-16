@@ -4,8 +4,10 @@ import { useState, useTransition, type ReactNode } from "react";
 import { Check, Loader2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { cx } from "@/components/ui/cx";
 import { cancelRsvp, rsvp } from "@/lib/me/actions";
 import { useToast } from "./Toast";
+import { pill } from "./pill";
 
 type Errors = Record<string, string>;
 
@@ -45,7 +47,7 @@ export function RsvpButton({ eventId, label, doneLabel, waitlistDoneLabel, error
   const settled = phase === "done" || phase === "waitlisted";
   return (
     <div className="grid gap-1.5">
-      <Button size={size} variant={settled ? "secondary" : "primary"} disabled={busy || settled} aria-busy={busy} onClick={run}
+      <Button size={size} variant={settled ? "ghost" : "primary"} disabled={busy || settled} aria-busy={busy} onClick={run}
         icon={busy ? <Loader2 aria-hidden="true" size={16} className="motion-safe:animate-spin" /> : settled ? <Check aria-hidden="true" size={16} className="text-ok-fg" /> : undefined}>
         {phase === "waitlisted" ? waitlistDoneLabel : settled ? doneLabel : label}
       </Button>
@@ -55,8 +57,8 @@ export function RsvpButton({ eventId, label, doneLabel, waitlistDoneLabel, error
 }
 
 /** Cancel / leave waitlist / withdraw application. The dialog names the event and says what will happen. */
-export function CancelButton({ eventId, trigger, title, body, confirm, keep, doneText, errors, variant = "secondary", className, icon }: {
-  eventId: string; trigger: string; title: string; body: string; confirm: string; keep: string; doneText: string; errors: Errors; variant?: "secondary" | "ghost"; className?: string; icon?: ReactNode;
+export function CancelButton({ eventId, trigger, title, body, confirm, keep, doneText, errors, variant = "danger", className, icon }: {
+  eventId: string; trigger: string; title: string; body: string; confirm: string; keep: string; doneText: string; errors: Errors; variant?: "soft" | "danger"; className?: string; icon?: ReactNode;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -76,7 +78,7 @@ export function CancelButton({ eventId, trigger, title, body, confirm, keep, don
   return (
     <div className="grid min-w-0 gap-1.5">
       <ConfirmDialog
-        trigger={<Button variant={variant} size="lg" disabled={state !== "idle"} icon={icon} className={className}>{trigger}</Button>}
+        trigger={<button type="button" disabled={state !== "idle"} className={cx(pill[variant], className)}>{icon}{trigger}</button>}
         title={title} body={body} confirmLabel={confirm} cancelLabel={keep} tone="danger" onConfirm={run}
       />
       <p role="alert" className="text-sm font-semibold text-danger-fg empty:hidden">{error}</p>

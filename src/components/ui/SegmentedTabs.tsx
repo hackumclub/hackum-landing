@@ -20,8 +20,8 @@ export type SegmentedTabsProps = InPage | Routed;
 
 const FADE = "max-md:[mask-image:linear-gradient(90deg,#000_calc(100%-36px),transparent)]";
 const TAB = "inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full px-4 text-sm font-semibold whitespace-nowrap transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ops-accent)]";
-const ON = "bg-panel text-fg shadow-[var(--shadow-soft)] ring-1 ring-line-strong";
-const OFF = "text-fg-muted hover:text-fg";
+const ON = "bg-seg-chip text-fg shadow-raise";
+const OFF = "text-fg-muted hover:bg-seg-chip/50 hover:text-fg";
 
 /**
  * One segmented control for both routed tabs (`hrefs`: links with aria-current) and in-page tabs (`value`/`onChange`:
@@ -57,14 +57,14 @@ export default function SegmentedTabs(props: SegmentedTabsProps) {
   };
 
   const row = (
-    <div className="flex w-max min-w-full gap-1 rounded-full bg-neutral-soft p-1">
+    <div className="flex w-max min-w-full gap-1 rounded-full bg-seg-track p-1 md:min-w-0">
       {items.map((it, i) => {
         const active = i === activeIndex;
         const cls = cx(TAB, active ? ON : OFF);
         const body = (
           <>
             {it.label}
-            {it.count !== undefined && <CountBadge n={it.count} className={active ? "bg-neutral-soft" : "bg-panel"} />}
+            {it.count !== undefined && <CountBadge n={it.count} className={active ? "bg-seg-track" : "bg-seg-chip/60"} />}
           </>
         );
         if (hrefs) {

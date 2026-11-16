@@ -1,5 +1,6 @@
 "use client";
 import { ChevronDown, ChevronUp, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { fill, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
 import { copy } from "@/i18n/areas/admin-events";
@@ -7,13 +8,22 @@ import { MAX_QUESTIONS, type Question } from "@/lib/events/questions";
 import { moveQuestion, newQuestion, QUESTION_TYPES, type FormErrors } from "@/lib/events/admin-form";
 import BilingualField from "@/components/ui/BilingualField";
 import Button from "@/components/ui/Button";
-import Field, { Input, Select } from "@/components/ui/Field";
+import Field, { Input } from "@/components/ui/Field";
+import Select from "@/components/ui/Select";
 import IconButton from "@/components/ui/IconButton";
 
 /** Add, reorder, edit and remove registration questions (≤ 20). Ids are generated (q1, q2, …) and never change. */
-export default function QuestionBuilder({ lang, value, onChange, errors, answered }: {
+export default function QuestionBuilder({ lang, value, onChange, errors, answered, reservedIds = [], showAnswered = true }: {
   lang: Locale; value: Question[]; onChange: (qs: Question[]) => void; errors: FormErrors; answered: number;
+  /** Ids that must never be handed out again (answer keys already stored): a new question must not inherit an old answer. */
+  reservedIds?: readonly string[];
+  /** The forms hub shows its own, more precise "N people have already answered" line. */
+  showAnswered?: boolean;
 }) {
+  // Every id seen in this session, so delete-then-add never reuses one (its stored answers would attach to the new question).
+  const seen = useRef(new Set<string>());
+  useEffect(() => { for (const q of value) seen.current.add(q.id); }, [value]);
+  const takenIds = () => [...seen.current, ...value.map((q) => q.id), ...reservedIds];
   const t = copy[lang].questions;
   const f = copy[lang].form;
   const d = getDictionary(lang);
@@ -28,31 +38,32 @@ export default function QuestionBuilder({ lang, value, onChange, errors, answere
   return (
     <div className="grid gap-4">
       <p className="text-sm text-fg-muted">{fill(t.line, { max: MAX_QUESTIONS })}</p>
-      {answered > 0 && <p role="note" className="rounded-[var(--radius-sm)] border border-line bg-warn-soft px-3 py-2 text-sm text-warn-fg">{fill(t.answered, { n: answered })}</p>}
+      {showAnswered && answered > 0 && <p role="note" className="rounded-[var(--radius-sm)] border border-line bg-warn-soft px-3 py-2 text-sm text-warn-fg">{fill(t.answered, { n: answered })}</p>}
       {errors.questions && <p className="text-sm font-semibold text-danger-fg">{err(errors.questions)}</p>}
-      {value.length === 0 && <p className="rounded-[var(--radius-sm)] border border-dashed border-line-strong px-3 py-4 text-sm text-fg-muted">{t.empty}</p>}
+      {value.length === 0 && <p className="rounded-[var(--radius-sm)] border border-dashed border-line px-3 py-4 text-sm text-fg-muted">{t.empty}</p>}
 
       <ol className="grid gap-4">
         {value.map((q, i) => (
-          <li key={q.id} className="grid gap-4 rounded-[var(--radius-md)] border border-line bg-panel-2 p-4">
+          <li key={q.id} className="grid gap-4 rounded-[var(--radius-md)] border border-line bg-panel-2 p-4 md:p-5">
             <div className="flex flex-wrap items-end justify-between gap-3">
-              <h3 className="text-sm font-bold text-fg">{fill(t.number, { n: i + 1 })}</h3>
+              <h3 className="flex items-center gap-2.5 text-sm font-bold text-fg">
+                <span aria-hidden="true" className="tnum grid size-7 place-items-center rounded-full bg-accent-soft text-xs font-bold text-accent-fg">{i + 1}</span>
+                {fill(t.number, { n: i + 1 })}
+              </h3>
               <div className="flex flex-wrap items-end gap-3">
                 <Field label={t.type} className="w-48">
                   {(c) => (
-                    <Select {...c} value={q.type} onChange={(e) => setType(i, e.target.value as Question["type"])}>
-                      {QUESTION_TYPES.map((type) => <option key={type} value={type}>{t.types[type]}</option>)}
-                    </Select>
+                    <Select {...c} value={q.type} onValueChange={(v) => setType(i, v as Question["type"])} options={QUESTION_TYPES.map((type) => ({ value: type, label: t.types[type] }))} />
                   )}
                 </Field>
                 <label className="flex min-h-10 items-center gap-2 text-sm font-semibold text-fg">
-                  <input type="checkbox" checked={q.required} onChange={(e) => update(i, { required: e.target.checked })} className="size-4 accent-[var(--ops-accent)]" />
+                  <input type="checkbox" checked={q.required} onChange={(e) => update(i, { required: e.target.checked })} className="size-5 accent-[var(--ops-accent)]" />
                   {t.required}
                 </label>
-                <div className="flex">
-                  <IconButton label={t.up} icon={<ChevronUp size={18} />} disabled={i === 0} onClick={() => onChange(moveQuestion(value, i, -1))} />
-                  <IconButton label={t.down} icon={<ChevronDown size={18} />} disabled={i === value.length - 1} onClick={() => onChange(moveQuestion(value, i, 1))} />
-                  <IconButton label={t.remove} icon={<Trash2 size={18} />} onClick={() => onChange(value.filter((_, j) => j !== i))} />
+                <div className="flex items-center gap-0.5 rounded-full bg-seg-track p-0.5">
+                  <IconButton className="rounded-full" label={t.up} icon={<ChevronUp size={18} />} disabled={i === 0} onClick={() => onChange(moveQuestion(value, i, -1))} />
+                  <IconButton className="rounded-full" label={t.down} icon={<ChevronDown size={18} />} disabled={i === value.length - 1} onClick={() => onChange(moveQuestion(value, i, 1))} />
+                  <IconButton className="rounded-full" label={t.remove} icon={<Trash2 size={18} />} onClick={() => onChange(value.filter((_, j) => j !== i))} />
                 </div>
               </div>
             </div>
@@ -95,7 +106,7 @@ export default function QuestionBuilder({ lang, value, onChange, errors, answere
       </ol>
 
       <div>
-        <Button variant="secondary" icon={<Plus aria-hidden="true" size={16} />} disabled={value.length >= MAX_QUESTIONS} onClick={() => onChange([...value, newQuestion(value.map((q) => q.id), "short")])}>
+        <Button variant="secondary" icon={<Plus aria-hidden="true" size={16} />} disabled={value.length >= MAX_QUESTIONS} onClick={() => onChange([...value, newQuestion(takenIds(), "short")])}>
           {t.add}
         </Button>
       </div>

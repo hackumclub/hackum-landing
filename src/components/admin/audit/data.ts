@@ -2,8 +2,12 @@ import "server-only";
 import { tf, type Locale } from "@/i18n/config";
 import type { Dict } from "@/i18n";
 import type { AreaCopy } from "@/i18n/areas/admin-members";
-import { auditGroup, diffPairs, entityKind, formatDiffValue, humanizeCode, paginate, type AuditGroup } from "@/lib/members/format";
-import { PAGE_SIZE, RANGES_MS, type AuditFilter } from "./filter";
+import { href } from "@/i18n/config";
+import { ubDayOf } from "@/lib/admin/list-filters";
+import { buildChangeLine } from "@/lib/members/audit-line";
+import { auditGroup, diffPairs, entityKind, formatDiffValue, humanizeCode, paginate, type AuditGroup, type EntityKind } from "@/lib/members/format";
+import { MAJOR_TRACKS, SCHOOLS } from "@/lib/num/schools";
+import { PAGE_SIZE, type AuditFilter } from "./filter";
 import { profileOf } from "@/lib/mockdb/core";
 import { getStore } from "@/lib/mockdb/store";
 import type { Db } from "@/lib/mockdb/types";
@@ -11,7 +15,11 @@ import type { Db } from "@/lib/mockdb/types";
 export type AuditRowDto = {
   id: string; actor: string; action: string; entity: string; at: string;
   /** One human sentence that starts with the actor's name: "Dev Organizer approved Anuujin’s membership". */
-  sentence: string; group: AuditGroup;
+  sentence: string; group: AuditGroup; entityKind: EntityKind;
+  /** "Draft → Published", "role: organizer → admin": the change in one line (null when the entry has no diff). */
+  change: string | null;
+  /** Where the object lives, only when it still exists. */
+  target: { kind: "event" | "member" | "registrations"; href: string } | null;
   diff: { key: string; label: string; before: string | null; after: string; changed: boolean }[];
 };
 export type AuditData = {
@@ -43,17 +51,28 @@ function entityLabel(db: Db, entity: string, id: string, lang: Locale, c: AreaCo
   return { label: a.entityOf.replace("{kind}", a.entities[kind]).replace("{name}", shown), name: shown };
 }
 
+function targetOf(db: Db, entity: string, id: string, lang: Locale): AuditRowDto["target"] {
+  const kind = entityKind(entity);
+  const member = (pid: string | null) => { const p = profileOf(db, pid); return p ? { kind: "member" as const, href: `${href(lang, "/admin/members")}?q=${encodeURIComponent(p.handle)}` } : null; };
+  switch (kind) {
+    case "event": return db.events.some((e) => e.id === id) ? { kind: "event", href: href(lang, `/admin/events/${id}`) } : null;
+    case "registration": { const r = db.registrations.find((x) => x.id === id); return r && db.events.some((e) => e.id === r.event_id) ? { kind: "registrations", href: href(lang, `/admin/events/${r.event_id}/registrations`) } : null; }
+    case "profile": case "staff_role": return member(id);
+    case "application": return member(db.membership_applications.find((a) => a.id === id)?.profile_id ?? null);
+    default: return null;
+  }
+}
+
 export function loadAudit(filter: AuditFilter, lang: Locale, c: AreaCopy, status: Dict["status"]): AuditData {
   const store = getStore();
   const db = store.read();
   const now = store.now();
-  const cutoff = filter.range ? now.getTime() - RANGES_MS[filter.range] : 0;
   const matches = db.audit_log
-    .filter((e) => (filter.groups.length === 0 || filter.groups.includes(auditGroup(e.action) as Exclude<AuditGroup, "other">))
-      && (filter.actor === null || e.actor_profile_id === filter.actor)
-      && Date.parse(e.at) >= cutoff)
+    .filter((e) => (filter.multi.group.length === 0 || filter.multi.group.includes(auditGroup(e.action)))
+      && (filter.multi.entity.length === 0 || filter.multi.entity.includes(entityKind(e.entity)))
+      && (filter.single.actor === null || e.actor_profile_id === filter.single.actor)
+      && (!filter.from || !filter.to || (ubDayOf(e.at) >= filter.from && ubDayOf(e.at) <= filter.to)))
     .sort((a, b) => b.at.localeCompare(a.at) || b.id.localeCompare(a.id));
-  const { page, pages, from, to } = paginate(matches.length, filter.page, PAGE_SIZE);
   const actorName = (id: string | null) => { const p = profileOf(db, id); return p ? tf(p.name, lang).trim() || p.name.mn || p.handle : c.audit.system; };
   const words = { yes: c.audit.boolean.yes, no: c.audit.boolean.no, empty: c.common.empty };
 
@@ -63,28 +82,39 @@ export function loadAudit(filter: AuditFilter, lang: Locale, c: AreaCopy, status
       if (key === "status" && v in status) return status[v as keyof typeof status];
       if (key === "role" && v in c.settings.staff.roles) return c.settings.staff.roles[v as keyof typeof c.settings.staff.roles];
       if (key === "template" && v in c.comms.templates) return c.comms.templates[v as keyof typeof c.comms.templates];
+      if (key === "school_id") { const x = SCHOOLS.find((y) => y.id === v); if (x) return tf(x.name, lang); }
+      if (key === "major_track") { const x = MAJOR_TRACKS.find((y) => y.id === v); if (x) return tf(x.name, lang); }
       if (key === "merged") return actorName(v) === c.audit.system ? v : actorName(v);
     }
     return formatDiffValue(v, lang, words);
   };
 
-  const rows = matches.slice(from, to).map((e): AuditRowDto => {
+  const build = (e: Db["audit_log"][number]): AuditRowDto => {
     const actor = actorName(e.actor_profile_id);
     const action = c.audit.actions[e.action] ?? humanizeCode(e.action);
     const target = entityLabel(db, e.entity, e.entity_id, lang, c);
     const template = c.audit.sentences[e.action];
     return {
-    id: e.id,
-    actor,
-    action,
-    entity: target.label,
-    sentence: template ? template.replace("{actor}", actor).replace("{target}", target.name) : c.audit.sentenceFallback.replace("{actor}", actor).replace("{action}", action),
-    group: auditGroup(e.action),
-    at: e.at,
-    diff: diffPairs(e.diff).map((p) => ({ key: p.key, label: c.audit.keys[p.key] ?? humanizeCode(p.key), before: p.changed ? show(p.key, p.before) : null, after: show(p.key, p.after), changed: p.changed })),
+      id: e.id,
+      actor,
+      action,
+      entity: target.label,
+      entityKind: entityKind(e.entity),
+      sentence: template ? template.replace("{actor}", actor).replace("{target}", target.name) : c.audit.sentenceFallback.replace("{actor}", actor).replace("{action}", action),
+      group: auditGroup(e.action),
+      at: e.at,
+      change: buildChangeLine(e.diff, { fmt: show, label: (k) => c.audit.keys[k] ?? humanizeCode(k), more: (n) => c.lists.audit.more.replace("{n}", String(n)) }),
+      target: targetOf(db, e.entity, e.entity_id, lang),
+      diff: diffPairs(e.diff).map((p) => ({ key: p.key, label: c.audit.keys[p.key] ?? humanizeCode(p.key), before: p.changed ? show(p.key, p.before) : null, after: show(p.key, p.after), changed: p.changed })),
     };
-  });
+  };
+  // The search looks at the sentence, the actor, the object and the change line, so it has to see built rows.
+  const needle = filter.q.trim().toLowerCase();
+  const all = matches.map(build);
+  const found = needle ? all.filter((r) => [r.sentence, r.actor, r.entity, r.change ?? "", r.action].some((x) => x.toLowerCase().includes(needle))) : all;
+  const { page, pages, from, to } = paginate(found.length, filter.page, PAGE_SIZE);
+  const rows = found.slice(from, to);
   const actorIds = [...new Set(db.audit_log.map((e) => e.actor_profile_id).filter((x): x is string => !!x))];
   const actors = actorIds.map((id) => ({ id, name: actorName(id) })).sort((a, b) => a.name.localeCompare(b.name, lang));
-  return { rows, total: matches.length, page, pages, from, to, actors, now: now.toISOString() };
+  return { rows, total: found.length, page, pages, from, to, actors, now: now.toISOString() };
 }

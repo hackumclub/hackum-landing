@@ -28,7 +28,7 @@ export async function createEventAction(input: unknown): Promise<Result<{ id: st
 }
 
 /** Dry run for a staged edit: which fields changed that notify people, and how many would get an updated invite. */
-export async function previewEventChangeAction(id: string, input: unknown): Promise<Result<{ changed: string[]; willNotify: number }>> {
+export async function previewEventChangeAction(id: string, input: unknown): Promise<Result<{ changed: string[]; willNotify: number; nonNumRegistrants: number }>> {
   const who = await requireStaffAction();
   if (!who.ok) return who;
   const parsed = eventInputSchema.safeParse(input);

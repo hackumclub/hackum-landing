@@ -2,7 +2,8 @@ import { Suspense, type ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { copy } from "@/i18n/areas/admin-members";
 import { href, isLocale, type Locale } from "@/i18n/config";
-import { PageHeader, SectionSkeleton, SectionTabs } from "@/components/admin/members/shared";
+import { PageHeader, SectionSkeleton } from "@/components/admin/members/shared";
+import SegmentedTabs from "@/components/ui/SegmentedTabs";
 import { requireStaffPage } from "@/lib/server/session";
 
 /** Settings are admin-only: organizers get the ordinary 404, header and tabs included (the gate wraps the whole frame). */
@@ -12,13 +13,14 @@ async function Gate({ lang, children }: { lang: Locale; children: ReactNode }) {
   return (
     <div className="grid grid-cols-1 gap-5">
       <PageHeader title={c.title} lead={c.lead} icon="shield" />
-      <SectionTabs
-        label={c.tabsLabel}
-        tabs={[
-          { href: href(lang, "/admin/settings"), label: c.tabs.seasons },
-          { href: href(lang, "/admin/settings/staff"), label: c.tabs.staff },
-          { href: href(lang, "/admin/settings/integrations"), label: c.tabs.integrations },
+      <SegmentedTabs
+        ariaLabel={c.tabsLabel}
+        items={[
+          { key: "seasons", label: c.tabs.seasons },
+          { key: "staff", label: c.tabs.staff },
+          { key: "integrations", label: c.tabs.integrations },
         ]}
+        hrefs={{ seasons: href(lang, "/admin/settings"), staff: href(lang, "/admin/settings/staff"), integrations: href(lang, "/admin/settings/integrations") }}
       />
       {children}
     </div>

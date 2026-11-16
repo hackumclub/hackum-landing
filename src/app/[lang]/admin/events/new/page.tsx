@@ -10,6 +10,9 @@ import { getStore } from "@/lib/mockdb/store";
 import { requireStaffPage } from "@/lib/server/session";
 import EventForm from "@/components/admin/events/EventForm";
 import { FormSkeleton } from "@/components/admin/events/Skeletons";
+import { adminMeta, type AdminMetaProps } from "@/lib/admin/meta";
+
+export const generateMetadata = ({ params }: AdminMetaProps) => adminMeta(params, "newEvent");
 
 async function Body({ lang }: { lang: Locale }) {
   await requireStaffPage();

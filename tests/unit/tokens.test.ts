@@ -33,6 +33,8 @@ const TEXT: [string, string][] = [
   ["warn-fg", "panel"], ["warn-fg", "warn-soft"],
   ["danger-fg", "panel"], ["danger-fg", "danger-soft"], ["on-danger", "danger"],
   ["fg", "neutral-soft"],
+  // Segmented control: raised chip text and the muted label on its track.
+  ["fg", "seg-chip"], ["accent-fg", "seg-chip"], ["fg-muted", "seg-track"], ["fg", "seg-track"],
   // Logo ember: text tone for "almost full / hot" states.
   ["ember-fg", "canvas"], ["ember-fg", "panel"], ["ember-fg", "ember-soft"],
 ];

@@ -1,51 +1,59 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { CLUB } from "@/lib/club";
-import { isLocale } from "@/i18n/config";
-import { getDictionary } from "@/i18n";
+import AuthShell from "@/components/auth/AuthShell";
+import JoinSection from "@/components/auth/JoinSection";
 import SubscribeForm from "@/components/SubscribeForm";
-import Icon3D from "@/components/Icon3D";
-import Split from "@/components/motion/Split";
-import RevealGroup from "@/components/motion/RevealGroup";
-
-const STEP_ICON = ["megaphone", "notebook", "trophy"];
+import Skeleton from "@/components/ui/Skeleton";
+import { CLUB } from "@/lib/club";
+import { getDictionary } from "@/i18n";
+import { copy } from "@/i18n/areas/public";
+import { isLocale } from "@/i18n/config";
+import { safeNext } from "@/lib/auth/landing";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/join">): Promise<Metadata> {
   const { lang } = await params;
-  return isLocale(lang) ? { title: getDictionary(lang).meta.join } : {};
+  return isLocale(lang) ? { title: copy[lang].join.metaTitle } : {};
 }
 
-export default async function Page({ params }: PageProps<"/[lang]/join">) {
+async function Form({ lang, searchParams }: { lang: "mn" | "en"; searchParams: PageProps<"/[lang]/join">["searchParams"] }) {
+  const q = await searchParams;
+  return <JoinSection lang={lang} next={safeNext(typeof q.next === "string" ? q.next : null)} />;
+}
+
+function FormSkeleton({ label }: { label: string }) {
+  return (
+    <div role="status" aria-label={label} className="grid gap-5 rounded-[28px] border border-line bg-panel p-6 sm:p-8">
+      <Skeleton className="h-10 w-3/4" /><Skeleton className="h-11 w-full" /><Skeleton className="h-11 w-full" /><Skeleton className="h-11 w-full" /><Skeleton className="h-11 w-full" />
+    </div>
+  );
+}
+
+export default async function Page({ params, searchParams }: PageProps<"/[lang]/join">) {
   const { lang } = await params;
   if (!isLocale(lang)) notFound();
+  const c = copy[lang].join;
   const d = getDictionary(lang);
-  const j = d.joinPage;
   return (
-    <section className="mx-auto max-w-[1100px] px-6 pb-8 pt-12">
-      {/* Plain top: title, one line of description, then name + email + send in a single row. */}
-      <div className="mx-auto max-w-3xl">
-        <p className="text-sm font-bold text-muted">{j.kicker}</p>
-        <Split as="h1" mode="lines" hero className="mt-1 font-display text-[clamp(34px,5vw,56px)] font-black leading-none">{j.title}</Split>
-        <p className="mt-3 max-w-xl text-lg text-muted">{d.subscribe.lead}</p>
-        <div className="mt-6"><SubscribeForm lang={lang} dict={d.subscribe} /></div>
+    <AuthShell lang={lang} wide banner={c.title}>
+      <div className="grid gap-6">
+        <Suspense fallback={<FormSkeleton label={c.loading} />}><Form lang={lang} searchParams={searchParams} /></Suspense>
+        <section aria-labelledby="newsletter-h" className="grid gap-4 rounded-[28px] border border-line bg-panel p-6 sm:p-8">
+          <div className="grid gap-1">
+            <h2 id="newsletter-h" className="font-display text-lg font-black text-fg">{c.newsletterTitle}</h2>
+            <p className="text-sm text-fg-muted">{c.newsletterLead}</p>
+          </div>
+          <SubscribeForm lang={lang} dict={d.subscribe} />
+          <div className="grid gap-2">
+            <p className="text-sm font-bold text-fg">{c.followUs}</p>
+            <ul className="flex flex-wrap gap-2">
+              {CLUB.socials.map(([label, url]) => (
+                <li key={label}><a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-full border border-line-strong bg-panel px-5 text-sm font-bold text-fg hover:bg-panel-2">{label}</a></li>
+              ))}
+            </ul>
+          </div>
+        </section>
       </div>
-
-      <RevealGroup as="ol" className="mt-20 grid gap-8 sm:grid-cols-3">
-        {j.steps.map(([t, desc], i) => (
-          <li key={t} className="group relative rounded-[26px] bg-paper p-7 shadow-soft ring-1 ring-ink/5 transition duration-300 hover:-translate-y-1 hover:shadow-card">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-brand font-display font-black text-white">{i + 1}</span>
-            <Icon3D name={STEP_ICON[i]} sizes="112px" className="pointer-events-none absolute -right-5 -top-9 z-10 h-28 w-28 rotate-6 drop-shadow-[0_14px_18px_rgb(0_60_100/0.25)] transition-transform duration-500 group-hover:-rotate-6 group-hover:scale-110" />
-            <h2 className="mt-8 font-display text-xl font-black">{t}</h2>
-            <p className="mt-2 text-muted">{desc}</p>
-          </li>
-        ))}
-      </RevealGroup>
-
-      <ul className="mt-10 flex flex-wrap justify-center gap-3">
-        {CLUB.socials.map(([label, url]) => (
-          <li key={label}><a href={url} target="_blank" rel="noopener noreferrer" className="btn-glass-light inline-block rounded-full px-6 py-3 font-bold text-ink hover:text-brand">{label}</a></li>
-        ))}
-      </ul>
-    </section>
+    </AuthShell>
   );
 }

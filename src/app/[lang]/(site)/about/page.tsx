@@ -17,6 +17,9 @@ const GOAL_ICON = ["chat", "heart", "rocket"];
 type Team = "project" | "marketing" | "external" | "internal";
 const TEAM_ICON: Record<Team, string> = { project: "notebook", marketing: "megaphone", external: "trophy", internal: "calendar" };
 
+// Prerendered per locale from cached readers; nothing here is per-request, so this route may block (Next docs: instant.md, "Disabling instant").
+export const instant = false;
+
 export async function generateMetadata({ params }: PageProps<"/[lang]/about">): Promise<Metadata> {
   const { lang } = await params;
   return isLocale(lang) ? { title: getDictionary(lang).meta.about } : {};

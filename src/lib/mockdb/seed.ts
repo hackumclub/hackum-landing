@@ -760,7 +760,7 @@ function addRecentPastEvents(db: Db, nowMs: number) {
     { slug: "react-workshop-autumn", kind: "workshop" as const, daysAgo: 49, mn: "React workshop: хоёр цагт анхны апп", en: "React workshop: your first app in two hours", img: "react-workshop" },
     { slug: "cv-workshop-autumn", kind: "workshop" as const, daysAgo: 37, mn: "Компьютер хараа: зураг таних workshop", en: "Computer vision: image recognition workshop", img: "cv-workshop" },
     { slug: "css-battle-autumn", kind: "competition" as const, daysAgo: 24, mn: "CSS Battle · Намар", en: "CSS Battle · Autumn", img: "quiz" },
-    { slug: "git-night-autumn", kind: "workshop" as const, daysAgo: 13, mn: "Git-ийн үдэш: баг дотор яаж ажиллах вэ", en: "Git night: how to work in a team", img: "git-workshop" },
+    { slug: "git-night-autumn", kind: "workshop" as const, daysAgo: 9, mn: "Git-ийн үдэш: баг дотор яаж ажиллах вэ", en: "Git night: how to work in a team", img: "git-workshop" },
     { slug: "pitch-night-autumn", kind: "meetup" as const, daysAgo: 5, mn: "Pitch Night · Намар", en: "Pitch Night · Autumn", img: "pitch-night" },
   ];
   const persona = (handle: string) => db.profiles.find((p) => p.handle === handle)?.id;

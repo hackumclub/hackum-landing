@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getPublicEvent, getPublicSlugs } from "@/lib/public/readers";
 import { copy, ticketDict } from "@/i18n/areas/public";
 import { fill, href, isLocale } from "@/i18n/config";
+import { overviewFallback } from "@/lib/events/overview";
 import { getDictionary } from "@/i18n";
 import EventTicket from "@/components/EventTicket";
 import EventTabs from "@/components/EventTabs";
@@ -68,7 +69,7 @@ export default async function Page({ params }: PageProps<"/[lang]/events/[slug]"
           <EventTabs
             labels={d.event.tabs}
             panels={[
-              <div key="o" className="space-y-3 text-muted"><p>{e.tagline[lang]}</p><p className="whitespace-pre-line">{description || fill(d.event.overview, vars)}</p><p><a className="font-bold text-brand" href="https://www.instagram.com/hackumclub/" target="_blank" rel="noopener noreferrer">@hackumclub</a></p></div>,
+              <div key="o" className="space-y-3 text-muted"><p>{e.tagline[lang]}</p><p className="whitespace-pre-line">{description || overviewFallback(lang, { name: e.name[lang], year: e.year, mode: e.mode, startsAt: e.startsAt, approximateDate: e.approximateDate, status: e.status })}</p><p><a className="font-bold text-brand" href="https://www.instagram.com/hackumclub/" target="_blank" rel="noopener noreferrer">@hackumclub</a></p></div>,
               <p key="p" className="text-muted">{d.event.prizes}</p>,
               <p key="s" className="text-muted">{fill(d.event.schedule, vars)}</p>,
             ]}

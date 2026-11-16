@@ -5,11 +5,7 @@ import { notFound } from "next/navigation";
 import { Share, Smartphone } from "lucide-react";
 import { copy } from "@/i18n/areas/me";
 import { isLocale } from "@/i18n/config";
-import { PERSONAS } from "@/lib/mockdb/seed";
-import { signInAs } from "@/lib/server/auth-actions";
-import Button from "@/components/ui/Button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import PersonaSwitcher from "@/components/live/PersonaSwitcher";
 import CalendarFeed from "@/components/me/CalendarFeed";
 import PrefsForm from "@/components/me/PrefsForm";
 import { IconCard, PageHeader, PageSkeleton } from "@/components/me/parts";
@@ -43,17 +39,6 @@ async function Body({ params }: Props) {
           <li className="flex items-start gap-3 rounded-[var(--radius-sm)] bg-panel-2 p-3"><Share aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-accent-fg" />{t.installIos}</li>
           <li className="flex items-start gap-3 rounded-[var(--radius-sm)] bg-panel-2 p-3"><Smartphone aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-accent-fg" />{t.installAndroid}</li>
         </ul>
-      </IconCard>
-
-      <IconCard id="demo" icon="passkey" tone="ember" title={t.demoTitle} line={t.demoLine}>
-        <div className="flex flex-wrap items-center gap-3">
-          <PersonaSwitcher lang={lang} personas={PERSONAS} current={session.handle} labels={d.admin.persona} />
-          <form action={signInAs}>
-            <input type="hidden" name="lang" value={lang} />
-            <input type="hidden" name="handle" value="" />
-            <Button type="submit" variant="secondary" size="lg">{t.demoSignOut}</Button>
-          </form>
-        </div>
       </IconCard>
     </div>
   );

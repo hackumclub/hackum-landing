@@ -50,7 +50,7 @@ export function countdown(ev: Pick<EventRow, "starts_at" | "ends_at">, now: Date
 
 // ── eligibility ──────────────────────────────────────────────────────────────────────────────────────────────────
 
-export type Reason = "members" | "alumni" | "invite" | "closed" | "not_open" | "full" | "cancelled";
+export type Reason = "members" | "alumni" | "invite" | "school" | "closed" | "not_open" | "full" | "cancelled";
 export type Eligibility = { ok: true; waitlist: boolean } | { ok: false; reason: Reason; at?: string };
 
 /** Can this person register right now, and if not, why? Mirrors the checks in registerForEvent so the UI never offers a dead end. */
@@ -58,6 +58,7 @@ export function eligibility(db: Db, ev: EventRow, me: Profile, now: Date): Eligi
   if (ev.status === "cancelled") return { ok: false, reason: "cancelled" };
   if (ev.status !== "published") return { ok: false, reason: "closed" };
   if (ev.audience === "invite") return { ok: false, reason: "invite" };
+  if (ev.school_scope === "num" && me.school_id !== "num") return { ok: false, reason: "school" };
   if (ev.audience === "members" && me.status !== "member") return { ok: false, reason: "members" };
   if (ev.audience === "alumni" && me.status !== "alumni") return { ok: false, reason: "alumni" };
   if (ev.reg_opens_at && now < new Date(ev.reg_opens_at)) return { ok: false, reason: "not_open", at: ev.reg_opens_at };
@@ -90,7 +91,7 @@ export type EventCardVm = {
   id: string; slug: string; kind: EventRow["kind"]; title: L; tagline: L;
   starts_at: string; ends_at: string; approximate: boolean; cover: string | null;
   mode: EventRow["mode"]; venue: string | null; onlineUrl: string | null;
-  regMode: EventRow["reg_mode"]; audience: EventRow["audience"]; cancelled: boolean;
+  regMode: EventRow["reg_mode"]; audience: EventRow["audience"]; schoolScope: EventRow["school_scope"]; cancelled: boolean;
   capacity: number | null; going: number; seatsLeft: number | null;
   decisionDeadline: string | null; teamMode: EventRow["team_mode"];
   live: boolean; over: boolean;
@@ -105,7 +106,7 @@ export function cardVm(db: Db, ev: EventRow, me: Profile, now: Date): EventCardV
     id: ev.id, slug: ev.slug, kind: ev.kind, title: ev.title, tagline: ev.tagline, starts_at: ev.starts_at, ends_at: ev.ends_at,
     approximate: ev.approximate_date, cover: ev.cover_path, mode: ev.mode, venue: ev.venue_name,
     onlineUrl: eventForViewer(db, ev.slug, me.id)?.online_url ?? null, // null unless the viewer holds a seat
-    regMode: ev.reg_mode, audience: ev.audience, cancelled: ev.status === "cancelled",
+    regMode: ev.reg_mode, audience: ev.audience, schoolScope: ev.school_scope, cancelled: ev.status === "cancelled",
     capacity: ev.capacity, going, seatsLeft: ev.capacity === null ? null : Math.max(0, ev.capacity - going),
     decisionDeadline: ev.decision_deadline, teamMode: ev.team_mode,
     live: new Date(ev.starts_at) <= now && new Date(ev.ends_at) > now, over: new Date(ev.ends_at) <= now,
@@ -181,6 +182,9 @@ export type MembershipView = {
   /** Membership is for NUM students who picked a major; anyone else stays a guest and is told why. */
   eligibility: "ok" | "school" | "major";
   canApply: boolean;
+  /** A member while an application window is open and they have not renewed (or asked to) for it. */
+  renew: { season: number; label: L; until: string } | null;
+  renewPending: boolean;
   history: { season: number; label: L; team: string | null; role: L | null }[];
 };
 
@@ -196,13 +200,18 @@ export function membershipView(db: Db, profileId: string, now: Date): Membership
   const eligible: MembershipView["eligibility"] = me.school_id !== "num" ? "school" : !me.major_track ? "major" : "ok";
   const mine = db.membership_applications.filter((a) => a.profile_id === profileId).sort((a, b) => b.created_at.localeCompare(a.created_at));
   const row = (open ? mine.find((a) => a.season === open.year) : undefined) ?? mine[0];
+  const hasSeason = (y: number) => db.memberships.some((m) => m.profile_id === profileId && m.season === y);
+  const pendingFor = (y: number) => mine.some((a) => a.season === y && a.status === "pending");
   const label = (y: number): L => db.seasons.find((s) => s.year === y)?.label ?? { mn: String(y), en: String(y) };
   return {
     status: me.status,
     window,
     app: row ? { status: row.status, season: row.season, created_at: row.created_at, reviewed_at: row.reviewed_at } : null,
     eligibility: eligible,
-    canApply: eligible === "ok" && me.status !== "member" && !!open && !mine.some((a) => a.season === open.year),
+    canApply: eligible === "ok" && me.status !== "member" && me.status !== "alumni" && !!open && !mine.some((a) => a.season === open.year),
+    renew: me.status === "member" && eligible !== "school" && !!open && !hasSeason(open.year) && !pendingFor(open.year)
+      ? { season: open.year, label: open.label, until: open.application_closes_at ?? "" } : null,
+    renewPending: me.status === "member" && !!open && !hasSeason(open.year) && pendingFor(open.year),
     history: db.memberships.filter((m) => m.profile_id === profileId).sort((a, b) => b.season - a.season).map((m) => ({ season: m.season, label: label(m.season), team: m.team, role: m.role_title })),
   };
 }

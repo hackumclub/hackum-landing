@@ -1,6 +1,8 @@
 "use client";
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
+import { chipClass } from "./control";
+import CountBadge from "./CountBadge";
 import { cx } from "./cx";
 
 /**
@@ -14,11 +16,11 @@ export default function FilterDisclosure({ label, activeCount, children, classNa
     <div className={cx("grid gap-3", className)}>
       <button
         type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}
-        className="inline-flex min-h-11 w-fit cursor-pointer items-center gap-2 rounded-full border border-line-strong bg-panel px-4 text-sm font-bold text-fg md:hidden"
+        className={chipClass(activeCount > 0, "min-h-11 w-fit gap-2 px-4 font-bold md:hidden")}
       >
         <SlidersHorizontal aria-hidden="true" size={16} />
         {label}
-        {activeCount > 0 && <span className="tnum grid min-w-5 place-items-center rounded-full bg-accent px-1.5 text-xs text-on-accent">{activeCount}</span>}
+        {activeCount > 0 && <CountBadge n={activeCount} className="bg-accent text-on-accent" />}
         <ChevronDown aria-hidden="true" size={16} className={cx("transition-transform duration-150", open && "rotate-180")} />
       </button>
       <div id={id} className={cx(open ? "grid" : "hidden", contentClassName ?? "gap-3 md:grid")}>{children}</div>

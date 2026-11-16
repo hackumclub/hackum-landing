@@ -10,6 +10,7 @@ import type { EventInput } from "@/lib/mockdb/events";
 export const KINDS = ["hackathon", "workshop", "meetup", "competition", "knowledge_day", "outing", "other"] as const satisfies readonly EventKind[];
 export const MODES = ["offline", "online", "hybrid"] as const satisfies readonly EventMode[];
 export const AUDIENCES = ["open", "members", "alumni", "invite"] as const satisfies readonly EventAudience[];
+export const SCOPES = ["all", "num"] as const satisfies readonly SchoolScope[];
 export const REG_MODES = ["rsvp", "application"] as const satisfies readonly RegMode[];
 export const TEAM_MODES = ["none", "optional", "required"] as const satisfies readonly TeamMode[];
 export const QUESTION_TYPES = ["short", "long", "select", "multi", "checkbox", "url"] as const satisfies readonly Question["type"][];
@@ -119,7 +120,8 @@ export function validate(s: FormState, opts: { takenSlugs: readonly string[] }):
   else if (s.starts_at && s.ends_at <= s.starts_at) e.ends_at = "end_before_start";
   if (!s.unlimited) {
     const n = s.capacity.trim() === "" ? Number.NaN : Number(s.capacity);
-    if (!Number.isInteger(n) || n < 1 || n > 5000) e.capacity = "capacity_range";
+    if (Number.isNaN(n) && s.capacity.trim() !== "") e.capacity = "capacity_nan";
+    else if (!Number.isInteger(n) || n < 1 || n > 5000) e.capacity = "capacity_range";
   }
   if (s.reg_closes_at && s.starts_at && s.reg_closes_at > s.starts_at) e.reg_closes_at = "closes_after_start";
   if (s.reg_opens_at && s.reg_closes_at && s.reg_opens_at > s.reg_closes_at) e.reg_opens_at = "opens_after_closes";
@@ -127,12 +129,19 @@ export function validate(s: FormState, opts: { takenSlugs: readonly string[] }):
   if (s.reg_mode === "application") {
     if (!s.decision_deadline) e.decision_deadline = "required";
     if (s.team_mode !== "none" && !(s.team_size_min >= 1 && s.team_size_min <= s.team_size_max && s.team_size_max <= 10)) e.team_size = "team_range";
-    if (s.questions.length > MAX_QUESTIONS) e.questions = "too_many";
-    s.questions.forEach((q, i) => {
-      if (!q.label.mn.trim()) e[`q${i}.label`] = "required";
-      if ((q.type === "select" || q.type === "multi") && (q.options ?? []).filter((o) => o.mn.trim()).length < 2) e[`q${i}.options`] = "options_min_2";
-    });
+    Object.assign(e, validateQuestions(s.questions));
   }
+  return e;
+}
+
+/** Errors for a question list (event form and the forms hub editor): `questions`, `q<i>.label`, `q<i>.options`. */
+export function validateQuestions(questions: readonly Question[]): FormErrors {
+  const e: FormErrors = {};
+  if (questions.length > MAX_QUESTIONS) e.questions = "too_many";
+  questions.forEach((q, i) => {
+    if (!q.label.mn.trim()) e[`q${i}.label`] = "required";
+    if ((q.type === "select" || q.type === "multi") && (q.options ?? []).filter((o) => o.mn.trim()).length < 2) e[`q${i}.options`] = "options_min_2";
+  });
   return e;
 }
 
@@ -160,7 +169,7 @@ export function moveQuestion(qs: Question[], index: number, dir: -1 | 1): Questi
 
 // ── before / after for the staged-edit dialog ──────────────────────────────────────────────────────────────────
 
-export const DIFF_KEYS = ["slug", "kind", "title", "tagline", "description", "starts_at", "ends_at", "mode", "venue_name", "venue_address", "online_url", "audience", "capacity", "waitlist", "reg_opens_at", "reg_closes_at", "cover_path", "reg_mode", "questions", "team_mode", "team_size_min", "team_size_max", "decision_deadline"] as const satisfies readonly (keyof EventInput)[];
+export const DIFF_KEYS = ["slug", "kind", "title", "tagline", "description", "starts_at", "ends_at", "mode", "venue_name", "venue_address", "online_url", "audience", "school_scope", "capacity", "waitlist", "reg_opens_at", "reg_closes_at", "cover_path", "reg_mode", "questions", "team_mode", "team_size_min", "team_size_max", "decision_deadline"] as const satisfies readonly (keyof EventInput)[];
 export type DiffKey = (typeof DIFF_KEYS)[number];
 /** Changing any of these tells people with a seat (mirrors NOTIFY_FIELDS in the rule). */
 const NOTIFY: readonly DiffKey[] = ["starts_at", "ends_at", "mode", "venue_name", "venue_address", "online_url"];

@@ -177,7 +177,7 @@ export default function MergePanel({ data, lang, c, common, status }: {
               <ProfileCard p={B} lang={lang} now={now} c={c} status={status} keep={keepId === B.id} onKeep={() => setKeepChoice(B.id)} />
             </div>
           </fieldset>
-          <div className="sticky bottom-3 z-20 -mx-1 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] border border-line-strong bg-panel px-3 py-3 shadow-[var(--shadow-card)]">
+          <div className="sticky bottom-3 z-20 -mx-1 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] border border-line bg-panel px-3 py-3 shadow-[var(--shadow-float)]">
             <p className="min-w-0 flex-1 text-sm text-fg-muted max-sm:basis-full">{moves ? fill(c.confirmBody, { moves }) : fill(c.confirmNothing, { drop: personName(drop, lang) })}</p>
             <ConfirmDialog
               trigger={<Button variant="danger" size="lg" className="max-sm:w-full" icon={<GitMerge aria-hidden="true" size={18} />} disabled={busy}>{c.mergeButton}</Button>}

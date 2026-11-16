@@ -8,6 +8,8 @@ export const CLUB = {
   name: "Hackum Students Club",
   short: "Hackum",
   founded: 2017,
+  /** Where alumni and visitors write to the club. Set NEXT_PUBLIC_CLUB_EMAIL once the club domain exists; until then links fall back to Instagram. */
+  email: process.env.NEXT_PUBLIC_CLUB_EMAIL?.trim() || null,
   socials: [
     ["Instagram", "https://www.instagram.com/hackumclub/"],
     ["Facebook", "https://www.facebook.com/share/1EjHXrvMXp/"],

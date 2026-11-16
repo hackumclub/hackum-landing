@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { ALL_TEMPLATES, renderEmail } from "@/emails/render";
+import { ALL_TEMPLATES, logoHtml, renderEmail } from "@/emails/render";
 import { SITE_URL } from "@/lib/site-url";
 import type { Locale } from "@/i18n/config";
 import type { Notification, TemplateName } from "@/lib/mockdb/types";
@@ -31,8 +31,9 @@ const full: Payload = {
 const hostile = Object.fromEntries(Object.entries(full).map(([k, v]) => [k, typeof v === "string" && k !== "starts_at" && k !== "ends_at" && k !== "mode" ? `${v}${SENTINEL}` : v])) as Payload;
 
 describe("ALL_TEMPLATES", () => {
-  it("lists the 13 templates once each", () => {
-    expect(new Set(ALL_TEMPLATES).size).toBe(13);
+  it("lists the 15 templates once each", () => {
+    expect(new Set(ALL_TEMPLATES).size).toBe(15);
+    expect(ALL_TEMPLATES).toEqual(expect.arrayContaining(["feedback_request", "poll_opened"]));
     expect(ALL_TEMPLATES).toContain("reminder_24h");
   });
 });
@@ -46,7 +47,9 @@ describe.each(LANGS)("renderEmail %s", (lang) => {
     expect(r.html).toContain("<!doctype html>");
     expect(r.html).toContain(`lang="${lang}"`);
     expect(r.html).toContain("#0085ca");
-    expect(r.html).toContain(`${SITE_URL}/img/brand/logo-128.png`);
+    // A public https origin gets the logo image; any other origin (local dev) gets the text mark, never a dead image.
+    expect(r.html).toContain(logoHtml(SITE_URL));
+    expect(r.html).not.toContain("http://localhost:3000/img/");
     expect(r.html).toContain(`href="${SITE_URL}/${lang}/me/settings"`);
     expect(r.text).toContain(`${SITE_URL}/${lang}/me/settings`);
     expect(r.html + r.text).not.toMatch(/undefined|\bnull\b|NaN|\[object/);
@@ -155,4 +158,17 @@ describe("content rules", () => {
   it("membership emails mention the season", () => {
     expect(renderEmail("membership_approved", full, "en").text).toContain("2026");
   });
+});
+
+describe("logoHtml", () => {
+  it("uses the hosted logo only on a public https origin", () => {
+    expect(logoHtml("https://hackum.mn")).toContain('src="https://hackum.mn/img/brand/logo-128.png"');
+  });
+  it.each(["http://localhost:3000", "http://localhost:3100", "https://localhost", "http://127.0.0.1:3000", "http://hackum.mn", "https://dev.local", "not a url"])(
+    "falls back to a text mark with no image for %s", (origin) => {
+      const html = logoHtml(origin);
+      expect(html).not.toContain("<img");
+      expect(html).toContain(">H</span>");
+    },
+  );
 });

@@ -22,7 +22,7 @@ export const STATUS_STYLE = {
 
 export default function StatusPill({ status, label, className }: { status: Status; label: string; className?: string }) {
   return (
-    <span className={cx("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold whitespace-nowrap", TONE[STATUS_STYLE[status]], className)}>
+    <span className={cx("inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs leading-none font-bold whitespace-nowrap", TONE[STATUS_STYLE[status]], className)}>
       {label}
     </span>
   );

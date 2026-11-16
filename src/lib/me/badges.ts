@@ -11,14 +11,14 @@ export type Badge = {
   tier: BadgeTier;
   earned: boolean;
   progress: { have: number; need: number };
-  /** Needs a feature that ships in a later slice (event feedback, results): shown locked with a "coming soon" label. */
+  /** Needs a feature that ships in a later slice (event results): shown locked with a "coming soon" label. */
   comingSoon?: true;
 };
 
 const HOUR = 3_600_000;
 const EARLY_WINDOW_H = 24;
 const EARLY_RANK = 10;
-const NEED = { regular: 5, twoSeasons: 2, team: 3 } as const;
+const NEED = { regular: 5, twoSeasons: 2, team: 3, feedback: 3 } as const;
 
 const make = (id: BadgeId, tier: BadgeTier, have: number, need: number, extra: { comingSoon?: true } = {}): Badge => ({
   id, tier, earned: have >= need, progress: { have: Math.min(have, need), need }, ...extra,
@@ -34,6 +34,8 @@ export function computeBadges(db: Db, profileId: string, now: Date = new Date())
   const firstEvent = mine.filter((r) => r.status === "attended" || (r.status === "going" && over(r.event_id))).length;
   const hackathons = mine.filter((r) => (r.status === "attended" || r.status === "going") && eventOf(r.event_id)?.kind === "hackathon").length;
   const seasons = new Set(db.memberships.filter((m) => m.profile_id === profileId).map((m) => m.season)).size;
+  // "Voice of the club": three event surveys answered (one row per person per event, so this is also three different events).
+  const feedbackCount = db.event_feedback.filter((f) => f.profile_id === profileId).length;
   const staff = db.staff_roles.some((r) => r.profile_id === profileId);
   const mentor = me?.status === "alumni" && db.memberships.some((m) => m.profile_id === profileId);
 
@@ -59,7 +61,7 @@ export function computeBadges(db: Db, profileId: string, now: Date = new Date())
     make("first-event", "bronze", firstEvent, 1),
     make("regular", "silver", attended.length, NEED.regular),
     make("hackathon", "silver", hackathons, 1),
-    make("feedback", "bronze", 0, 1, { comingSoon: true }),
+    make("feedback", "bronze", feedbackCount, NEED.feedback),
     make("two-seasons", "silver", seasons, NEED.twoSeasons),
     make("organizer", "gold", staff ? 1 : 0, 1),
     make("mentor", "gold", mentor ? 1 : 0, 1),

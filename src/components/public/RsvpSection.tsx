@@ -17,7 +17,8 @@ function loadPanel(slug: string, lang: Locale, session: Awaited<ReturnType<typeo
   const db = getStore().read();
   const ev = eventForViewer(db, slug, session?.profileId ?? null); // hides the online link from people without a seat
   if (!ev) return null;
-  const view = rsvpView(db, ev, session && { profileId: session.profileId, status: session.status, onboarded: session.onboarded }, now);
+  const schoolId = session ? (db.profiles.find((p) => p.id === session.profileId)?.school_id ?? null) : null;
+  const view = rsvpView(db, ev, session && { profileId: session.profileId, status: session.status, onboarded: session.onboarded, schoolId }, now);
   const who = publicAttendees(db, ev.id, 5);
   const eventPath = href(lang, `/events/${ev.slug}`);
   const applyPath = href(lang, `/me/events/${ev.slug}/apply`);
@@ -27,6 +28,8 @@ function loadPanel(slug: string, lang: Locale, session: Awaited<ReturnType<typeo
   return {
     copy: copy[lang].rsvp,
     eventId: ev.id,
+    scope: ev.school_scope,
+    lang,
     name: ev.title[lang].trim() || ev.title.mn,
     view,
     seats: seatInfo(db, ev),
@@ -42,6 +45,8 @@ function loadPanel(slug: string, lang: Locale, session: Awaited<ReturnType<typeo
       myEvents: href(lang, "/me/events"),
       apply: applyPath,
       join: href(lang, "/join"),
+      membership: href(lang, "/me/membership"),
+      browse: href(lang, "/events"),
       ics: `/api/events/${encodeURIComponent(ev.slug)}/ics?lang=${lang}`,
       ...(seated ? { google: googleCalendarUrl(toIcsEvent(ev, { lang, includeOnline: true })) } : {}),
       ...(seated && ev.online_url && /^https?:\/\//i.test(ev.online_url) ? { online: ev.online_url } : {}),

@@ -4,18 +4,22 @@ import { useRouter } from "next/navigation";
 import { useId, useOptimistic, useState, useTransition } from "react";
 import { CalendarPlus, Check, Loader2, Ticket, Video } from "lucide-react";
 import Sticker from "@/components/Sticker";
-import { fill } from "@/i18n/config";
+import ScopeTag from "./ScopeTag";
+import { fill, type Locale } from "@/i18n/config";
 import type { PublicCopy } from "@/i18n/areas/public";
 import type { Result } from "@/lib/result";
 import { cancelRsvp, rsvp } from "@/lib/me/actions";
 import type { RsvpView } from "@/lib/public/rsvp";
 import type { SeatInfo } from "@/lib/public/types";
 
-export type PanelLinks = { signIn: string; onboarding: string; myEvents: string; apply: string; join: string; ics: string; google?: string; online?: string };
+export type PanelLinks = { signIn: string; onboarding: string; myEvents: string; apply: string; join: string; membership: string; browse: string; ics: string; google?: string; online?: string };
 export type PanelProps = {
   copy: PublicCopy["rsvp"];
   eventId: string;
   name: string;
+  /** Which schools may register (`events.school_scope`); shown as a tag. */
+  scope: "num" | "all";
+  lang: Locale;
   view: RsvpView;
   seats: SeatInfo;
   /** Pre-formatted dates (UB time) for the notes that need one. */
@@ -38,7 +42,7 @@ const chip = "inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm fo
  * The registration panel on an event page. The server decides what to offer (src/lib/public/rsvp.ts); this component
  * only performs the two actions, shows an optimistic state while they run and maps every error code to a message.
  */
-export default function RsvpPanel({ copy: c, eventId, name, view, seats, dates, attendees, ordinal, links }: PanelProps) {
+export default function RsvpPanel({ copy: c, eventId, name, scope, lang, view, seats, dates, attendees, ordinal, links }: PanelProps) {
   const router = useRouter();
   const [state, setOptimistic] = useOptimistic<RsvpView, RsvpView>(view, (_current, next) => next);
   const [pending, start] = useTransition();
@@ -65,7 +69,10 @@ export default function RsvpPanel({ copy: c, eventId, name, view, seats, dates, 
 
   return (
     <section aria-labelledby={`${errorId}-h`} aria-busy={pending} className="min-w-0">
-      <h2 id={`${errorId}-h`} className="font-display text-lg font-black">{c.title}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id={`${errorId}-h`} className="font-display text-lg font-black">{c.title}</h2>
+        <ScopeTag scope={scope} lang={lang} />
+      </div>
       <div className="mt-4 space-y-4">
         <Seats c={c} capacity={seats.capacity} left={left} going={going} waitlisted={seats.waitlisted} />
         <Body c={c} state={state} pending={pending} name={name} dates={dates} ordinal={ordinal} links={links}
@@ -130,7 +137,12 @@ function Body({ c, state, pending, name, dates, ordinal, links, confirming, conf
   const note = "text-sm text-muted";
   switch (state.kind) {
     case "signed_out":
-      return <div className="space-y-2"><Link href={links.signIn} className={primary}>{state.apply ? c.signInApply : c.signInRsvp}</Link><p className={note}>{c.signInNote}</p></div>;
+      return (
+        <div className="space-y-2">
+          <Link href={links.signIn} className={primary}>{state.apply ? c.signInApply : c.signInRsvp}</Link>
+          <p className={note}>{c.signInNote} <Link href={links.join} className="inline-flex min-h-[44px] items-center font-bold text-brand-deep underline decoration-2 underline-offset-4">{c.createAccountCta}</Link></p>
+        </div>
+      );
     case "needs_onboarding":
       return <div className="space-y-2"><p className="font-bold">{c.finishProfile}</p><p className={note}>{c.finishProfileLead}</p><Link href={links.onboarding} className={primary}>{c.finishProfileCta}</Link></div>;
     case "rsvp":
@@ -191,10 +203,24 @@ function Body({ c, state, pending, name, dates, ordinal, links, confirming, conf
     case "cancelled":
       return <p className="text-sm font-bold">{c.cancelled}</p>;
     case "blocked":
+      if (state.reason === "school" || (state.reason === "members" && state.numOnly)) {
+        // F-12: membership is impossible for this person, so say so and point at what they can do instead.
+        return (
+          <div className="space-y-3">
+            <p className="font-bold">{c.numOnly}</p>
+            <p className={note}>{c.numOnlyLead}</p>
+            <div className="flex flex-wrap gap-2">
+              <Link href={links.membership} className={secondary}>{c.numOnlyMembership}</Link>
+              <Link href={links.browse} className={secondary}>{c.browseOpen}</Link>
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="space-y-3">
           <p className="text-sm font-bold">{state.reason === "not_open" ? (dates.opensAt ? fill(c.notOpen, { date: dates.opensAt }) : c.notOpenNoDate) : c[state.reason]}</p>
-          {state.reason === "members" || state.reason === "alumni" ? <Link href={links.join} className={secondary}>{c.membersCta}</Link> : null}
+          {state.reason === "members" ? <Link href={links.membership} className={secondary}>{c.membersCta}</Link> : null}
+          {state.reason === "alumni" ? <Link href={links.browse} className={secondary}>{c.browseOpen}</Link> : null}
         </div>
       );
   }

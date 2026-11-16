@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type ReactNode } from "react";
 import { GraduationCap, Mail, RefreshCw, ShieldCheck, UserRound } from "lucide-react";
@@ -7,16 +8,21 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Drawer from "@/components/ui/Drawer";
 import StatusPill from "@/components/ui/StatusPill";
 import Avatar from "@/components/ui/Avatar";
-import { fill, tf, type Locale } from "@/i18n/config";
+import Tag, { type TagTone } from "@/components/ui/Tag";
+import { fill, href, tf, type Locale } from "@/i18n/config";
 import type { Dict } from "@/i18n";
 import type { AreaCopy } from "@/i18n/areas/admin-members";
 import { setStatusAction } from "@/lib/members/actions";
 import { relativeTime } from "@/lib/members/format";
+import { MAJOR_TRACKS } from "@/lib/num/schools";
+import { semesterLabel } from "@/lib/semester";
 import type { MemberStatus } from "@/lib/status";
-import { formatUb } from "@/lib/time";
+import { formatUbStable } from "@/lib/time";
 import type { MemberDto } from "./data";
 import { errorText } from "./shared";
 
+export type BadgeCopy = { names: Record<string, string>; tiers: Record<string, string> };
+const TIER_TONE: Record<string, TagTone> = { bronze: "ember", silver: "neutral", gold: "warn" };
 const SAFE_URL = /^https?:\/\//i;
 const TARGETS: { status: MemberStatus; verb: "promote" | "alumni" | "guest" }[] = [
   { status: "member", verb: "promote" }, { status: "alumni", verb: "alumni" }, { status: "guest", verb: "guest" },
@@ -41,8 +47,8 @@ const Row = ({ k, children }: { k: string; children: ReactNode }) => (
  * Profile card for staff: who they are at a glance (avatar, status, school/year), seasons as chips, registrations, applications,
  * then contact details. The one big action, "Change status", is pinned to the bottom so it is always in reach on a phone.
  */
-export default function MemberDrawer({ member, now, lang, c, common, bulk, status, onClose }: {
-  member: MemberDto | null; now: Date; lang: Locale; c: AreaCopy["members"]["drawer"] & { never: string }; common: AreaCopy["common"];
+export default function MemberDrawer({ member, now, lang, c, lists, badges, common, bulk, status, onClose }: {
+  member: MemberDto | null; now: Date; lang: Locale; c: AreaCopy["members"]["drawer"] & { never: string }; lists: AreaCopy["lists"]; badges: BadgeCopy; common: AreaCopy["common"];
   bulk: AreaCopy["members"]["directory"]["bulk"]; status: Dict["status"]; onClose: () => void;
 }) {
   const router = useRouter();
@@ -50,7 +56,9 @@ export default function MemberDrawer({ member, now, lang, c, common, bulk, statu
   const [choosing, setChoosing] = useState(false);
   const [result, setResult] = useState<{ tone: "ok" | "error"; text: string; for: string } | null>(null);
   const name = member ? tf(member.name, lang).trim() || member.name.mn || member.handle : "";
-  const when = (iso: string) => formatUb(new Date(iso), lang, { year: "numeric", month: "short", day: "numeric" });
+  const when = (iso: string) => formatUbStable(new Date(iso), lang, "date");
+  const lm = lists.members.drawer;
+  const track = member?.track ? tf(MAJOR_TRACKS.find((x) => x.id === member.track)?.name ?? { mn: member.track, en: member.track }, lang) : null;
   const notice = result && member && result.for === member.id ? result : null;
 
   const change = (target: MemberStatus) => {
@@ -70,7 +78,7 @@ export default function MemberDrawer({ member, now, lang, c, common, bulk, statu
       {member && (
         <div className="grid gap-5">
           <div className="grid justify-items-center gap-2 rounded-[var(--radius-md)] bg-[radial-gradient(120%_120%_at_50%_0%,var(--ops-accent-soft),var(--ops-panel)_70%)] px-4 py-5 text-center">
-            <Avatar name={name} size={72} className="ring-4 ring-panel" />
+            <Avatar name={name} src={member.avatar} size={72} className="ring-4 ring-panel" />
             <p className="font-display text-xl font-black [overflow-wrap:anywhere] text-fg">{name}</p>
             <div className="flex flex-wrap items-center justify-center gap-2">
               <StatusPill status={member.status} label={status[member.status]} />
@@ -78,11 +86,11 @@ export default function MemberDrawer({ member, now, lang, c, common, bulk, statu
             </div>
             {(member.school || member.gradYear) && (
               <p className="inline-flex flex-wrap items-center justify-center gap-1.5 text-sm text-fg">
-                <GraduationCap aria-hidden="true" size={16} className="text-fg-muted" />
-                {[member.school, member.gradYear ? fill(c.classOf, { year: member.gradYear }) : null].filter(Boolean).join(" · ")}
+                <Tag tone={member.schoolId === "num" ? "accent" : "neutral"} icon={GraduationCap}>{member.schoolId === "num" ? lists.members.schools.num : (member.school ?? lists.members.schools.other)}</Tag>
+                {member.gradYear ? fill(c.classOf, { year: member.gradYear }) : null}
               </p>
             )}
-            {member.major && <p className="text-sm text-fg-muted">{member.major}</p>}
+            {(track || member.major || member.program) && <p className="text-sm text-fg-muted">{[track, member.major, member.program].filter(Boolean).join(" · ")}</p>}
           </div>
 
           {notice && (
@@ -108,12 +116,34 @@ export default function MemberDrawer({ member, now, lang, c, common, bulk, statu
                 {member.registrations.map((r) => (
                   <li key={r.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] bg-panel-2 px-3 py-2 text-sm">
                     <span className="grid min-w-0">
-                      <span className="font-semibold [overflow-wrap:anywhere] text-fg">{tf(r.event, lang)}</span>
+                      <Link href={href(lang, `/admin/events/${r.eventId}/registrations?q=${encodeURIComponent(name)}`)} aria-label={fill(lm.eventLink, { event: tf(r.event, lang) })} className="font-semibold [overflow-wrap:anywhere] text-fg underline-offset-2 hover:text-accent-fg hover:underline">{tf(r.event, lang)}</Link>
                       <span className="text-xs text-fg-muted">{when(r.startsAt)}</span>
                     </span>
                     <StatusPill status={r.status} label={status[r.status]} />
                   </li>
                 ))}
+              </ul>
+            )}
+          </Section>
+
+          {member.semesters.length > 0 && (
+            <Section title={lm.subjects}>
+              <p className="text-xs text-fg-muted">{lm.subjectsNote}</p>
+              <ul className="grid gap-2">
+                {member.semesters.map((x) => (
+                  <li key={`${x.year}-${x.term}`} className="grid gap-1.5 rounded-[var(--radius-sm)] bg-panel-2 px-3 py-2 text-sm">
+                    <span className="font-semibold text-fg">{semesterLabel(x, lang)}</span>
+                    <span className="flex flex-wrap gap-1.5">{x.subjects.map((sub) => <Tag key={sub}>{sub}</Tag>)}</span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          <Section title={lm.badges}>
+            {member.badges.length === 0 ? <p className="text-sm text-fg-muted">{lm.noBadges}</p> : (
+              <ul className="flex flex-wrap gap-2">
+                {member.badges.map((b) => <li key={b.id}><Tag tone={TIER_TONE[b.tier] ?? "neutral"}>{badges.names[b.id] ?? b.id}<span className="sr-only"> ({badges.tiers[b.tier] ?? b.tier})</span></Tag></li>)}
               </ul>
             )}
           </Section>
@@ -151,11 +181,13 @@ export default function MemberDrawer({ member, now, lang, c, common, bulk, statu
                 </span>
               </Row>
               <Row k={c.school}>{member.school ?? "—"}</Row>
+              <Row k={lm.track}>{track ?? "—"}</Row>
               <Row k={c.major}>{member.major ?? "—"}</Row>
+              <Row k={lm.program}>{member.program ?? "—"}</Row>
               <Row k={c.gradYear}>{member.gradYear ?? "—"}</Row>
               <Row k={c.language}>{member.locale === "mn" ? "Монгол" : "English"}</Row>
               <Row k={c.joined}>{when(member.createdAt)}</Row>
-              <Row k={c.lastSeen}>{member.lastSeenAt ? <span title={formatUb(new Date(member.lastSeenAt), lang, { dateStyle: "medium", timeStyle: "short" })}>{relativeTime(new Date(member.lastSeenAt), now, lang)}</span> : c.never}</Row>
+              <Row k={c.lastSeen}>{member.lastSeenAt ? <span title={formatUbStable(new Date(member.lastSeenAt), lang, "datetime")}>{relativeTime(new Date(member.lastSeenAt), now, lang)}</span> : c.never}</Row>
               {Object.entries(member.links).filter(([, v]) => SAFE_URL.test(v)).map(([k, v]) => (
                 <Row key={k} k={`${c.links} · ${k}`}><a href={v} target="_blank" rel="noopener noreferrer" className="break-all font-semibold text-accent-fg hover:underline">{v}</a></Row>
               ))}

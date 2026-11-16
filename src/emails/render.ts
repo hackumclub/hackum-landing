@@ -18,6 +18,20 @@ export const ALL_TEMPLATES: readonly TemplateName[] = [
 
 const BRAND = "#0085ca";
 const BUTTON = "#00689d"; // darker than the brand blue so white button text passes AA (≥4.5:1)
+/**
+ * Mail clients and the admin preview cannot load images from a private origin, so the logo image is used only when the
+ * site origin is a public https one (the real SITE_URL in production). Otherwise the header shows a text-only mark: a
+ * white disc with an "H" and the wordmark, which needs no network.
+ */
+export function logoHtml(origin: string): string {
+  let host = "";
+  try { host = new URL(origin).hostname; } catch { /* not a URL: text mark */ }
+  const publicHttps = origin.startsWith("https://") && host !== "" && host !== "localhost" && host !== "127.0.0.1" && !host.endsWith(".local");
+  return publicHttps
+    ? `<img src="${origin}/img/brand/logo-128.png" width="40" height="40" alt="" style="vertical-align:middle;border:0;border-radius:20px;">`
+    : `<span style="display:inline-block;vertical-align:middle;width:40px;height:40px;line-height:40px;border-radius:20px;background:#ffffff;color:${BRAND};font-size:22px;font-weight:800;text-align:center;font-family:${FONT};">H</span>`;
+}
+
 const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 const ORGANIZER = process.env.EMAIL_ORGANIZER ?? "noreply@hackum.club";
 
@@ -293,7 +307,7 @@ function htmlOf(c: Content, ev: Ev, lang: Locale, settingsUrl: string): string {
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(c.paragraphs[1] ?? c.heading)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f5f8;"><tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;">
-<tr><td style="background:${BRAND};padding:18px 24px;"><img src="${SITE_URL}/img/brand/logo-128.png" width="40" height="40" alt="Hackum" style="vertical-align:middle;border:0;"> <span style="vertical-align:middle;margin-left:10px;color:#ffffff;font-size:20px;font-weight:700;font-family:${FONT};">Hackum</span></td></tr>
+<tr><td style="background:${BRAND};padding:18px 24px;">${logoHtml(SITE_URL)} <span style="vertical-align:middle;margin-left:10px;color:#ffffff;font-size:20px;font-weight:700;font-family:${FONT};">Hackum</span></td></tr>
 <tr><td style="padding:28px 24px 12px;"><h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#14202b;font-family:${FONT};">${esc(c.heading)}</h1>${paras}${facts}${button}${links}</td></tr>
 <tr><td style="padding:16px 24px 24px;border-top:1px solid #e3e8ee;font-size:13px;line-height:1.5;color:#5b6572;">${esc(L(lang, "Та Hackum клубт бүртгэлтэй тул энэ имэйлийг авлаа.", "You're getting this because you have a Hackum account."))} <a href="${esc(settingsUrl)}" style="color:${BUTTON};">${esc(L(lang, "Мэдэгдлийн тохиргоо", "Notification settings"))}</a></td></tr>
 </table></td></tr></table></body></html>`;

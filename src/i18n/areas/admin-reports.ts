@@ -1,0 +1,203 @@
+// Copy for the admin Reports area (event report, period report, print and image export). Mongolian is the source;
+// English is typed against it so a missing key fails tsc. Placeholders are filled with fill().
+import type { Plural } from "@/i18n/plural";
+
+const p = (one: string, other: string = one): Plural => ({ one, other });
+
+const mn = {
+  nav: "Тайлан",
+  na: "—",
+  anonymous: "Нэргүй",
+  tool: {
+    label: "Тайлан татах",
+    pdf: "PDF татах",
+    pdfHint: "Хэвлэх цонхонд “PDF болгон хадгалах”-ыг сонгоно уу.",
+    allImages: "Бүх зургийг татах",
+    allImagesBusy: "Татаж байна…",
+    allDone: "{n} зураг татлаа",
+    image: "Зураг татах",
+    imageLabel: "Зураг татах: {chart}",
+    imageFail: "Зургийг үүсгэж чадсангүй. Дахин оролдоно уу.",
+    close: "Хаах",
+  },
+  doc: {
+    brand: "Hackum клуб",
+    eventReport: "Эвентийн тайлан",
+    periodReport: "Хугацааны тайлан",
+    generated: "Үүсгэсэн: {when} · UTC+8",
+    title: "Hackum тайлан — {name}",
+    scope: { num: "МУИС-ийн оюутан", all: "Бүх сургууль" },
+    range: "{from} – {to}",
+  },
+  event: {
+    title: "Эвентийн тайлан",
+    loading: "Тайланг ачаалж байна…",
+    tab: "Тайлан",
+    notReady: { title: "Тайлан эвент дууссаны дараа гарна", line: "Энэ эвент “{status}” төлөвтэй байна. Одоохондоо бүртгэлийн дүнг дүн шинжилгээнээс харна уу.", action: "Дүн шинжилгээ үзэх" },
+    sections: { summary: "Товч дүн", audience: "Оролцогчид", feedback: "Санал сэтгэгдэл" },
+    kpi: {
+      registered: "Бүртгүүлсэн", going: "Ирнэ гэсэн", attended: "Ирсэн", showRate: "Ирцийн хувь", rating: "Дундаж үнэлгээ", nps: "NPS", responseRate: "Хариу өгсөн хувь",
+      showRateHint: "ирсэн ÷ ирэх байсан", ratingHint: "5-аас", npsHint: "-100-аас +100", responseHint: "{n} хүн хариулсан",
+    },
+    funnel: {
+      title: "Бүртгэлээс ирц хүртэл", head: ["Шат", "Хүн", "Өмнөх шатнаас"] as [string, string, string],
+      steps: { registered: "Бүртгүүлсэн", going: "Ирнэ гэсэн", attended: "Ирсэн" },
+      takeaway: "{registered} хүн бүртгүүлж, {attended} нь ирлээ. Ирээгүй {noShow}, хүлээлгэд {waitlisted}.",
+    },
+    days: { title: "Өдөр тутмын бүртгэл", series: "бүртгэл", head: ["Өдөр", "Бүртгэл"] as [string, string], takeaway: "Нийт {n} бүртгэл. Хамгийн их нь {day} ({peak})." },
+    school: {
+      title: "Ирсэн хүмүүс: сургуулиар", centre: "хүн", other: "Бусад", head: ["Сургууль", "Хүн", "Хувь"] as [string, string, string],
+      takeaway: "{school} хамгийн олон ({n} хүн).", none: "Ирсэн хүн бүртгэгдээгүй байна.",
+    },
+    track: { title: "Ирсэн хүмүүс: мэргэжлийн чиглэлээр", group: "Чиглэл", series: "Хүн", takeaway: "{track} чиглэл хамгийн олон ({n} хүн)." },
+    fresh: {
+      title: "Шинэ ба буцаж ирсэн", centre: "хүн", other: "Бусад", head: ["Төрөл", "Хүн", "Хувь"] as [string, string, string],
+      new: "Анх удаа", returning: "Өмнө нь ирж байсан", takeaway: "{returning} хүн өмнөх эвентүүдэд ч ирж байсан, {fresh} хүн анх удаа ирлээ.",
+    },
+    unknown: "Мэдээлэлгүй",
+    feedback: {
+      empty: { title: "Санал сэтгэгдэл хараахан алга", line: "Ирсэн хүмүүсээс 14 хоногийн дотор санал авна. Хариу ирмэгц энд харагдана." },
+      ratingTitle: "Үнэлгээний тархалт", ratingGroup: "Үнэлгээ", ratingSeries: "Хүн", star: p("{n} од", "{n} од"),
+      ratingTakeaway: "Дундаж {avg} / 5, {n} хүн үнэлсэн.",
+      npsTitle: "NPS: найздаа санал болгох уу?", npsTakeaway: "NPS {nps}: 9–10 өгсөн хүний хувь, 0–6 өгсөн хүний хувийн зөрүү.", npsHead: ["Үзүүлэлт", "Утга"] as [string, string],
+      npsScale: { low: "-100", mid: "0", high: "+100" }, npsValue: "NPS",
+      commentsTitle: "Сэтгэгдлүүд", well: "Сайн байсан", improve: "Сайжруулах", noWell: "Сайн талын сэтгэгдэл алга.", noImprove: "Сайжруулах санал алга.",
+    },
+  },
+  period: {
+    title: "Тайлан",
+    lead: "Улирал эсвэл жилийн дүнг нэг баримт болгон хэвлэж, зургаар нь хадгална.",
+    loading: "Тайланг ачаалж байна…",
+    controls: "Тайлангийн хугацаа",
+    rangeDefault: "Энэ улирал",
+    openAnalytics: "Дүн шинжилгээ",
+    openReport: "Тайлан нээх",
+    sections: { summary: "Товч дүн", events: "Эвентүүд", compare: "Улирлын харьцуулалт", people: "Оролцогчид ба санал асуулга" },
+    kpi: { events: "Эвент", attendees: "Давтагдаагүй оролцогч", showRate: "Ирцийн хувь", newMembers: "Шинэ гишүүн", rating: "Дундаж үнэлгээ", nps: "NPS" },
+    days: { title: "Өдөр тутмын бүртгэл", series: "бүртгэл", head: ["Өдөр", "Бүртгэл"] as [string, string], takeaway: "Нийт {n} бүртгэл. Хамгийн их нь {day} ({peak})." },
+    events: {
+      title: "Дууссан эвентүүд", caption: "Дууссан эвентүүдийн ирц, үнэлгээ, NPS",
+      cols: { event: "Эвент", date: "Огноо", attended: "Ирсэн", registered: "Бүртгүүлсэн", rating: "Үнэлгээ", nps: "NPS", responses: "Хариу" },
+      open: "Тайлан: {title}",
+      empty: { title: "Энэ хугацаанд дууссан эвент алга", line: "Огнооны завсрыг өргөсгөөд дахин үзнэ үү." },
+    },
+    compare: {
+      title: "Улирал бүрийн дүн", caption: "Улирлын харьцуулалт",
+      cols: { semester: "Улирал", events: "Эвент", registrations: "Бүртгэл", attended: "Ирсэн" },
+      chartTitle: "Бүртгэл ба ирц улирлаар", group: "Улирал", seriesRegistrations: "Бүртгэл", seriesAttended: "Ирсэн",
+      takeaway: "{semester} улиралд хамгийн олон хүн ирлээ ({n}).",
+      empty: { title: "Харьцуулах улирал алга", line: "Огнооны завсрыг өргөсгөөд дахин үзнэ үү." },
+    },
+    retention: {
+      title: "Буцаж ирэлт", caption: "Анх ирсэн улирлаар хамаарсан буцаж ирэлт",
+      cols: { cohort: "Анх ирсэн улирал", total: "Хүн", returned: "Буцаж ирсэн", rate: "Хувь" },
+      empty: { title: "Буцаж ирэлтийн мэдээлэл алга", line: "Хоёр улирлаас дээш хугацаа сонгоно уу." },
+    },
+    polls: {
+      title: "Санал асуулгын оролцоо", caption: "Хаагдсан санал асуулгын оролцоо",
+      cols: { poll: "Санал асуулга", voted: "Санал өгсөн", eligible: "Эрхтэй", turnout: "Оролцоо" },
+      empty: { title: "Энэ хугацаанд хаагдсан санал асуулга алга", line: "Санал асуулгыг Санал асуулга хэсэгт үүсгэнэ." },
+    },
+  },
+  error: { title: "Тайланг ачаалж чадсангүй", line: "Өгөгдлийг уншиж чадсангүй. Дахин оролдоно уу.", retry: "Дахин оролдох" },
+};
+
+const en: typeof mn = {
+  nav: "Reports",
+  na: "n/a",
+  anonymous: "Anonymous",
+  tool: {
+    label: "Export the report",
+    pdf: "Download PDF",
+    pdfHint: "Choose “Save as PDF” in the print window.",
+    allImages: "Download all images",
+    allImagesBusy: "Downloading…",
+    allDone: "{n} images downloaded",
+    image: "Download image",
+    imageLabel: "Download image: {chart}",
+    imageFail: "Could not create the image. Try again.",
+    close: "Close",
+  },
+  doc: {
+    brand: "Hackum Students Club",
+    eventReport: "Event report",
+    periodReport: "Period report",
+    generated: "Generated {when} · UTC+8",
+    title: "Hackum report — {name}",
+    scope: { num: "NUM students", all: "All schools" },
+    range: "{from} – {to}",
+  },
+  event: {
+    title: "Event report",
+    loading: "Loading the report…",
+    tab: "Report",
+    notReady: { title: "The report is ready once the event is completed", line: "This event is “{status}”. For now, read the registration numbers in Analytics.", action: "Open analytics" },
+    sections: { summary: "At a glance", audience: "Who came", feedback: "Feedback" },
+    kpi: {
+      registered: "Registered", going: "Going", attended: "Attended", showRate: "Show rate", rating: "Average rating", nps: "NPS", responseRate: "Response rate",
+      showRateHint: "attended ÷ expected", ratingHint: "out of 5", npsHint: "-100 to +100", responseHint: "{n} people answered",
+    },
+    funnel: {
+      title: "From registration to attendance", head: ["Step", "People", "Of previous step"],
+      steps: { registered: "Registered", going: "Going", attended: "Attended" },
+      takeaway: "{registered} people registered and {attended} came. {noShow} did not show, {waitlisted} are waitlisted.",
+    },
+    days: { title: "Registrations per day", series: "registrations", head: ["Day", "Registrations"], takeaway: "{n} registrations in total. Busiest day: {day} ({peak})." },
+    school: {
+      title: "Attendees by school", centre: "people", other: "Other", head: ["School", "People", "Share"],
+      takeaway: "{school} sent the most ({n} people).", none: "No attendees are recorded yet.",
+    },
+    track: { title: "Attendees by major track", group: "Track", series: "People", takeaway: "{track} is the biggest track ({n} people)." },
+    fresh: {
+      title: "New and returning", centre: "people", other: "Other", head: ["Type", "People", "Share"],
+      new: "First time", returning: "Came before", takeaway: "{returning} people came to earlier events too; {fresh} came for the first time.",
+    },
+    unknown: "Not filled in",
+    feedback: {
+      empty: { title: "No feedback yet", line: "People who came can answer for 14 days. Their answers show up here." },
+      ratingTitle: "Rating distribution", ratingGroup: "Rating", ratingSeries: "People", star: p("{n} star", "{n} stars"),
+      ratingTakeaway: "Average {avg} out of 5 from {n} people.",
+      npsTitle: "NPS: would you recommend it?", npsTakeaway: "NPS {nps}: the share who gave 9–10 minus the share who gave 0–6.", npsHead: ["Measure", "Value"],
+      npsScale: { low: "-100", mid: "0", high: "+100" }, npsValue: "NPS",
+      commentsTitle: "Comments", well: "What went well", improve: "What to improve", noWell: "No comments on what went well.", noImprove: "No suggestions yet.",
+    },
+  },
+  period: {
+    title: "Reports",
+    lead: "Print a semester or a year as one document and save every chart as an image.",
+    loading: "Loading the report…",
+    controls: "Report period",
+    rangeDefault: "This semester",
+    openAnalytics: "Analytics",
+    openReport: "Open report",
+    sections: { summary: "At a glance", events: "Events", compare: "Semester comparison", people: "People and polls" },
+    kpi: { events: "Events", attendees: "Unique attendees", showRate: "Show rate", newMembers: "New members", rating: "Average rating", nps: "NPS" },
+    days: { title: "Registrations per day", series: "registrations", head: ["Day", "Registrations"], takeaway: "{n} registrations in total. Busiest day: {day} ({peak})." },
+    events: {
+      title: "Completed events", caption: "Attendance, rating and NPS of completed events",
+      cols: { event: "Event", date: "Date", attended: "Attended", registered: "Registered", rating: "Rating", nps: "NPS", responses: "Replies" },
+      open: "Report: {title}",
+      empty: { title: "No completed events in this range", line: "Try a wider date range." },
+    },
+    compare: {
+      title: "Semester by semester", caption: "Semester comparison",
+      cols: { semester: "Semester", events: "Events", registrations: "Registrations", attended: "Attended" },
+      chartTitle: "Registrations and attendance by semester", group: "Semester", seriesRegistrations: "Registrations", seriesAttended: "Attended",
+      takeaway: "{semester} had the most attendees ({n}).",
+      empty: { title: "No semesters to compare", line: "Try a wider date range." },
+    },
+    retention: {
+      title: "Coming back", caption: "Return rate by the semester people first came",
+      cols: { cohort: "First came in", total: "People", returned: "Came back", rate: "Share" },
+      empty: { title: "No return data", line: "Pick a range that spans more than one semester." },
+    },
+    polls: {
+      title: "Poll turnout", caption: "Turnout of closed polls",
+      cols: { poll: "Poll", voted: "Voted", eligible: "Eligible", turnout: "Turnout" },
+      empty: { title: "No closed polls in this range", line: "Create polls in the Polls section." },
+    },
+  },
+  error: { title: "Could not load the report", line: "The data could not be read. Try again.", retry: "Try again" },
+};
+
+export const copy = { mn, en };

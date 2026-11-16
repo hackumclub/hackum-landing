@@ -8,29 +8,34 @@ import AuditFilters from "@/components/admin/audit/AuditFilters";
 import AuditPager from "@/components/admin/audit/AuditPager";
 import AuditTable from "@/components/admin/audit/AuditTable";
 import { loadAudit } from "@/components/admin/audit/data";
-import { parseAuditFilter } from "@/components/admin/audit/filter";
+import { AUDIT_SPEC } from "@/components/admin/audit/filter";
 import { previewState } from "@/components/admin/members/preview";
 import { PageHeader, SectionSkeleton } from "@/components/admin/members/shared";
-import { withQuery } from "@/lib/members/format";
+import { parseListState, serializeListState } from "@/lib/admin/list-state";
 import { requireStaffPage } from "@/lib/server/session";
+import { adminMeta, type AdminMetaProps } from "@/lib/admin/meta";
+
+export const generateMetadata = ({ params }: AdminMetaProps) => adminMeta(params, "audit");
 
 type Props = { params: Promise<{ lang: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 async function Body({ lang, searchParams }: { lang: Locale; searchParams: Props["searchParams"] }) {
-  await requireStaffPage();
+  await requireStaffPage({ admin: true }); // admin only: an organizer gets the 404 (F-18)
   await connection(); // relative times and the 24h/7d/30d ranges are per-request
   await previewState(searchParams);
-  const filter = parseAuditFilter(await searchParams);
+  const filter = parseListState(await searchParams, AUDIT_SPEC);
   const c = copy[lang];
   const d = getDictionary(lang);
   const data = loadAudit(filter, lang, c, d.status);
   const path = href(lang, "/admin/audit");
-  const filtered = filter.groups.length > 0 || filter.actor !== null || filter.range !== null;
-  const hrefFor = (page: number) => withQuery(path, { group: filter.groups, actor: filter.actor, range: filter.range, page: page > 1 ? page : null });
+  const hrefFor = (page: number) => {
+    const qs = serializeListState({ ...filter, page }, AUDIT_SPEC).toString();
+    return qs ? `${path}?${qs}` : path;
+  };
   return (
     <>
-      <AuditFilters filter={filter} actors={data.actors} path={path} c={c.audit} />
-      <AuditTable rows={data.rows} total={data.total} now={data.now} lang={lang} c={c.audit} common={c.common} closeLabel={d.ui.close} clearHref={path} filtered={filtered} homeHref={href(lang, "/admin")} />
+      <AuditFilters actors={data.actors} lang={lang} c={c.audit} lists={c.lists} />
+      <AuditTable rows={data.rows} total={data.total} now={data.now} lang={lang} c={c.audit} common={c.common} lists={c.lists} closeLabel={d.ui.close} homeHref={href(lang, "/admin")} />
       <AuditPager page={data.page} pages={data.pages} from={data.from} to={data.to} total={data.total} hrefFor={hrefFor} c={c.audit} />
     </>
   );

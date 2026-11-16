@@ -92,4 +92,19 @@ describe("rsvpView", () => {
     expect(view("r", guest)).toEqual({ kind: "rsvp", waitlist: true });
     expect(registerForEvent({ db, actor: "me", now: NOW }, { eventId: "r", answers: {} })).toEqual({ ok: true, data: { status: "waitlisted" } });
   });
+
+  it("school scope: a NUM-only event is blocked for a student of another school (or one with no school yet), open to NUM students and to unknown viewers", () => {
+    addEvent(db, { id: "n", school_scope: "num" });
+    expect(view("n", { ...guest, schoolId: "must" })).toEqual({ kind: "blocked", reason: "school" });
+    expect(view("n", { ...guest, schoolId: null })).toEqual({ kind: "blocked", reason: "school" });
+    expect(view("n", { ...guest, schoolId: "num" })).toEqual({ kind: "rsvp", waitlist: false });
+    expect(view("n", guest)).toEqual({ kind: "rsvp", waitlist: false });
+    expect(view("n", null)).toEqual({ kind: "signed_out", apply: false });
+  });
+
+  it("members-only event: another school's guest is told membership is NUM-only; a NUM guest is not", () => {
+    addEvent(db, { id: "m2", audience: "members" });
+    expect(view("m2", { ...guest, schoolId: "must" })).toEqual({ kind: "blocked", reason: "members", numOnly: true });
+    expect(view("m2", { ...guest, schoolId: "num" })).toEqual({ kind: "blocked", reason: "members" });
+  });
 });

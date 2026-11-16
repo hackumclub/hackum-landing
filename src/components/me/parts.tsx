@@ -66,24 +66,31 @@ export function StickyBar({ children, aboveTabs = false, label }: { children: Re
   );
 }
 
-/** Poster slot with a fixed aspect ratio: the cover, or a soft wash with a 3D ticket when the event has none. Children are overlays. */
-export function Poster({ cover, className, greyed, sizes = "(min-width: 768px) 224px, 100vw", children }: { cover: string | null; className?: string; greyed?: boolean; sizes?: string; children?: ReactNode }) {
+/**
+ * Poster slot. Posters are portrait or square designs with text on them, so the artwork is never cropped: the whole image
+ * is shown (`object-contain`) over a blurred, tinted copy of itself that fills the rest of the slot. The slot has a fixed
+ * aspect ratio (or a min height beside text), so nothing shifts when the image loads. Nothing is drawn on top of it.
+ * `eager` is for the one image that is the LCP candidate of a page (eager + fetchpriority high); the rest lazy-load.
+ */
+export function Poster({ cover, className, greyed, sizes = "(min-width: 768px) 224px, 100vw", eager, children }: { cover: string | null; className?: string; greyed?: boolean; sizes?: string; eager?: boolean; children?: ReactNode }) {
   return (
-    <div className={cx("relative overflow-hidden bg-[radial-gradient(90%_90%_at_80%_10%,var(--ops-accent-soft),var(--ops-ember-soft))]", className)}>
-      {cover
-        ? <Image src={cover} alt="" fill sizes={sizes} className={cx("object-cover", greyed && "grayscale")} />
-        : <div className="absolute inset-0 grid place-items-center"><Icon3D name="ticket" sizes="160px" className="size-28 rotate-6 drop-shadow-[0_14px_16px_rgb(0_40_70/0.3)]" /></div>}
-      {/* A soft scrim keeps chips readable over any poster. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/30 to-transparent" />
+    <div data-poster className={cx("relative isolate overflow-hidden bg-[radial-gradient(90%_90%_at_80%_10%,var(--ops-accent-soft),var(--ops-ember-soft))]", className)}>
+      {cover ? (
+        <>
+          {/* Backdrop: the same file at thumbnail size (a few hundred bytes), blown up and blurred. */}
+          <Image src={cover} alt="" aria-hidden="true" fill sizes="48px" data-poster-backdrop className={cx("-z-10 scale-125 object-cover opacity-70 blur-2xl saturate-150", greyed && "grayscale")} />
+          <Image src={cover} alt="" fill sizes={sizes} data-poster-img loading={eager ? "eager" : "lazy"} fetchPriority={eager ? "high" : "auto"} className={cx("object-contain", greyed && "grayscale")} />
+        </>
+      ) : <div className="absolute inset-0 grid place-items-center"><Icon3D name="ticket" sizes="160px" className="size-24 rotate-6 drop-shadow-[0_14px_16px_rgb(0_40_70/0.3)]" /></div>}
       {children}
     </div>
   );
 }
 
-/** Calendar-leaf date chip that sits over a poster: month on top, big day below. */
+/** Calendar-leaf date tile for the text column of an event card: month on top, big day below. Never sits on the artwork. */
 export function DateChip({ month, day, className }: { month: string; day: string; className?: string }) {
   return (
-    <div aria-hidden="true" className={cx("grid min-w-14 justify-items-center rounded-[var(--radius-sm)] bg-panel px-2.5 py-1.5 text-center leading-none shadow-[0_8px_18px_-8px_rgb(0_20_40/0.6)] ring-1 ring-line", className)}>
+    <div aria-hidden="true" className={cx("grid min-w-14 shrink-0 justify-items-center rounded-[var(--radius-sm)] border border-line bg-panel-2 px-2.5 py-1.5 text-center leading-none", className)}>
       <span className="text-xs font-bold text-ember-fg">{month}</span>
       <span className="mt-1 font-display text-xl font-black text-fg tnum">{day}</span>
     </div>
@@ -124,7 +131,7 @@ export function Timeline({ items, label }: { items: TimelineItem[]; label: strin
         return (
           <li key={i} aria-current={it.state === "current" ? "step" : undefined} className="relative grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-3 pb-5 last:pb-0">
             {!last && <span aria-hidden="true" className={cx("absolute top-10 bottom-0 left-5 w-0.5 -translate-x-1/2 rounded-full", it.state === "done" ? "bg-ok-fg/50" : "bg-line-strong/40")} />}
-            <span aria-hidden="true" className={cx("z-10 grid size-10 place-items-center rounded-full", it.state === "done" ? "bg-ok-soft text-ok-fg" : it.state === "current" ? "ops-gloss" : "border border-line-strong bg-panel text-fg-muted")}>
+            <span aria-hidden="true" className={cx("z-10 grid size-10 place-items-center rounded-full", it.state === "done" ? "bg-ok-soft text-ok-fg" : it.state === "current" ? "ops-gloss" : "border border-line bg-panel-2 text-fg-muted")}>
               <Icon size={18} />
             </span>
             <div className="grid content-center gap-0.5">

@@ -54,6 +54,34 @@ describe("countdown", () => {
   });
 });
 
+describe("school scope and membership next actions", () => {
+  it("a NUM-only event is locked for another school with reason \"school\" (checked before members-only), open for NUM", () => {
+    const ev = addEvent(db, { id: "num", school_scope: "num", audience: "members" });
+    profile("a").school_id = "must";
+    expect(eligibility(db, ev, profile("a"), NOW)).toEqual({ ok: false, reason: "school" });
+    expect(eligibility(db, ev, profile("b"), NOW)).toEqual({ ok: false, reason: "members" });
+    profile("b").status = "member";
+    expect(eligibility(db, ev, profile("b"), NOW)).toEqual({ ok: true, waitlist: false });
+  });
+  it("card view models carry the school scope", () => {
+    addEvent(db, { id: "num", school_scope: "num" });
+    profile("a").school_id = "must";
+    expect(eventsTabs(db, "a", NOW).upcoming[0]).toMatchObject({ schoolScope: "num", elig: { ok: false, reason: "school" } });
+  });
+  it("a member can renew while a window is open (once), an alumna gets no student form", () => {
+    db.seasons.push({ year: 2027, label: { mn: "2027", en: "2027" }, application_opens_at: at(-24), application_closes_at: at(24 * 30), is_current: false });
+    profile("a").status = "member";
+    expect(membershipView(db, "a", NOW)).toMatchObject({ renew: { season: 2027 }, renewPending: false, canApply: false });
+    db.membership_applications.push({ id: "x", profile_id: "a", season: 2027, motivation: "Renewal", team_interest: [], answers: {}, status: "pending", reviewed_by: null, reviewed_at: null, review_note: null, created_at: at(-1) });
+    expect(membershipView(db, "a", NOW)).toMatchObject({ renew: null, renewPending: true });
+    profile("b").status = "alumni";
+    expect(membershipView(db, "b", NOW)).toMatchObject({ canApply: false, renew: null });
+    db.seasons[0].application_closes_at = at(-1);
+    profile("c").status = "member";
+    expect(membershipView(db, "c", NOW).renew).toBeNull(); // window closed: history only
+  });
+});
+
 describe("eligibility", () => {
   it("open event → ok; members-only for a guest → reason; closed windows and cancelled events", () => {
     const open = addEvent(db, { id: "o" });

@@ -47,12 +47,15 @@ test("bilingual inputs line up side by side at 1280px", async ({ page }) => {
   expect(mn && en && Math.abs(mn.y - en.y)).toBeLessThanOrEqual(1);
 });
 
-test("non-staff get the ordinary 404 and signed-out visitors never see the backoffice", async ({ page }) => {
-  for (const who of [null, "anuujin", "temuulen"]) {
+test("signed-out visitors are sent to sign-in and non-staff get a real 404; neither ever sees the backoffice", async ({ page }) => {
+  await signInAs(page, null);
+  await page.goto("/en/admin");
+  await expect(page).toHaveURL(/\/en\/sign-in\?next=%2Fen%2Fadmin$/);
+  for (const who of ["anuujin", "temuulen"]) {
     await signInAs(page, who);
     const res = await page.goto("/en/admin");
     await expect(page.getByText("coffee not found")).toBeVisible();
-    expect(res?.status()).toBeLessThan(500);
+    expect(res?.status()).toBe(404);
     await expect(page.locator("main h1", { hasText: "Dashboard" })).toHaveCount(0);
   }
 });
@@ -68,10 +71,12 @@ test("an organizer sees the dashboard with live demo data and the demo-data mark
 test("dashboard: needs-attention rows and event rows are links to where the work is done", async ({ page }) => {
   await page.goto("/en/admin");
   const apps = page.getByRole("link", { name: /hackathon applications? to review/ });
-  await expect(apps).toHaveAttribute("href", "/en/admin/events?filter=applications");
+  // F-17: the row opens the event's registrations (the object), not a preset list of events.
+  await expect(apps).toHaveAttribute("href", /^\/en\/admin\/events\/[^/]+\/registrations\?status=applied$/);
   await expect(page.getByRole("link", { name: /emails? failed to send/ })).toHaveAttribute("href", "/en/admin/comms?status=failed");
   await apps.click();
-  await expect(page.getByRole("button", { name: "Remove filter: Applications to review" })).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/events\/[^/]+\/registrations/);
+  await expect(page.locator("main h1:visible")).toBeVisible();
 
   await page.goto("/en/admin");
   const event = page.getByRole("link", { name: /Knowledge Day: Building RAG Systems/ });

@@ -13,7 +13,7 @@ export type AttentionItem = { kind: AttentionKind; count: number; href: string }
 const ATTENTION_PATH: Record<AttentionKind, string> = {
   failed_emails: "/admin/comms?status=failed",
   pending_applications: "/admin/events?filter=applications",
-  pending_members: "/admin/members/applications",
+  pending_members: "/admin/members?tab=applications",
   missing_cover: "/admin/events?filter=missing_cover",
   needs_en: "/admin/events?filter=needs_en",
 };

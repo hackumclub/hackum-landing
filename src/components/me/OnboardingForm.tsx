@@ -66,7 +66,7 @@ export default function OnboardingForm({ lang, c, bilingual, next, initial }: {
         <legend className="mb-1 text-sm font-semibold text-fg">{c.language}</legend>
         <div className="grid grid-cols-2 gap-2">
           {(["mn", "en"] as const).map((l) => (
-            <label key={l} className={cx("flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] border px-3 text-sm font-semibold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent", locale === l ? "border-accent bg-accent-soft text-accent-fg" : "border-line-strong text-fg")}>
+            <label key={l} className={cx("flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] border px-3 text-sm font-semibold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent", locale === l ? "border-accent bg-accent-soft text-accent-fg" : "border-line bg-panel-2 text-fg")}>
               <input type="radio" name="locale" value={l} checked={locale === l} onChange={() => setLocale(l)} className="sr-only" />
               {l === "mn" ? c.langMn : c.langEn}
             </label>

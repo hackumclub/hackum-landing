@@ -33,6 +33,8 @@
   --radius-card: 20px;
   --shadow-card: 0 1px 0 rgb(7 27 41 / 0.05), 0 14px 34px -14px rgb(7 27 41 / 0.3);
   --shadow-soft: 0 1px 2px 0 rgb(7 27 41 / 0.06);
+  /* Raised chip inside a segmented track (selected tab / segment): the only shadow a control gets. */
+  --shadow-raise: 0 1px 2px rgb(7 27 41 / 0.14), 0 4px 10px -4px rgb(7 27 41 / 0.22);
   --shadow-glow: 0 10px 30px -8px rgb(0 133 202 / 0.55);
 
   /* Ops layer (backoffice + member app, direction "Clubhouse Ops"): semantic colours resolved at runtime from
@@ -50,6 +52,8 @@
   --color-accent-fg: var(--ops-accent-fg);
   --color-accent-soft: var(--ops-accent-soft);
   --color-neutral-soft: var(--ops-neutral-soft);
+  --color-seg-track: var(--ops-seg-track);
+  --color-seg-chip: var(--ops-seg-chip);
   --color-ok-fg: var(--ops-ok-fg);
   --color-ok-soft: var(--ops-ok-soft);
   --color-warn-fg: var(--ops-warn-fg);
@@ -263,6 +267,9 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
   --ops-accent-fg: #006ba3;
   --ops-accent-soft: #e0f1fa;
   --ops-neutral-soft: #e6edf2;
+  /* Segmented control: a soft tinted track with a raised chip (light = white chip, dark = lifted panel). */
+  --ops-seg-track: #e8eff4;
+  --ops-seg-chip: #ffffff;
   --ops-ok-fg: #00785c;
   --ops-ok-soft: #e1f5ee;
   --ops-warn-fg: #7a5f00;
@@ -315,6 +322,8 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
   --ops-accent-fg: #6cc5f2;
   --ops-accent-soft: #123f5a;
   --ops-neutral-soft: #1b3a4f;
+  --ops-seg-track: #0a2233;
+  --ops-seg-chip: #1f4a66;
   --ops-ok-fg: #2fd3a6;
   --ops-ok-soft: #0e3d3f;
   --ops-warn-fg: #e5bf03;
@@ -349,6 +358,8 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
     --ops-accent-fg: #6cc5f2;
     --ops-accent-soft: #123f5a;
     --ops-neutral-soft: #1b3a4f;
+    --ops-seg-track: #0a2233;
+    --ops-seg-chip: #1f4a66;
     --ops-ok-fg: #2fd3a6;
     --ops-ok-soft: #0e3d3f;
     --ops-warn-fg: #e5bf03;

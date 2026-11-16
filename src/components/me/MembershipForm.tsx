@@ -2,7 +2,9 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import type { MeCopy } from "@/i18n/areas/me";
-import { fill } from "@/i18n/config";
+import { fill, type Locale } from "@/i18n/config";
+import type { Answers, Question } from "@/lib/events/questions";
+import QuestionFields, { validateAnswers } from "@/components/forms/QuestionFields";
 import { applyForMembershipAction } from "@/lib/me/actions";
 import { useToast } from "./Toast";
 import Button from "@/components/ui/Button";
@@ -17,28 +19,34 @@ const MIN = 10;
 const MAX = 1000;
 
 /** Membership application: motivation (10–1000 chars, live counter) and the teams they are drawn to. */
-export default function MembershipForm({ c, errors }: { c: MeCopy["membership"]; errors: Record<string, string> }) {
+export default function MembershipForm({ c, errors, questions = [], lang }: { c: MeCopy["membership"]; errors: Record<string, string>; questions?: Question[]; lang: Locale }) {
   const router = useRouter();
   const toast = useToast();
   const form = useRef<HTMLFormElement>(null);
   const [text, setText] = useState("");
   const [teams, setTeams] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Answers>({});
   const [fieldErr, setFieldErr] = useState<{ motivation?: string }>({});
+  const [qErr, setQErr] = useState<Record<string, string>>({});
   const [topErr, setTopErr] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [pending, start] = useTransition();
-  useFocusFirstError(form, fieldErr);
+  useFocusFirstError(form, { ...fieldErr, ...qErr });
 
   const len = text.trim().length;
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setTopErr(null);
-    if (len < MIN || len > MAX) { setFieldErr({ motivation: c.motivationErr }); return; }
-    setFieldErr({});
+    const answerErrors = validateAnswers(questions, answers);
+    const bad = len < MIN || len > MAX;
+    setFieldErr(bad ? { motivation: c.motivationErr } : {});
+    setQErr(answerErrors);
+    if (bad || Object.keys(answerErrors).length) return;
     start(async () => {
-      const r = await applyForMembershipAction({ motivation: text.trim(), team_interest: teams });
+      const r = await applyForMembershipAction({ motivation: text.trim(), team_interest: teams, answers });
       if (r.ok) { setSent(true); toast(c.sent); router.refresh(); return; }
-      if (r.error === "invalid") setFieldErr({ motivation: c.motivationErr });
+      if (r.error === "invalid" && "fields" in r) setQErr(r.fields);
+      else if (r.error === "invalid") setFieldErr({ motivation: c.motivationErr });
       else setTopErr(errors[r.error] ?? errors.server);
     });
   }
@@ -50,6 +58,7 @@ export default function MembershipForm({ c, errors }: { c: MeCopy["membership"];
         hint={<><span>{c.motivationHint}</span> <span className={cx("tnum", len > MAX && "font-bold text-danger-fg")}>{fill(c.counter, { n: len, max: MAX })}</span></>}>
         {(ctl) => <Textarea {...ctl} name="motivation" rows={5} value={text} onChange={(e) => setText(e.target.value)} />}
       </Field>
+      {questions.length > 0 && <QuestionFields questions={questions} answers={answers} onChange={setAnswers} errors={qErr} lang={lang} />}
       <fieldset className="grid gap-2">
         <legend className="text-sm font-semibold text-fg">{c.interests}</legend>
         <p className="text-sm text-fg-muted">{c.interestsHint}</p>

@@ -41,12 +41,6 @@ const EXPECTED_404: { path: RegExp; personas: string[]; reason: string }[] = [
 
 /** Failures that exist today. key = `${persona}|${pathname}` for pages, `${persona}|console:${id}` for console noise. */
 const KNOWN: Record<string, string> = {
-  // F-04: the organizer's admin nav lists Settings, which is admin-only and renders the 404 page.
-  "dev-organizer|/en/admin/settings": "F-04",
-  // F-02b: a member's /me/membership has no link or button in the content, only the shell nav.
-  "anuujin|/en/me/membership": "F-02b",
-  // F-10: the Code of Conduct is plain text: no contact/report link and no way on inside <main>.
-  "*|/en/code-of-conduct": "F-10",
 };
 
 /** Console errors that are known dev-server findings (the classifier returns the finding id). */
@@ -215,29 +209,29 @@ for (const persona of PERSONAS) {
     });
 
     // Strict versions of the tracked failures. Un-fixme once the finding is fixed and delete its KNOWN entry.
-    test.fixme(`F-07 no instant-shell console.error on any page (${persona.name})`, () => {
+    test(`F-07 no instant-shell console.error on any page (${persona.name})`, () => {
       const bad = pages.flatMap((p) => p.consoleErrors.filter((m) => consoleId(m) === "F-07").map((m) => `${p.path}: ${m.slice(0, 80)}`));
       expect(bad).toEqual([]);
     });
-    test.fixme(`F-08 no hydration console.error on any page (${persona.name})`, () => {
+    test(`F-08 no hydration console.error on any page (${persona.name})`, () => {
       const bad = pages.flatMap((p) => p.consoleErrors.filter((m) => consoleId(m) === "F-08").map((m) => `${p.path}: ${m.slice(0, 80)}`));
       expect(bad).toEqual([]);
     });
     if (persona.name === "dev-organizer") {
-      test.fixme("F-04 the organizer is never linked to a page that 404s", () => {
+      test("F-04 the organizer is never linked to a page that 404s", () => {
         const bad = pages.filter((p) => p.notFound).map((p) => `${p.path} (linked from ${p.from})`);
         expect(bad).toEqual([]);
       });
     }
     if (persona.name === "signed-out") {
-      test.fixme("F-10 the Code of Conduct page offers a way to report a problem or move on", () => {
+      test("F-10 the Code of Conduct page offers a way to report a problem or move on", () => {
         const p = pages.find((x) => x.path === "/en/code-of-conduct");
         expect(p, "code of conduct not reached by the crawl").toBeTruthy();
         expect(p?.mainActions).toBeGreaterThan(0);
       });
     }
     if (persona.name === "anuujin") {
-      test.fixme("F-02b /en/me/membership gives a member something to do next", () => {
+      test("F-02b /en/me/membership gives a member something to do next", () => {
         const p = pages.find((x) => x.path === "/en/me/membership");
         expect(p, "membership page not reached by the crawl").toBeTruthy();
         expect(p?.mainActions).toBeGreaterThan(0);
@@ -258,7 +252,7 @@ test.describe("nav behaviours that are not link crawling", () => {
     }
   });
 
-  test.fixme("F-09 language switch keeps the query string (filters)", async ({ page }) => {
+  test("F-09 language switch keeps the query string (filters)", async ({ page }) => {
     await signInAs(page, "dev-admin");
     await page.goto("/en/admin/comms?status=failed");
     expect(await page.locator("a[hreflang='mn']").first().getAttribute("href")).toBe("/mn/admin/comms?status=failed");
@@ -276,7 +270,7 @@ test.describe("nav behaviours that are not link crawling", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText(/not found/i);
   });
 
-  test.fixme("F-03 signed out, /en/admin redirects to sign-in with next", async ({ page }) => {
+  test("F-03 signed out, /en/admin redirects to sign-in with next", async ({ page }) => {
     await signInAs(page, null);
     await page.goto("/en/admin");
     await expect(page).toHaveURL(/\/en\/sign-in\?next=%2Fen%2Fadmin/);
@@ -292,12 +286,12 @@ test.describe("nav behaviours that are not link crawling", () => {
     expect(await status(page, "/en/events/no-such-event-audit")).toBe(404);
   });
 
-  test.fixme("F-05 a page that renders 'not found' also answers 404 (not 200)", async ({ page }) => {
+  test("F-05 a page that renders 'not found' also answers 404 (not 200)", async ({ page }) => {
     await signInAs(page, "anuujin");
     expect(await status(page, "/en/admin")).toBe(404);
   });
 
-  test.fixme("F-01 the public header offers sign in (signed out) or an account entry (signed in)", async ({ page }) => {
+  test("F-01 the public header offers sign in (signed out) or an account entry (signed in)", async ({ page }) => {
     await signInAs(page, null);
     await page.goto("/en");
     await expect(page.locator("header").getByRole("link", { name: /sign in|нэвтрэх/i })).toBeVisible();
@@ -306,7 +300,7 @@ test.describe("nav behaviours that are not link crawling", () => {
     await expect(page.locator("header").getByRole("link", { name: /my hackum|profile|account|dashboard|миний/i })).toBeVisible();
   });
 
-  test.fixme("F-02 a guest from another school can change school from where the membership page sends them", async ({ page }) => {
+  test("F-02 a guest from another school can change school from where the membership page sends them", async ({ page }) => {
     await signInAs(page, "temuulen");
     await page.goto("/en/me/membership");
     await page.getByRole("link", { name: /update school/i }).click();

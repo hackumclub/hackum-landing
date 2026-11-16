@@ -1,10 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useTransition, type ReactNode } from "react";
 import { fill, type Locale } from "@/i18n/config";
 import { copy } from "@/i18n/areas/admin-events";
 import { getDictionary } from "@/i18n";
 import { setEventStatusAction } from "@/lib/events/actions";
+import type { Missing } from "@/lib/events/readiness";
 import type { EventStatus } from "@/lib/status";
 import Button from "@/components/ui/Button";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -25,7 +26,11 @@ export function movesFor(status: EventStatus, hasRegistrations: boolean): Move[]
   }
 }
 
-export default function StatusActions({ lang, eventId, title, status, people }: { lang: Locale; eventId: string; title: string; status: EventStatus; people: number }) {
+/**
+ * Status moves with a confirm dialog that names the object and the consequence. Publishing an event with gaps (no
+ * description, venue, cover or English text) lists them first: "Publish anyway" / "Fix first" (audit F-15).
+ */
+export default function StatusActions({ lang, eventId, title, status, people, missing = [] }: { lang: Locale; eventId: string; title: string; status: EventStatus; people: number; missing?: Missing[] }) {
   const t = copy[lang].header;
   const d = getDictionary(lang);
   const router = useRouter();
@@ -40,13 +45,25 @@ export default function StatusActions({ lang, eventId, title, status, people }: 
       router.refresh();
     });
 
-  const dialog = (move: Move) => {
+  const dialog = (move: Move): { title: string; body: ReactNode; confirm: string; cancel: string; tone: "danger" | "default" } => {
+    if (move === "publish" && missing.length > 0) {
+      const r = t.readiness;
+      return {
+        title: fill(r.title, { title }), confirm: r.confirm, cancel: r.fix, tone: "default",
+        body: (
+          <>
+            <span className="block">{r.body}</span>
+            <ul className="mt-2 grid list-disc gap-1 pl-5 font-semibold text-fg">{missing.map((m) => <li key={m}>{r.items[m]}</li>)}</ul>
+          </>
+        ),
+      };
+    }
     if (move === "cancelEvent") {
       const x = people > 0 ? t.dialogs.cancel : t.dialogs.cancelNobody;
-      return { title: fill(x.title, { title, n: people }), body: fill(x.body, { n: people }), confirm: x.confirm, tone: "danger" as const };
+      return { title: fill(x.title, { title, n: people }), body: fill(x.body, { n: people }), confirm: x.confirm, cancel: d.ui.cancel, tone: "danger" };
     }
     const x = t.dialogs[move];
-    return { title: fill(x.title, { title }), body: x.body, confirm: t[move], tone: "default" as const };
+    return { title: fill(x.title, { title }), body: x.body, confirm: t[move], cancel: d.ui.cancel, tone: "default" };
   };
 
   const moves = movesFor(status, people > 0);
@@ -59,7 +76,7 @@ export default function StatusActions({ lang, eventId, title, status, people }: 
           <ConfirmDialog
             key={move}
             trigger={<Button variant={move === "publish" ? "primary" : "secondary"} disabled={pending}>{t[move]}</Button>}
-            title={x.title} body={x.body} confirmLabel={x.confirm} cancelLabel={d.ui.cancel} tone={x.tone}
+            title={x.title} body={x.body} confirmLabel={x.confirm} cancelLabel={x.cancel} tone={x.tone}
             onConfirm={() => run(move)}
           />
         );

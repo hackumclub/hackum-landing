@@ -11,11 +11,24 @@ export type Column<T> = {
   sortValue?: (row: T) => string | number;
   /** Right-aligned with tabular figures. */
   numeric?: boolean;
-  /** Hide on narrow screens so the table stays readable at 360px without page-level horizontal scroll. */
-  hideBelow?: "sm" | "md" | "lg" | "xl";
+  /**
+   * Hide on narrow screens so the table stays readable. Below `md` every row is a card (title block, then a two-column
+   * grid of the other columns, each labelled with its header), so "sm" and "md" columns still show there; "lg" and "xl"
+   * columns are dropped from the card too.
+   */
+  hideBelow?: "sm" | "md" | "lg" | "xl" | "2xl";
+  /** The row's title block (thumbnail, title, tags). It takes the leftover width, and the whole top of the card on phones. */
+  primary?: boolean;
+  /** Left out of the phone card (long free-text columns); the row's drawer still shows it. */
+  hideInCard?: boolean;
+  /** Phone card layout: take the full card width instead of half (long values such as "64 applications · 2 accepted"). */
+  wide?: boolean;
+  /** Fixed column width from md, as Tailwind classes (`md:w-44`), so dates, states and numbers line up row to row. */
+  width?: string;
 };
 
-const HIDE = { sm: "hidden sm:table-cell", md: "hidden md:table-cell", lg: "hidden lg:table-cell", xl: "hidden xl:table-cell" } as const;
+// "sm"/"md" columns show in the card layout (< md) and the table (>= md); only lg/xl actually hide.
+const HIDE = { sm: "", md: "", lg: "hidden lg:table-cell", xl: "hidden xl:table-cell", "2xl": "hidden 2xl:table-cell" } as const;
 type Sort = { key: string; dir: "ascending" | "descending" } | null;
 
 export type PaginationLabels = { nav: string; previous: string; next: string; page: (n: number) => string; showing: (from: number, to: number, total: number) => string };
@@ -41,7 +54,7 @@ function pageItems(current: number, count: number): (number | "gap-l" | "gap-r")
  * bottom `selectionBar` that only exists while something is selected. Selection survives page changes; the page resets
  * to 1 when the number of rows changes (a filter was applied).
  */
-export default function DataTable<T>({ rows, columns, getId, caption, empty, selectable = false, selectLabel = "Select", selectAllLabel = "Select all", onSelectionChange, onRowClick, pageSize, selectionBar, paginationLabels = DEFAULT_PAGINATION }: {
+export default function DataTable<T>({ rows, columns, getId, caption, empty, selectable = false, selectLabel = "Select", selectAllLabel = "Select all", onSelectionChange, onRowClick, pageSize, selectionBar, paginationLabels = DEFAULT_PAGINATION, fixed = false }: {
   rows: T[]; columns: Column<T>[]; getId: (row: T) => string; caption: string; empty: ReactNode;
   selectable?: boolean; selectLabel?: string; selectAllLabel?: string; onSelectionChange?: (ids: string[]) => void;
   /** Pointer convenience: clicking the row (not a button, link or checkbox inside it) opens it. Keyboard users keep the row's own button/link. */
@@ -51,6 +64,11 @@ export default function DataTable<T>({ rows, columns, getId, caption, empty, sel
   /** Rendered in a sticky bottom bar (above the /me tab bar on phones) while at least one row is selected. */
   selectionBar?: (ids: string[]) => ReactNode;
   paginationLabels?: PaginationLabels;
+  /**
+   * Fixed table layout from md: columns with a `width` keep exactly that width and the `primary` column takes the rest, so
+   * every row and every list lines up. Every non-primary column must then have a `width`. Admin lists use it.
+   */
+  fixed?: boolean;
 }) {
   const [sort, setSort] = useState<Sort>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -91,14 +109,15 @@ export default function DataTable<T>({ rows, columns, getId, caption, empty, sel
 
   const PL = paginationLabels;
   return (
-    <div className="grid gap-3">
-    <div className="overflow-x-auto rounded-[var(--radius-md)] border border-line bg-panel">
-      <table className="w-full border-collapse text-left text-sm">
+    <div className="grid grid-cols-1 gap-3">
+    {/* From xl the wrapper clips instead of scrolling, so the header can stick to the page (a scroll container would trap it). */}
+    <div className="overflow-x-auto rounded-[var(--radius-md)] border border-line bg-panel xl:overflow-clip">
+      <table role="table" className={cx("w-full border-collapse text-left text-sm max-md:block", fixed && "md:table-fixed")}>
         <caption className="sr-only">{caption}</caption>
-        <thead className="sticky top-0 z-10 bg-panel-2 text-fg-muted">
-          <tr>
+        <thead role="rowgroup" className="xl:sticky xl:top-[var(--table-sticky-top,0px)] xl:z-10 bg-panel-2 text-fg-muted shadow-[0_1px_0_var(--ops-line)] max-md:sr-only">
+          <tr role="row">
             {selectable && (
-              <th scope="col" className="w-10 px-3 py-2">
+              <th scope="col" className="w-12 py-2.5 pr-0 pl-4">
                 <input
                   type="checkbox"
                   aria-label={selectAllLabel}
@@ -112,9 +131,9 @@ export default function DataTable<T>({ rows, columns, getId, caption, empty, sel
               const state = sort?.key === c.key ? sort.dir : "none";
               const Icon = state === "ascending" ? ArrowUp : state === "descending" ? ArrowDown : ArrowUpDown;
               return (
-                <th key={c.key} scope="col" aria-sort={c.sortValue ? state : undefined} className={cx("px-3 py-2 font-semibold whitespace-nowrap", c.numeric && "text-right", c.hideBelow && HIDE[c.hideBelow])}>
+                <th key={c.key} scope="col" aria-sort={c.sortValue ? state : undefined} className={cx("px-4 py-2.5 text-xs font-semibold whitespace-nowrap", c.numeric && "md:text-right", c.hideBelow && HIDE[c.hideBelow], c.hideInCard && "max-md:hidden", c.width)}>
                   {c.sortValue ? (
-                    <button type="button" onClick={() => toggleSort(c.key)} className="inline-flex cursor-pointer items-center gap-1 rounded hover:text-fg">
+                    <button type="button" onClick={() => toggleSort(c.key)} className={cx("inline-flex cursor-pointer items-center gap-1 rounded hover:text-fg", c.numeric && "flex-row-reverse")}>
                       {c.header}
                       <Icon aria-hidden="true" size={14} className={state === "none" ? "opacity-50" : undefined} />
                     </button>
@@ -124,20 +143,28 @@ export default function DataTable<T>({ rows, columns, getId, caption, empty, sel
                 </th>
               );
             })}
+            {onRowClick && <td aria-hidden="true" className="w-10 p-0 max-xl:hidden" />}
           </tr>
         </thead>
-        <tbody>
+        <tbody role="rowgroup" className="max-md:block">
           {visible.map((row) => {
             const id = getId(row);
             const isSel = selected.has(id);
             return (
               <tr
                 key={id}
-                className={cx("border-t border-line", isSel ? "bg-accent-soft" : "hover:bg-panel-2", onRowClick && "cursor-pointer")}
+                role="row"
+                className={cx(
+                  "group/row relative border-t border-line transition-colors duration-150 first:border-t-0",
+                  // Phones: one card per row. Title block on top, the other columns in a labelled two-column grid below.
+                  "max-md:grid max-md:grid-cols-2 max-md:gap-x-4 max-md:gap-y-3 max-md:p-4",
+                  isSel ? "bg-accent-soft" : "hover:bg-panel-2",
+                  onRowClick && "cursor-pointer",
+                )}
                 onClick={onRowClick ? (e) => { if (!(e.target as HTMLElement).closest("a,button,input,label,select,textarea")) onRowClick(row); } : undefined}
               >
                 {selectable && (
-                  <td className="px-3 py-2.5">
+                  <td role="cell" className="w-12 py-3 pr-0 pl-4 max-md:absolute max-md:top-3.5 max-md:right-3 max-md:w-auto max-md:p-0">
                     <input
                       type="checkbox"
                       aria-label={selectLabel}
@@ -152,8 +179,29 @@ export default function DataTable<T>({ rows, columns, getId, caption, empty, sel
                   </td>
                 )}
                 {columns.map((c) => (
-                  <td key={c.key} className={cx("px-3 py-2.5 text-fg", c.numeric && "tnum text-right", c.hideBelow && HIDE[c.hideBelow])}>{c.cell(row)}</td>
+                  <td
+                    key={c.key}
+                    role="cell"
+                    data-label={c.primary ? undefined : c.header}
+                    className={cx(
+                      "px-4 py-3 align-middle text-fg",
+                      c.numeric && "tnum md:text-right",
+                      c.hideBelow && HIDE[c.hideBelow],
+                      c.hideInCard && "max-md:hidden",
+                      c.width,
+                      // Card layout: no cell padding, labelled meta cells, the primary cell spans the card.
+                      "max-md:block max-md:min-w-0 max-md:p-0 max-md:text-left",
+                      c.primary ? cx("max-md:col-span-2", selectable && "max-md:pr-8") : cx(c.wide && "max-md:col-span-2", "max-md:before:mb-0.5 max-md:before:block max-md:before:text-xs max-md:before:font-semibold max-md:before:text-fg-muted max-md:before:content-[attr(data-label)]"),
+                    )}
+                  >
+                    {c.cell(row)}
+                  </td>
                 ))}
+                {onRowClick && (
+                  <td role="cell" aria-hidden="true" className="w-10 p-0 pr-2 text-right max-xl:hidden">
+                    <ChevronRight size={16} className="inline text-fg-muted opacity-0 transition-[opacity,transform] duration-150 group-hover/row:translate-x-0.5 group-hover/row:opacity-100 motion-reduce:transition-none" />
+                  </td>
+                )}
               </tr>
             );
           })}

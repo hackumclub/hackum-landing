@@ -8,6 +8,9 @@ import { loadStaff } from "@/components/admin/settings/data";
 import { previewState } from "@/components/admin/members/preview";
 import { SectionSkeleton } from "@/components/admin/members/shared";
 import { requireStaffPage } from "@/lib/server/session";
+import { adminMeta, type AdminMetaProps } from "@/lib/admin/meta";
+
+export const generateMetadata = ({ params }: AdminMetaProps) => adminMeta(params, "staff");
 
 type Props = { params: Promise<{ lang: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 

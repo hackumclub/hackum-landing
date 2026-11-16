@@ -1,4 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import AccountSlot from "@/components/auth/AccountSlot";
+import { copy } from "@/i18n/areas/public";
 import { CLUB, LATEST_YEAR } from "@/lib/club";
 import { fill, href, type Locale } from "@/i18n/config";
 import type { Dict } from "@/i18n";
@@ -39,6 +42,10 @@ export default function Footer({ lang, dict }: { lang: Locale; dict: Dict }) {
             <h2 className="mb-4 text-sm font-bold text-faint">{f.club}</h2>
             <ul className="space-y-3 font-semibold">
               {club.map(([label, p]) => <li key={p}><Link href={href(lang, p)} className="hover:text-brand">{label}</Link></li>)}
+              {/* Sign in when signed out, My Hackum (and Dashboard for staff) when signed in: streams in so the page stays static. */}
+              <Suspense fallback={<li><Link href={href(lang, "/sign-in")} className="hover:text-brand">{copy[lang].chrome.signIn}</Link></li>}>
+                <AccountSlot lang={lang} variant="footer" join={dict.nav.join} />
+              </Suspense>
             </ul>
           </div>
           <div>

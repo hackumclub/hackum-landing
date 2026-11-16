@@ -1,17 +1,16 @@
 "use client";
 // Small building blocks shared by the Members, Comms, Settings and Audit screens (this agent's areas only).
-import Link from "next/link";
 import Stage from "@/components/ops/Stage";
 import Icon3D from "@/components/Icon3D";
-import { usePathname } from "next/navigation";
 import { useId, useMemo, useState, type ReactNode } from "react";
-import { CheckCircle2, Lock, TriangleAlert, X } from "lucide-react";
+import { CheckCircle2, TriangleAlert, X } from "lucide-react";
 import { cx } from "@/components/ui/cx";
-import { Input, Select } from "@/components/ui/Field";
+import { Input } from "@/components/ui/Field";
+import Select from "@/components/ui/Select";
 import IconButton from "@/components/ui/IconButton";
 import Avatar from "@/components/ui/Avatar";
+import { RowEntity, RowTitle } from "@/components/ui/RowParts";
 import Skeleton from "@/components/ui/Skeleton";
-import ScrollRow from "./ScrollRow";
 import type { L, Locale } from "@/i18n/config";
 import { tf } from "@/i18n/config";
 import type { AreaCopy } from "@/i18n/areas/admin-members";
@@ -32,63 +31,10 @@ export function NoticeBanner({ notice, onDismiss, dismissLabel }: { notice: Noti
   );
 }
 
-export type SectionTab = { href: string; label: string; count?: number; disabledReason?: string };
-
-/** Route tabs like ui/TabNav, plus a disabled state that says why (used for admin-only tabs shown to organizers). */
-export function SectionTabs({ label, tabs }: { label: string; tabs: SectionTab[] }) {
-  const path = usePathname();
-  return (
-    <nav aria-label={label} className="min-w-0 border-b border-line">
-      <ScrollRow className="-mx-1">
-      <ul className="flex gap-1 px-1">
-        {tabs.map((t) => {
-          const active = path === t.href;
-          const base = "inline-flex min-h-10 items-center gap-1.5 border-b-2 px-3 text-sm font-semibold whitespace-nowrap";
-          return (
-            <li key={t.href}>
-              {t.disabledReason ? (
-                <span aria-disabled="true" title={t.disabledReason} className={cx(base, "cursor-not-allowed border-transparent text-fg-muted opacity-70")}>
-                  <Lock aria-hidden="true" size={13} />
-                  {t.label}
-                  <span className="sr-only"> ({t.disabledReason})</span>
-                </span>
-              ) : (
-                <Link href={t.href} aria-current={active ? "page" : undefined} className={cx(base, active ? "border-accent text-fg" : "border-transparent text-fg-muted hover:text-fg")}>
-                  {t.label}
-                  {t.count !== undefined && <span className="tnum rounded-full bg-neutral-soft px-1.5 text-xs text-fg">{t.count}</span>}
-                </Link>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      </ScrollRow>
-    </nav>
-  );
-}
-
-/** Segment buttons with counts ("All 140 · Members 40"). One is always selected; announced with aria-pressed. */
-export function Segments<V extends string>({ label, value, onChange, options }: { label: string; value: V; onChange: (v: V) => void; options: { value: V; label: string; count?: number }[] }) {
-  return (
-    <ScrollRow role="group" aria-label={label} className="-mx-1 flex gap-1 border-b border-line px-1">
-      {options.map((o) => {
-        const on = o.value === value;
-        return (
-          <button key={o.value} type="button" aria-pressed={on} onClick={() => onChange(o.value)}
-            className={cx("inline-flex min-h-10 cursor-pointer items-center gap-1.5 border-b-2 px-3 text-sm font-semibold whitespace-nowrap", on ? "border-accent text-fg" : "border-transparent text-fg-muted hover:text-fg")}>
-            {o.label}
-            {o.count !== undefined && <span className="tnum rounded-full bg-neutral-soft px-1.5 text-xs text-fg">{o.count}</span>}
-          </button>
-        );
-      })}
-    </ScrollRow>
-  );
-}
-
 export type PersonLite = { id: string; name: L; handle: string; status?: string; school?: string | null };
 export const personName = (p: { name: L; handle: string }, lang: Locale, fallback = "") => (tf(p.name, lang).trim() || fallback || p.handle);
 
-/** Searchable single choice: a filter box narrows a native <select> (keyboard- and screen-reader-friendly, no custom listbox). */
+/** Searchable single choice: a filter box narrows a themed `Select` (the themed `Select`). */
 export function PersonPicker({ label, people, value, onChange, lang, c, exclude, error, hint }: {
   label: string; people: PersonLite[]; value: string; onChange: (id: string) => void; lang: Locale;
   c: Pick<AreaCopy["members"]["merge"], "find" | "findPlaceholder" | "noMatches" | "pickPrompt">; exclude?: string; error?: string; hint?: string;
@@ -109,10 +55,10 @@ export function PersonPicker({ label, people, value, onChange, lang, c, exclude,
         <label htmlFor={searchId} className="text-sm font-semibold text-fg">{label} <span className="font-normal text-fg-muted">· {c.find}</span></label>
         <Input id={searchId} type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={c.findPlaceholder} autoComplete="off" />
       </div>
-      <Select aria-label={label} aria-invalid={error ? true : undefined} aria-describedby={error ? `${searchId}-err` : undefined} value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">{c.pickPrompt}</option>
-        {matches.map((p) => <option key={p.id} value={p.id}>{personName(p, lang)} · @{p.handle}</option>)}
-      </Select>
+      <Select
+        aria-label={label} aria-invalid={error ? true : undefined} aria-describedby={error ? `${searchId}-err` : undefined} value={value} onValueChange={onChange}
+        options={[{ value: "", label: c.pickPrompt }, ...matches.map((p) => ({ value: p.id, label: `${personName(p, lang)} · @${p.handle}` }))]}
+      />
       {error && <p id={`${searchId}-err`} className="text-sm font-semibold text-danger-fg">{error}</p>}
       {hint && <p className="text-sm text-fg-muted">{hint}</p>}
       {q.trim() && matches.length === 0 && <p className="text-sm text-fg-muted">{c.noMatches}</p>}
@@ -120,16 +66,14 @@ export function PersonPicker({ label, people, value, onChange, lang, c, exclude,
   );
 }
 
-/** Avatar + name, with an optional second line. Names truncate so a table row never forces horizontal page scroll. */
-export function PersonCell({ name, sub, size = 32, children }: { name: string; sub?: ReactNode; size?: number; children?: ReactNode }) {
+/** Avatar (40px) + name on one line with ellipsis, optional second line: the people version of the shared row anatomy. */
+export function PersonCell({ name, sub, size = 40, src, children }: { name: string; sub?: ReactNode; size?: number; src?: string | null; children?: ReactNode }) {
   return (
-    <span className="flex min-w-0 items-center gap-2.5">
-      <Avatar name={name} size={size} />
-      <span className="grid min-w-0">
-        {children ?? <span className="truncate font-semibold text-fg">{name}</span>}
-        {sub && <span className="truncate text-xs text-fg-muted">{sub}</span>}
-      </span>
-    </span>
+    <RowEntity
+      leading={<Avatar name={name} src={src} size={size} />}
+      title={children ?? <RowTitle>{name}</RowTitle>}
+      sub={sub ? <span className="min-w-0 truncate text-xs leading-6 text-fg-muted">{sub}</span> : undefined}
+    />
   );
 }
 

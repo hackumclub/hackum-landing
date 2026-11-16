@@ -3,8 +3,10 @@ import { ArrowLeft } from "lucide-react";
 import { fill, href, tf, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
 import { copy } from "@/i18n/areas/admin-events";
+import { copy as reportCopy } from "@/i18n/areas/admin-reports";
 import { displayStatus, eventWhen } from "@/lib/events/format";
 import { outboxForEvent } from "@/lib/events/admin-outbox";
+import { missingForPublish } from "@/lib/events/readiness";
 import { eventStats } from "@/lib/mockdb/queries";
 import type { Db, EventRow } from "@/lib/mockdb/types";
 import StatusPill from "@/components/ui/StatusPill";
@@ -39,7 +41,7 @@ export default function EventHeader({ db, event, now, lang }: { db: Db; event: E
             <span>{fill(t.meta, { kind: d.admin.kinds[event.kind], when: eventWhen(event, lang) })}</span>
           </span>
         }
-        actions={<StatusActions lang={lang} eventId={event.id} title={title} status={event.status} people={people} />}
+        actions={<StatusActions lang={lang} eventId={event.id} title={title} status={event.status} people={people} missing={missingForPublish(event)} />}
         art={posterSrc(event.cover_path)
           ? <Poster path={event.cover_path} sizes="160px" className="aspect-[4/5] w-full rotate-3 rounded-[var(--radius-sm)] ring-4 ring-white/80 shadow-[0_18px_30px_-10px_rgb(0_30_60/0.6)] md:w-32" />
           : <Icon3D name="calendar" sizes="208px" className="w-24 rotate-3 drop-shadow-[0_18px_22px_rgb(0_30_60/0.45)] md:w-40" />}
@@ -51,6 +53,7 @@ export default function EventHeader({ db, event, now, lang }: { db: Db; event: E
           { href: `${base}/registrations`, label: t.tabs.registrations, count: stats.registered },
           { href: `${base}/analytics`, label: t.tabs.analytics },
           { href: `${base}/comms`, label: t.tabs.comms, count: outboxForEvent(db, event).length },
+          ...(event.status === "completed" ? [{ href: `${base}/report`, label: reportCopy[lang].event.tab }] : []),
         ]}
       />
     </div>

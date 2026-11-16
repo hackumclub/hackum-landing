@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { cx } from "./cx";
 
 /** Up to two initials from a display name ("?" when empty). Works for Cyrillic. */
@@ -8,10 +7,16 @@ export function initials(name: string) {
   return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
 }
 
-export default function Avatar({ name, src, size = 32, className }: { name: string; src?: string | null; size?: number; className?: string }) {
+/**
+ * Round photo or letter fallback. Photos are plain <img>: they are tiny (≤ 512 px WebP re-encoded on upload), served with
+ * their own immutable cache headers by /api/avatar, and carry a `?v=` query that next/image's optimizer would reject.
+ * `alt` is empty by default because a name is almost always printed next to the picture; pass it when it stands alone.
+ */
+export default function Avatar({ name, src, size = 32, className, alt = "" }: { name: string; src?: string | null; size?: number; className?: string; alt?: string }) {
   const style = { width: size, height: size };
   return src ? (
-    <Image src={src} alt="" width={size} height={size} className={cx("shrink-0 rounded-full object-cover", className)} style={style} />
+    // eslint-disable-next-line @next/next/no-img-element -- see the note above
+    <img src={src} alt={alt} width={size} height={size} loading="lazy" decoding="async" className={cx("shrink-0 rounded-full object-cover", className)} style={style} />
   ) : (
     <span aria-hidden="true" style={{ ...style, fontSize: Math.round(size * 0.38) }} className={cx("inline-grid shrink-0 place-items-center rounded-full bg-accent-soft font-bold text-accent-fg", className)}>
       {initials(name)}

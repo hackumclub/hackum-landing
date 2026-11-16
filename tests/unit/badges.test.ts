@@ -78,11 +78,22 @@ describe("computeBadges", () => {
     expect(badge("hackathon").earned).toBe(false);
   });
 
-  it("feedback and winner are coming soon: never earned, need 1", () => {
-    for (const id of ["feedback", "winner"]) {
-      expect(badge(id)).toMatchObject({ earned: false, comingSoon: true, progress: { have: 0, need: 1 } });
-    }
-    expect(computeBadges(db, "p", NOW).filter((b) => b.comingSoon).length).toBe(2);
+  it("winner is coming soon: never earned, need 1", () => {
+    expect(badge("winner")).toMatchObject({ earned: false, comingSoon: true, progress: { have: 0, need: 1 } });
+    expect(computeBadges(db, "p", NOW).filter((b) => b.comingSoon).map((b) => b.id)).toEqual(["winner"]);
+  });
+
+  it("feedback (Voice of the club): earned at three answered surveys (feedback_count >= 3), progress capped, only the person's own count", () => {
+    const answer = (who: string, event: string) =>
+      db.event_feedback.push({ id: `fb${++n}`, event_id: event, profile_id: who, rating: 4, nps: 8, went_well: "", improve: "", anonymous: true, created_at: at(-1), updated_at: at(-1) });
+    expect(badge("feedback")).toMatchObject({ earned: false, progress: { have: 0, need: 3 } });
+    answer("p", "e1"); answer("p", "e2"); answer("someone-else", "e1"); answer("someone-else", "e2"); answer("someone-else", "e3");
+    expect(badge("feedback")).toMatchObject({ earned: false, progress: { have: 2, need: 3 } });
+    expect(badge("feedback")).not.toHaveProperty("comingSoon");
+    answer("p", "e3");
+    expect(badge("feedback")).toMatchObject({ earned: true, progress: { have: 3, need: 3 } });
+    answer("p", "e4");
+    expect(badge("feedback").progress).toEqual({ have: 3, need: 3 });
   });
 
   it("two-seasons: memberships in two different seasons", () => {

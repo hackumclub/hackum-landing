@@ -9,6 +9,9 @@ import { requireStaffPage } from "@/lib/server/session";
 import EventForm from "@/components/admin/events/EventForm";
 import { FormSkeleton } from "@/components/admin/events/Skeletons";
 import { loadEvent } from "@/components/admin/events/load";
+import { adminMeta, type AdminMetaProps } from "@/lib/admin/meta";
+
+export const generateMetadata = ({ params }: AdminMetaProps) => adminMeta(params, "event");
 
 type Params = Promise<{ lang: string; id: string }>;
 type Search = Promise<Record<string, string | string[] | undefined>>;

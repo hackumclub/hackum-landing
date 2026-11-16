@@ -17,8 +17,8 @@ const TONE: Record<TagTone, string> = {
  */
 export default function Tag({ tone = "neutral", icon: Icon, children, className }: { tone?: TagTone; icon?: LucideIcon; children: ReactNode; className?: string }) {
   return (
-    <span className={cx("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap", TONE[tone], className)}>
-      {Icon && <Icon aria-hidden="true" size={16} className="shrink-0" />}
+    <span className={cx("inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs leading-none font-semibold whitespace-nowrap", TONE[tone], className)}>
+      {Icon && <Icon aria-hidden="true" size={14} className="shrink-0" />}
       {children}
     </span>
   );

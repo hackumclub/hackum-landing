@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Db } from "@/lib/mockdb/types";
-import { applyForMembership } from "@/lib/mockdb/members";
+import { applyForMembership, reviewMembership } from "@/lib/mockdb/members";
 import { registerForEvent } from "@/lib/mockdb/registrations";
 import { previewEventChange, updateEvent, type EventInput } from "@/lib/mockdb/events";
 import { setSemesterSubjects, updateAcademic } from "@/lib/mockdb/academic";
@@ -114,5 +114,25 @@ describe("narrowing an event to NUM", () => {
     expect(updateEvent(ctx(db, "org"), "e1", { ...input, school_scope: "num" }).ok).toBe(true);
     expect(db.registrations).toHaveLength(2);
     expect(updateEvent(ctx(db, "org"), "e1", { ...input, school_scope: "bad" as never })).toEqual({ ok: false, error: "invalid" });
+  });
+});
+
+describe("reviewing a membership application", () => {
+  const file = (profileId: string) => {
+    db.membership_applications.push({ id: `a_${profileId}`, profile_id: profileId, season: 2027, motivation: "x".repeat(20), team_interest: [], answers: {}, status: "pending", reviewed_by: null, reviewed_at: null, review_note: null, created_at: at(-5) });
+    return `a_${profileId}`;
+  };
+  it("refuses to approve an applicant who is not a NUM student with a major, but lets staff reject", () => {
+    const id = file("must1");
+    expect(reviewMembership(ctx(db, "org"), { id, approve: true, note: "" })).toEqual({ ok: false, error: "ineligible" });
+    expect(db.profiles.find((p) => p.id === "must1")!.status).toBe("guest");
+    expect(db.memberships).toHaveLength(0);
+    expect(db.membership_applications[0].status).toBe("pending");
+    expect(reviewMembership(ctx(db, "org"), { id, approve: false, note: "Members must study at NUM" }).ok).toBe(true);
+  });
+  it("still approves an eligible NUM student", () => {
+    const id = file("num1");
+    expect(reviewMembership(ctx(db, "org"), { id, approve: true, note: "" }).ok).toBe(true);
+    expect(db.profiles.find((p) => p.id === "num1")!.status).toBe("member");
   });
 });

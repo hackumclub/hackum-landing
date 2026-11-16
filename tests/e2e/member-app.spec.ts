@@ -89,7 +89,7 @@ test.describe("events: RSVP and cancel", () => {
     }
 
     await page.goto("/en/me/events?tab=upcoming");
-    await card(page, "Alumni Night").getByRole("button", { name: "Going" }).click();
+    await card(page, "Alumni Night").getByRole("button", { name: "I'm going" }).click();
     await expect(page.getByRole("status").filter({ hasText: "You're going" })).toBeVisible();
 
     await page.goto("/en/me/events?tab=going");
@@ -104,7 +104,7 @@ test.describe("events: RSVP and cancel", () => {
     await page.getByRole("alertdialog").getByRole("button", { name: "Cancel RSVP" }).click();
     await expect(page.getByText("RSVP cancelled")).toBeVisible();
     await page.goto("/en/me/events?tab=upcoming");
-    await expect(card(page, "Alumni Night").getByRole("button", { name: "Going" })).toBeVisible();
+    await expect(card(page, "Alumni Night").getByRole("button", { name: "I'm going" })).toBeVisible();
   });
 
   test("members-only events are greyed with the reason for a guest, and cannot be RSVPed", async ({ page }) => {
@@ -112,7 +112,7 @@ test.describe("events: RSVP and cancel", () => {
     await page.goto("/en/me/events?tab=upcoming");
     const git = card(page, "Online Workshop: Practical Git");
     await expect(git.getByText("Members only")).toBeVisible();
-    await expect(git.getByRole("button", { name: "Going" })).toBeDisabled();
+    await expect(git.getByRole("button", { name: "I'm going" })).toBeDisabled();
   });
 
   test("an empty tab says what it is and offers one action", async ({ page }) => {
@@ -138,7 +138,7 @@ test.describe("events: RSVP and cancel", () => {
       joined = false;
     } else {
       await other.goto("/en/me/events?tab=upcoming");
-      await card(other, "Alumni Night").getByRole("button", { name: "Going" }).click();
+      await card(other, "Alumni Night").getByRole("button", { name: "I'm going" }).click();
       joined = true;
     }
     await expect.poll(count, { timeout: 15_000 }).toBe(before + (joined ? 1 : -1));
@@ -148,7 +148,7 @@ test.describe("events: RSVP and cancel", () => {
       await card(other, "Alumni Night").getByRole("button", { name: "Cancel RSVP" }).click();
       await other.getByRole("alertdialog").getByRole("button", { name: "Cancel RSVP" }).click();
     } else {
-      await card(other, "Alumni Night").getByRole("button", { name: "Going" }).click();
+      await card(other, "Alumni Night").getByRole("button", { name: "I'm going" }).click();
     }
     await expect.poll(count, { timeout: 15_000 }).toBe(before);
     await other.close();
@@ -276,13 +276,21 @@ test.describe("app-like polish", () => {
     expect(poster?.height ?? 0).toBeGreaterThan(200); // the poster is large, not a thumbnail
   });
 
-  test("event cards share one poster size on every tab", async ({ page }) => {
+  test("event cards keep one poster ratio on every tab (the whole poster is shown, never cropped)", async ({ page }) => {
     await signInAs(page, "temuulen");
     for (const tab of ["upcoming", "going"]) {
       await page.goto(`/en/me/events?tab=${tab}`);
       await page.locator("main h1").first().waitFor();
-      const heights = await page.locator("article").evaluateAll((els) => els.map((el) => Math.round(el.firstElementChild?.getBoundingClientRect().height ?? 0)));
-      if (heights.length > 1) expect(new Set(heights).size, `${tab}: ${heights.join(",")}`).toBe(1);
+      // A stacked card (poster spans the card) has a fixed 5:4 slot; a wide card (poster beside the text) has a fixed width.
+      const slots = await page.locator("article [data-poster]").evaluateAll((els) => els.map((el) => {
+        const r = el.getBoundingClientRect();
+        const a = el.closest("article")!.getBoundingClientRect();
+        return { w: Math.round(r.width), h: Math.round(r.height), stacked: r.width >= a.width - 2 };
+      }));
+      for (const s of slots) {
+        if (s.stacked) expect(Math.abs(s.h - s.w * 0.8), `${tab}: ${s.w}x${s.h}`).toBeLessThanOrEqual(2);
+        else expect(s.w, `${tab}: ${s.w}x${s.h}`).toBe(224);
+      }
     }
   });
 
@@ -343,6 +351,7 @@ test.describe("sign-in picker", () => {
   test("reads as who you are signing in as: initials, role chip, what you can do, where you land", async ({ page }) => {
     await signInAs(page, null);
     await page.goto("/en/sign-in");
+    await page.locator("details[data-demo-accounts] summary").click(); // demo accounts are collapsed by default
     const member = page.locator("li", { hasText: /Member \(Anuujin\)/ });
     await expect(member.getByText("Signing in as")).toBeVisible();
     await expect(member.getByText("Member", { exact: true })).toBeVisible();
@@ -382,7 +391,7 @@ test.describe("membership", () => {
     await page.goto("/en/me/membership");
     await expect(page.getByRole("heading", { name: "Membership is for NUM students" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Submit application" })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Update school and major" })).toHaveAttribute("href", "/en/me/profile");
+    await expect(page.getByRole("link", { name: "Update school and major" })).toHaveAttribute("href", "/en/me/profile#school");
     await expect(page.getByRole("link", { name: "Browse open events" })).toBeVisible();
   });
 
@@ -414,7 +423,7 @@ test.describe("membership", () => {
     await page.goto("/en/me/membership");
     await expect(page.getByRole("heading", { name: "You're a Hackum member" }).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Membership history" })).toBeVisible();
-    await expect(page.getByText("Season 2026")).toBeVisible();
+    await expect(page.getByText("Season 2026", { exact: true })).toBeVisible(); // the history row (the status card says "Member for Season 2026")
   });
 });
 
@@ -478,7 +487,7 @@ for (const width of [360, 768, 1280]) {
       const nav = page.locator('nav[aria-label="Main menu"]:visible');
       await expect(nav).toHaveCount(1);
       const links = nav.getByRole("link");
-      await expect(links).toHaveCount(4);
+      await expect(links).toHaveCount(width >= 1024 ? 6 : 4); // the laptop rail adds Polls and Notifications
       await expect(nav.getByRole("link", { name: "Events" })).toHaveAttribute("aria-current", "page");
       for (const l of await links.all()) {
         const box = await l.boundingBox();

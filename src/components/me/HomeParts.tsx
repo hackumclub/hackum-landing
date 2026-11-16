@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, CalendarPlus, CalendarX, Clock, ExternalLink, MapPin, Navigation } from "lucide-react";
+import { CalendarDays, CalendarX, Clock, ExternalLink, MapPin } from "lucide-react";
 import type { Dict } from "@/i18n";
 import type { MeCopy } from "@/i18n/areas/me";
 import { fill, tf, type Locale } from "@/i18n/config";
@@ -7,24 +7,23 @@ import { googleCalendarUrl } from "@/lib/calendar/gcal";
 import { SITE_URL } from "@/lib/site-url";
 import { formatUb } from "@/lib/time";
 import { countdown, ordinal, type Attention, type EventCardVm, type MembershipView } from "@/lib/me/queries";
-import { ButtonLink, buttonClass } from "@/components/ui/Button";
+import { ButtonLink } from "@/components/ui/Button";
 import StatusPill from "@/components/ui/StatusPill";
 import Icon3D from "@/components/Icon3D";
 import Sticker from "@/components/Sticker";
 import type { StickerName } from "@/lib/manul";
 import { cx } from "@/components/ui/cx";
 import { Card, DateChip, Poster } from "./parts";
+import { pill } from "./pill";
 import { CancelButton } from "./EventActions";
-import { chipParts, placeText, whenText } from "./EventCard";
-
-/** Calendar-style action tile for the ticket's quick-actions row: icon over label, 64px tall so it is an easy thumb target. */
-const tile = "h-auto! min-h-16! w-full flex-col! gap-1! rounded-[var(--radius-sm)]! px-2! py-2! text-xs! leading-tight! whitespace-normal!";
+import { chipParts, placeText, QuickActions, whenText } from "./EventCard";
 
 /**
- * The soonest event the person is going to, as a ticket: the poster large with a countdown chip, then the details and a
- * row of quick actions (calendar, directions or join link, cancel), notches on the tear line between them.
+ * The soonest event the person is going to, as a ticket: the whole poster on one side (nothing drawn over it), the details on
+ * the other. From md up the two halves are separated by a dashed tear line with a real semicircular cut-out at each end (a CSS
+ * mask on the card, so the page shows through in both themes); on phones the poster simply sits above the details.
  */
-export function NextEventCard({ vm, lang, c, d, now }: { vm: EventCardVm; lang: Locale; c: MeCopy; d: Dict; now: Date }) {
+export function NextEventCard({ vm, lang, c, d, now, eager = true }: { vm: EventCardVm; lang: Locale; c: MeCopy; d: Dict; now: Date; eager?: boolean }) {
   const h = c.home;
   const T = c.event;
   const title = tf(vm.title, lang);
@@ -35,46 +34,45 @@ export function NextEventCard({ vm, lang, c, d, now }: { vm: EventCardVm; lang: 
     title, start: new Date(vm.starts_at), end: new Date(vm.ends_at), location,
     description: `${tf(vm.tagline, lang)}\n${SITE_URL}/${lang}/events/${vm.slug}`.trim(),
   });
-  const maps = vm.venue ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(vm.venue)}` : null;
   const chip = chipParts(vm, lang);
-  const notch = "absolute size-4 rounded-full border border-line bg-canvas";
+  // Cut-outs sit on the tear line: 5fr | 1px | 6fr puts it at 5/11 of the card width.
+  const cut = "md:[mask-image:radial-gradient(circle_9px_at_45.4545%_0,#0000_96%,#000),radial-gradient(circle_9px_at_45.4545%_100%,#0000_96%,#000)] md:[mask-composite:intersect] md:[-webkit-mask-composite:source-in]";
   return (
-    <article aria-label={h.nextTitle} className="grid grid-cols-[minmax(0,1fr)] overflow-hidden rounded-[var(--radius-md)] border border-line bg-panel shadow-[var(--shadow-card)] md:grid-cols-[minmax(0,5fr)_auto_minmax(0,6fr)]">
-      <Poster cover={vm.cover} sizes="(min-width: 768px) 400px, 100vw" className="aspect-[5/4] md:aspect-auto md:min-h-80">
-        <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
-          <DateChip month={chip.month} day={chip.day} />
-          <span className="ops-gloss inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold"><Clock aria-hidden="true" size={16} />{left.kind === "live" ? h.countdownLive : left.text}</span>
-        </div>
-        <div className="absolute bottom-3 left-3"><StatusPill status="going" label={d.status.going} className="shadow-[0_4px_10px_-4px_rgb(0_20_40/0.5)] ring-2 ring-panel" /></div>
-      </Poster>
-      {/* Tear line: dashed, with a notch cut out of each end (left/right on phones, top/bottom beside the poster). */}
-      <div aria-hidden="true" className="relative h-0 border-t-2 border-dashed border-line md:h-auto md:w-0 md:border-t-0 md:border-l-2">
-        <span className={cx(notch, "-top-[9px] -left-2 md:-top-2 md:-left-[9px]")} />
-        <span className={cx(notch, "-top-[9px] -right-2 md:top-auto md:right-auto md:-bottom-2 md:-left-[9px]")} />
-      </div>
-      <div className="grid content-between gap-4 p-4 md:p-5">
-        <div className="grid gap-2">
-          <h3 className="font-display text-xl leading-snug font-bold text-fg [overflow-wrap:anywhere]">
-            <Link href={`/${lang}/events/${vm.slug}`} className="hover:underline">{title}</Link>
-          </h3>
-          <p className="flex items-center gap-1.5 text-sm font-bold text-accent-fg"><CalendarDays aria-hidden="true" size={16} className="shrink-0" />{whenText(vm, lang)}</p>
-          {place && <p className="flex items-start gap-1.5 text-sm text-fg-muted"><MapPin aria-hidden="true" size={16} className="mt-0.5 shrink-0" />{place}</p>}
-        </div>
-        {vm.onlineUrl && <ButtonLink href={vm.onlineUrl} target="_blank" rel="noopener noreferrer" size="lg" className="w-full" icon={<ExternalLink aria-hidden="true" size={16} />}>{T.joinOnline}</ButtonLink>}
-        <div className="grid gap-2">
-          <p className="sr-only">{h.quickActions}</p>
-          <div className="grid grid-cols-3 gap-2">
-            <a href={`/api/events/${encodeURIComponent(vm.slug)}/ics`} title={h.ics} className={buttonClass("secondary", "lg", tile)}><CalendarPlus aria-hidden="true" size={20} className="text-accent-fg" />{h.calendarShort}</a>
-            {maps
-              ? <a href={maps} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "lg", tile)}><Navigation aria-hidden="true" size={20} className="text-accent-fg" />{h.directions}</a>
-              : <a href={gcal} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "lg", tile)}><ExternalLink aria-hidden="true" size={20} className="text-accent-fg" />{h.google}</a>}
-            <CancelButton eventId={vm.id} variant="secondary" doneText={T.cancelDone} errors={c.errors as Record<string, string>} keep={T.keep} confirm={T.cancel}
-              trigger={T.cancel} title={fill(T.cancelTitle, { title })} body={T.cancelBody} className={tile} icon={<CalendarX aria-hidden="true" size={20} className="text-danger-fg" />} />
+    <div className="drop-shadow-[0_18px_22px_rgb(0_40_70/0.14)]">
+      <article aria-label={h.nextTitle} className={cx("@container grid grid-cols-[minmax(0,1fr)] overflow-hidden rounded-[var(--radius-md)] border border-line bg-panel md:grid-cols-[minmax(0,5fr)_1px_minmax(0,6fr)]", cut)}>
+        <Poster cover={vm.cover} eager={eager} sizes="(min-width: 768px) 440px, 100vw" className="aspect-[5/4] md:aspect-auto md:min-h-80" />
+        <div aria-hidden="true" className="hidden md:block md:my-5 md:bg-[repeating-linear-gradient(to_bottom,var(--ops-line)_0_6px,transparent_6px_12px)]" />
+        <div className="grid content-between gap-4 p-4 md:p-6">
+          <div className="grid gap-3">
+            <div className="flex items-start gap-3">
+              <DateChip month={chip.month} day={chip.day} />
+              <div className="grid min-w-0 flex-1 gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="ops-gloss inline-flex min-h-8 items-center gap-1.5 rounded-full px-3 text-sm font-bold"><Clock aria-hidden="true" size={16} />{left.kind === "live" ? h.countdownLive : left.text}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <h3 className="font-display text-xl leading-snug font-bold text-fg [overflow-wrap:anywhere]">
+                    <Link href={`/${lang}/events/${vm.slug}`} className="inline-flex min-h-11 items-center hover:underline">{title}</Link>
+                  </h3>
+                  <StatusPill status="going" label={d.status.going} />
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-1.5">
+              <p className="flex items-start gap-2 text-sm font-bold text-accent-fg"><CalendarDays aria-hidden="true" size={16} className="mt-0.5 shrink-0" />{whenText(vm, lang)}</p>
+              {place && <p className="flex items-start gap-2 text-sm text-fg-muted"><MapPin aria-hidden="true" size={16} className="mt-0.5 shrink-0" /><span className="[overflow-wrap:anywhere]">{place}</span></p>}
+            </div>
           </div>
-          <p className="text-xs text-fg-muted">{h.calendarNote}{" "}<a href={gcal} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-6 items-center gap-1 font-semibold text-accent-fg hover:underline">{h.google}<ExternalLink aria-hidden="true" size={12} /></a></p>
+          <div className="grid gap-3">
+            {vm.onlineUrl && <ButtonLink href={vm.onlineUrl} target="_blank" rel="noopener noreferrer" size="lg" className="w-full" icon={<ExternalLink aria-hidden="true" size={16} />}>{T.joinOnline}</ButtonLink>}
+            <QuickActions vm={vm} c={c}
+              danger={<CancelButton eventId={vm.id} doneText={T.cancelDone} errors={c.errors as Record<string, string>} keep={T.keep} confirm={T.cancel}
+                trigger={T.cancel} title={fill(T.cancelTitle, { title })} body={T.cancelBody} icon={<CalendarX aria-hidden="true" size={18} className="shrink-0" />} />} />
+            <p className="text-xs leading-normal text-fg-muted">{h.calendarNote}{" "}<a href={gcal} target="_blank" rel="noopener noreferrer" className="font-semibold whitespace-nowrap text-accent-fg underline-offset-2 hover:underline">{h.google}<ExternalLink aria-hidden="true" size={12} className="ml-1 inline align-[-1px]" /></a></p>
+          </div>
         </div>
-      </div>
-    </article>
+      </article>
+    </div>
   );
 }
 
@@ -123,7 +121,7 @@ export function AttentionList({ items, lang, c }: { items: Attention[]; lang: Lo
                 <p className="text-sm font-bold text-fg">{title}</p>
                 <p className="text-sm text-fg-muted">{line}</p>
               </div>
-              <Link href={href} className={buttonClass("secondary", "lg", "col-span-2 w-full bg-panel")}>{action}</Link>
+              <Link href={href} className={cx(pill.soft, "col-span-2 w-full")}>{action}</Link>
             </div>
           </li>
         );

@@ -19,7 +19,7 @@ export default function CalendarFeed({ path, siteOrigin, c }: { path: string; /*
       <p className="rounded-[var(--radius-sm)] bg-panel-2 px-3 py-2 text-sm break-all text-fg" data-testid="calendar-https">{https}</p>
       <div className="grid gap-2 sm:flex sm:flex-wrap">
         <a href={webcal} className={buttonClass("primary", "lg", "w-full sm:w-auto")}><CalendarSync aria-hidden="true" size={16} />{c.calWebcal}</a>
-        <CopyButton value={https} label={`${c.calHttps}: ${c.calCopy}`} copiedLabel={c.calCopied} className="w-full sm:w-auto" />
+        <CopyButton value={https} label={c.calCopyLink} copiedLabel={c.calCopied} className="w-full sm:w-auto" />
       </div>
       <p className="text-sm text-fg-muted">{c.calPrivate}</p>
     </IconCard>

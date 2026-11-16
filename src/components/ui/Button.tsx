@@ -7,7 +7,7 @@ export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANT: Record<ButtonVariant, string> = {
   primary: "ops-gloss",
-  secondary: "border border-line-strong bg-panel text-fg hover:bg-panel-2",
+  secondary: "border border-line bg-panel text-fg shadow-[var(--shadow-soft)] hover:border-line-strong/60 hover:bg-panel-2",
   ghost: "text-fg hover:bg-neutral-soft",
   danger: "bg-danger text-on-danger hover:brightness-95",
   // On a blue surface (Stage, sidebar): the public site's white pill and frosted pill.

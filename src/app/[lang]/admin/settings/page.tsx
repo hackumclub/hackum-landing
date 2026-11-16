@@ -11,7 +11,10 @@ import { loadSeasons } from "@/components/admin/settings/data";
 import { previewState } from "@/components/admin/members/preview";
 import { SectionSkeleton } from "@/components/admin/members/shared";
 import { requireStaffPage } from "@/lib/server/session";
-import { formatUb } from "@/lib/time";
+import { formatUbStable } from "@/lib/time";
+import { adminMeta, type AdminMetaProps } from "@/lib/admin/meta";
+
+export const generateMetadata = ({ params }: AdminMetaProps) => adminMeta(params, "settings");
 
 type Props = { params: Promise<{ lang: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -26,7 +29,7 @@ async function Body({ lang, searchParams }: { lang: Locale; searchParams: Props[
   const current = seasons.find((s) => s.isCurrent);
   const open = seasons.find((s) => s.window === "open");
   const next = seasons.filter((s) => s.window === "scheduled").sort((a, b) => (a.opensAt ?? "").localeCompare(b.opensAt ?? ""))[0];
-  const day = (iso: string | null) => (iso ? formatUb(new Date(iso), lang, { month: "short", day: "numeric" }) : "");
+  const day = (iso: string | null) => (iso ? formatUbStable(new Date(iso), lang, "short") : "");
   const appLine = open ? fill(t.appsOpen, { label: tf(open.label, lang), when: day(open.closesAt) })
     : next ? fill(t.appsScheduled, { label: tf(next.label, lang), when: day(next.opensAt) }) : t.appsClosed;
   const AppIcon = open ? CalendarCheck : next ? CalendarClock : CalendarX;

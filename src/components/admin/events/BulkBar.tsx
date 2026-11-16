@@ -5,7 +5,7 @@ import { plural } from "@/i18n/plural";
 import Button from "@/components/ui/Button";
 
 /**
- * Appears when rows are selected. Capacity-aware: Accept is disabled, with the reason written next to it, when it would
+ * The contents of the table's sticky selection bar (DataTable `selectionBar`), so the bar sticks above the tab bar on phones. Capacity-aware: Accept is disabled, with the reason written next to it, when it would
  * take more seats than are left (the rule re-checks and answers "full" if someone else just took a seat).
  */
 export default function BulkBar({ lang, count, application, hasTeam, wholeTeam, onWholeTeam, adding, taken, over, capacity, pending, onDecide, onClear }: {
@@ -19,7 +19,7 @@ export default function BulkBar({ lang, count, application, hasTeam, wholeTeam, 
   return (
     <div
       role="group" aria-label={t.groupLabel} data-testid="bulk-bar"
-      className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 grid gap-2 rounded-[var(--radius-md)] border border-line-strong bg-panel p-3 shadow-[0_18px_40px_-12px_rgb(7_27_41/0.55)] md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center md:gap-3"
+      className="grid gap-2 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center md:gap-3"
     >
       <div className="flex items-center justify-between gap-3 md:justify-start">
         <p className="text-sm font-bold text-fg">{plural(lang, count, t.selected)}</p>

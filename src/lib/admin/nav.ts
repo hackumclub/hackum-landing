@@ -6,19 +6,29 @@ import type { Locale } from "@/i18n/config";
  */
 export const adminPreviewAllowed = () => process.env.NODE_ENV !== "production" || process.env.ADMIN_PREVIEW === "1";
 
-export type AdminNavKey = "dashboard" | "events" | "members" | "comms" | "settings" | "audit" | "kit";
-export type AdminNavItem = { key: AdminNavKey; href: string; ready: boolean };
+import type { StaffRoleName } from "@/lib/mockdb/types";
 
-// Flip `ready` as each plan task ships its page; unready items render as "Soon" instead of linking to a 404.
-const ITEMS: [AdminNavKey, string, boolean][] = [
-  ["dashboard", "", true],
-  ["events", "/events", true],
-  ["members", "/members", true],
-  ["comms", "/comms", true],
-  ["settings", "/settings", true],
-  ["audit", "/audit", true],
-  ["kit", "/kit", true],
+export type AdminNavKey = "dashboard" | "events" | "members" | "forms" | "polls" | "analytics" | "reports" | "comms" | "inbox" | "settings" | "audit" | "kit";
+export type AdminNavItem = { key: AdminNavKey; href: string; ready: boolean; adminOnly: boolean };
+
+// Flip `ready` as each page ships; unready items render as "Soon" instead of linking to a 404. `kit` is a developer
+// page: reachable by URL, never listed.
+const ITEMS: { key: AdminNavKey; path: string; ready: boolean; adminOnly?: boolean; hidden?: boolean }[] = [
+  { key: "dashboard", path: "", ready: true },
+  { key: "events", path: "/events", ready: true },
+  { key: "members", path: "/members", ready: true },
+  { key: "forms", path: "/forms", ready: true },
+  { key: "polls", path: "/polls", ready: true },
+  { key: "analytics", path: "/analytics", ready: true },
+  { key: "reports", path: "/reports", ready: true },
+  { key: "comms", path: "/comms", ready: true },
+  { key: "inbox", path: "/inbox", ready: true },
+  { key: "settings", path: "/settings", ready: true, adminOnly: true },
+  { key: "audit", path: "/audit", ready: true, adminOnly: true },
+  { key: "kit", path: "/kit", ready: true, hidden: true },
 ];
 
-export const adminNav = (lang: Locale): AdminNavItem[] => ITEMS.map(([key, path, ready]) => ({ key, href: `/${lang}/admin${path}`, ready }));
-export const isAdminRouteReady = (lang: Locale, key: AdminNavKey) => adminNav(lang).find((i) => i.key === key)!.ready;
+/** Only the items this role may open: an organizer never sees Settings or Audit (they would 404). Defaults to admin. */
+export const adminNav = (lang: Locale, role: StaffRoleName = "admin"): AdminNavItem[] =>
+  ITEMS.filter((i) => !i.hidden && (role === "admin" || !i.adminOnly)).map((i) => ({ key: i.key, href: `/${lang}/admin${i.path}`, ready: i.ready, adminOnly: !!i.adminOnly }));
+export const isAdminRouteReady = (lang: Locale, key: AdminNavKey) => adminNav(lang).find((i) => i.key === key)?.ready ?? true;

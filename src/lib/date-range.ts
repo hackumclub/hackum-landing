@@ -35,3 +35,32 @@ export function isIsoDate(v: string): boolean {
   const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
   return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
 }
+
+/** Longest range the analytics query accepts (mirrors the guard in `mockdb/analytics.ts`). */
+export const MAX_RANGE_DAYS = 800;
+
+/** `YYYY-MM-DD` plus `n` calendar days (negative allowed). Assumes a valid date. */
+export const addDays = (iso: string, n: number): string => ymd(new Date(Date.parse(`${iso}T00:00:00Z`) + n * DAY_MS));
+
+/** Inclusive number of days in the range (a one-day range is 1). */
+export const rangeDays = (r: DateRange): number => Math.round((Date.parse(`${r.to}T00:00:00Z`) - Date.parse(`${r.from}T00:00:00Z`)) / DAY_MS) + 1;
+
+/** The equal-length range that ends the day before `r` starts (for "vs previous period" deltas). */
+export function previousRange(r: DateRange): DateRange {
+  const n = rangeDays(r);
+  return { from: addDays(r.from, -n), to: addDays(r.from, -1) };
+}
+
+type Param = string | string[] | undefined;
+/**
+ * Reads `?from=&to=` from untrusted URL params. Anything missing, repeated, impossible, reversed or longer than
+ * MAX_RANGE_DAYS falls back to `fallback`. `custom` is true only when the URL carried a usable range that differs
+ * from the fallback (so the picker knows whether to offer "reset").
+ */
+export function parseRangeParams(p: { from?: Param; to?: Param }, fallback: DateRange): { range: DateRange; custom: boolean } {
+  const { from, to } = p;
+  if (typeof from !== "string" || typeof to !== "string" || !isIsoDate(from) || !isIsoDate(to) || from > to) return { range: fallback, custom: false };
+  const range = { from, to };
+  if (rangeDays(range) > MAX_RANGE_DAYS) return { range: fallback, custom: false };
+  return { range, custom: !(from === fallback.from && to === fallback.to) };
+}

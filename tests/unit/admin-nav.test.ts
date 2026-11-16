@@ -20,10 +20,20 @@ describe("adminPreviewAllowed (temporary gate until Clerk staff auth, plan Task 
 
 describe("adminNav", () => {
   it("builds locale-prefixed hrefs and has no unfinished sections left", () => {
-    const nav = adminNav("en");
+    const nav = adminNav("en", "admin");
     expect(nav.find((i) => i.key === "dashboard")).toMatchObject({ href: "/en/admin", ready: true });
-    expect(nav.find((i) => i.key === "events")).toMatchObject({ href: "/en/admin/events", ready: true });
-    expect(nav.every((i) => i.ready)).toBe(true); // every backoffice area is built; no "Soon" items left
-    expect(nav.map((i) => i.key)).toEqual(["dashboard", "events", "members", "comms", "settings", "audit", "kit"]);
+    expect(nav.find((i) => i.key === "inbox")).toMatchObject({ href: "/en/admin/inbox", ready: true });
+    expect(nav.every((i) => i.ready)).toBe(true);
+  });
+  it("organizer gets the working areas and no Settings or Audit (F-04, F-18)", () => {
+    expect(adminNav("en", "organizer").map((i) => i.key)).toEqual(["dashboard", "events", "members", "forms", "polls", "analytics", "reports", "comms", "inbox"]);
+  });
+  it("admin gets everything, Settings and Audit last; the developer kit is never listed", () => {
+    const keys = adminNav("mn", "admin").map((i) => i.key);
+    expect(keys).toEqual(["dashboard", "events", "members", "forms", "polls", "analytics", "reports", "comms", "inbox", "settings", "audit"]);
+    expect(keys).not.toContain("kit");
+  });
+  it("keeps the old one-argument call working (admin view)", () => {
+    expect(adminNav("en").map((i) => i.key)).toContain("settings");
   });
 });

@@ -137,7 +137,7 @@ test.describe("registration panel", () => {
   });
 
   test("members-only event gives a specific reason to a guest and no dead RSVP button", async ({ page }) => {
-    await signInAs(page, "temuulen");
+    await signInAs(page, "bayar"); // a NUM guest: the school check passes, so the members-only reason is the one shown (a MUST guest gets the school reason first)
     await page.goto("/en/events/members-meetup-live");
     await expect(page.getByText("This event is for Hackum members only.")).toBeVisible();
     await expect(page.getByRole("button", { name: /I’m going/ })).toHaveCount(0);

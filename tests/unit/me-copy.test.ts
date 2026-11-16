@@ -23,7 +23,7 @@ describe("member app copy", () => {
     for (const k of Object.keys(mn)) expect(placeholders(en[k]), k).toBe(placeholders(mn[k]));
   });
   it("Mongolian copy is Cyrillic, not English left in by mistake", () => {
-    const loose = Object.entries(mn).filter(([k, v]) => !/[Ѐ-ӿ]/.test(v) && !/^(meta\.brand|home\.google|home\.ics|nav\.switchLang|settings\.vis|onboarding\.langEn|membership\.teams|apply\.errorsTitle|apply\.counter|membership\.counter|settings\.calHttps)/.test(k) && /[A-Za-z]{4,}/.test(v));
+    const loose = Object.entries(mn).filter(([k, v]) => !/[Ѐ-ӿ]/.test(v) && !/^(meta\.brand|home\.google|home\.ics|nav\.switchLang|settings\.vis|onboarding\.langEn|membership\.teams|apply\.errorsTitle|apply\.counter|membership\.counter|settings\.calHttps|profile\.linkKinds)/.test(k) && /[A-Za-z]{4,}/.test(v));
     expect(loose.map(([k]) => k)).toEqual([]);
   });
 });

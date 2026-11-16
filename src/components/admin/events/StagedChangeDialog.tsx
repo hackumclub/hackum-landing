@@ -1,4 +1,5 @@
 "use client";
+import Tag from "@/components/ui/Tag";
 import * as AD from "@radix-ui/react-alert-dialog";
 import { fill, tf, type L, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
@@ -28,6 +29,7 @@ function show(key: DiffKey, v: unknown, lang: Locale): string {
     case "kind": return d.admin.kinds[v as keyof typeof d.admin.kinds];
     case "mode": return f.modes[v as keyof typeof f.modes];
     case "audience": return f.audiences[v as keyof typeof f.audiences];
+    case "school_scope": return f.scopes[v as keyof typeof f.scopes];
     case "reg_mode": return f.regModes[v as keyof typeof f.regModes];
     case "team_mode": return f.teamModes[v as keyof typeof f.teamModes];
     case "waitlist": return v ? t.yes : t.no;
@@ -40,8 +42,10 @@ function show(key: DiffKey, v: unknown, lang: Locale): string {
  * Staged edit of a published event: before/after for every changed field and how many people get an updated invite.
  * Controlled (the form decides when to open it after previewEventChange), unlike ConfirmDialog which owns its trigger.
  */
-export default function StagedChangeDialog({ open, onOpenChange, lang, title, willNotify, changes, onConfirm }: {
-  open: boolean; onOpenChange: (o: boolean) => void; lang: Locale; title: string; willNotify: number; changes: FieldChange[]; onConfirm: () => void;
+export default function StagedChangeDialog({ open, onOpenChange, lang, title, willNotify, nonNumRegistrants = 0, changes, onConfirm }: {
+  open: boolean; onOpenChange: (o: boolean) => void; lang: Locale; title: string; willNotify: number;
+  /** Current registrants from other schools when the audience is narrowed to МУИС: they keep their seats. */
+  nonNumRegistrants?: number; changes: FieldChange[]; onConfirm: () => void;
 }) {
   const t = copy[lang].staged;
   const container = useOpsPortal();
@@ -52,12 +56,13 @@ export default function StagedChangeDialog({ open, onOpenChange, lang, title, wi
         <AD.Content className="fixed top-1/2 left-1/2 z-50 grid max-h-[88dvh] w-[min(94vw,38rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-[var(--radius-md)] border border-line bg-panel p-6 text-fg shadow-[var(--shadow-card)]">
           <AD.Title className="font-display text-lg font-bold">{fill(t.title, { title })}</AD.Title>
           <AD.Description className="text-sm font-semibold text-fg">{willNotify > 0 ? plural(lang, willNotify, t.notify) : t.none}</AD.Description>
+          {nonNumRegistrants > 0 && <p role="note" className="rounded-[var(--radius-sm)] border border-line bg-warn-soft px-3 py-2 text-sm font-semibold text-warn-fg">{plural(lang, nonNumRegistrants, t.nonNum)}</p>}
           <ul className="grid gap-3">
             {changes.map((c) => (
               <li key={c.key} className="grid gap-1.5 rounded-[var(--radius-sm)] border border-line bg-panel-2 p-3 text-sm">
                 <p className="flex flex-wrap items-center gap-2 font-bold">
                   {t.fields[c.key]}
-                  {c.notifies && <span className="rounded-full bg-ember-soft px-2 py-0.5 text-xs font-bold text-ember-fg">{t.notifies}</span>}
+                  {c.notifies && <Tag tone="ember">{t.notifies}</Tag>}
                 </p>
                 <dl className="grid gap-1 sm:grid-cols-2 sm:gap-3">
                   <div><dt className="text-xs font-semibold text-fg-muted">{t.before}</dt><dd className="break-words text-fg-muted line-through decoration-1">{show(c.key, c.before, lang)}</dd></div>

@@ -3,7 +3,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { updateTag } from "next/cache";
-import type { Locale } from "@/i18n/config";
+import { DEFAULT_LOCALE, isLocale, type Locale } from "@/i18n/config";
 import { err, type Result } from "@/lib/result";
 import { getStore, mockEnabled } from "@/lib/mockdb/store";
 import type { Ctx, StaffRoleName } from "@/lib/mockdb/types";
@@ -40,10 +40,22 @@ export async function requireSession(lang: Locale, next: string, opts: { onboard
   return s;
 }
 
-/** Admin pages: anyone who is not staff gets the ordinary 404, so the backoffice is invisible to them. */
-export async function requireStaffPage(role?: "admin"): Promise<Session> {
+type StaffPageOpts = "admin" | { admin?: true; lang?: Locale; next?: string };
+
+/**
+ * Admin pages. Signed out → sign-in (and back); signed in without a staff role, or an organizer on an admin-only page
+ * → the ordinary 404, so the backoffice stays invisible. `"admin"` is the short form of `{ admin: true }`.
+ * The proxy already answers these with a real 307 / 404 status; this is the server-side re-check.
+ */
+export async function requireStaffPage(opts?: StaffPageOpts): Promise<Session> {
+  const o = typeof opts === "string" ? { admin: true as const } : opts ?? {};
   const s = await getSession();
-  if (!s || !s.staffRole || (role === "admin" && s.staffRole !== "admin")) notFound();
+  if (!s) {
+    const saved = (await cookies()).get("lang")?.value;
+    const lang = o.lang ?? (isLocale(saved) ? saved : DEFAULT_LOCALE);
+    redirect(`/${lang}/sign-in?next=${encodeURIComponent(o.next ?? `/${lang}/admin`)}`);
+  }
+  if (!s.staffRole || (o.admin && s.staffRole !== "admin")) notFound();
   return s;
 }
 

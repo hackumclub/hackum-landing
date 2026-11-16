@@ -59,6 +59,8 @@ export function reviewMembership(ctx: Ctx, input: { id: string; approve: boolean
   const person = app && profileOf(ctx.db, app.profile_id);
   if (!app || !person) return err("not_found");
   if (app.status !== "pending") return err("conflict");
+  // Same rule as applying: only NUM students with a major become members (rejecting stays possible).
+  if (input.approve && (person.school_id !== "num" || !person.major_track)) return err("ineligible");
   Object.assign(app, { status: input.approve ? "approved" : "rejected", reviewed_by: staff.data.id, reviewed_at: iso(ctx.now), review_note: input.note.trim() || null });
   if (input.approve) {
     if (!ctx.db.memberships.some((m) => m.profile_id === person.id && m.season === app.season)) {

@@ -16,6 +16,7 @@ import CopyButton from "./CopyButton";
 import { useHideTabs } from "./flow";
 import { PageHeader, StickyBar, Timeline } from "./parts";
 import { useFocusFirstError } from "./focus";
+import { pill } from "./pill";
 
 type Step = "answers" | "team" | "review";
 type TeamMode = "none" | "optional" | "required";
@@ -158,7 +159,7 @@ export default function ApplyFlow({ lang, eventId, slug, title, questions, teamM
   return (
     <form ref={form} noValidate onSubmit={(e) => { e.preventDefault(); advance(); }} className="grid gap-5">
       <PageHeader title={title} lead={c.title} sticker="writing" />
-      <Stepper steps={steps} idx={idx} c={c} />
+      {steps.length > 1 && <Stepper steps={steps} idx={idx} c={c} />}
 
       {step === "answers" && (
         <div className={card}>
@@ -222,7 +223,7 @@ export default function ApplyFlow({ lang, eventId, slug, title, questions, teamM
             <section key={s} aria-label={s === "answers" ? c.reviewAnswers : c.reviewTeam} className="grid gap-3 rounded-[var(--radius-md)] border border-line bg-panel p-4">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="font-display text-base font-bold text-fg">{s === "answers" ? c.reviewAnswers : c.reviewTeam}</h3>
-                <Button type="button" variant="ghost" size="lg" icon={<Pencil aria-hidden="true" size={14} />} onClick={() => setIdx(i)}>{c.reviewEdit}: {c.steps[s]}</Button>
+                <button type="button" className={pill.soft} onClick={() => setIdx(i)}><Pencil aria-hidden="true" size={14} />{c.reviewEdit}: {c.steps[s]}</button>
               </div>
               <dl className="grid gap-3">
                 {s === "answers" && questions.map((q) => (
@@ -249,7 +250,7 @@ export default function ApplyFlow({ lang, eventId, slug, title, questions, teamM
       )}
 
       <StickyBar label={c.title}>
-        {idx > 0 && <Button type="button" variant="secondary" size="lg" className="min-h-12 px-5" icon={<ArrowLeft aria-hidden="true" size={18} />} onClick={() => { setTopError(null); setIdx((i) => i - 1); }}>{c.back}</Button>}
+        {idx > 0 && <button type="button" className={cx(pill.soft, "px-5")} onClick={() => { setTopError(null); setIdx((i) => i - 1); }}><ArrowLeft aria-hidden="true" size={18} />{c.back}</button>}
         <Button type="submit" size="lg" disabled={pending} aria-busy={pending} className="min-h-12 flex-1 text-lg md:flex-none md:px-10"
           icon={pending ? <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" /> : undefined}>{step === "review" ? (pending ? c.submitting : c.submit) : c.next}</Button>
       </StickyBar>
@@ -268,7 +269,7 @@ function Stepper({ steps, idx, c }: { steps: Step[]; idx: number; c: MeCopy["app
         <span aria-hidden="true" className="absolute top-4 left-4 h-1 -translate-y-1/2 rounded-full bg-accent transition-[width] duration-200 motion-reduce:transition-none" style={{ width: `calc((100% - 2rem) * ${pct / 100})` }} />
         {steps.map((s, i) => (
           <li key={s} aria-current={i === idx ? "step" : undefined} className="relative z-10 grid justify-items-center gap-1">
-            <span className={cx("grid size-8 place-items-center rounded-full text-sm font-black tnum", i < idx ? "bg-accent text-on-accent" : i === idx ? "ops-gloss" : "border-2 border-line-strong bg-panel text-fg-muted")}>
+            <span className={cx("grid size-8 place-items-center rounded-full text-sm font-black tnum", i < idx ? "bg-accent text-on-accent" : i === idx ? "ops-gloss" : "border border-line bg-panel-2 text-fg-muted")}>
               {i < idx ? <Check aria-hidden="true" size={16} /> : i + 1}
             </span>
             <span className={cx("text-xs font-bold", i === idx ? "text-fg" : "text-fg-muted")}>{c.steps[s]}{i <= idx && <span className="sr-only"> ({i < idx ? c.stepDone : c.stepCurrent})</span>}</span>
@@ -330,7 +331,7 @@ function QuestionField({ q, lang, value, error, onChange, c }: {
         <fieldset data-qid={q.id} className="grid gap-2">
           <legend className="mb-1 text-sm font-semibold text-fg">{title}{q.required && <span aria-hidden="true" className="text-danger-fg"> *</span>}</legend>
           {(q.options ?? []).map((o, i) => (
-            <label key={i} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--radius-sm)] border border-line-strong px-3 text-sm text-fg">
+            <label key={i} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--radius-sm)] border border-line bg-panel-2 px-3 text-sm text-fg">
               <input type="checkbox" name={q.id} value={String(i)} checked={picked.includes(String(i))} aria-invalid={error && i === 0 ? true : undefined} aria-describedby={error ? errId : undefined}
                 onChange={(e) => onChange(e.target.checked ? [...picked, String(i)] : picked.filter((x) => x !== String(i)))} className="size-5 accent-accent" />
               {tf(o, lang)}
@@ -344,7 +345,7 @@ function QuestionField({ q, lang, value, error, onChange, c }: {
       const errId = `${q.id}-err`;
       return (
         <div data-qid={q.id} className="grid gap-1.5">
-          <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--radius-sm)] border border-line-strong px-3 text-sm text-fg">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--radius-sm)] border border-line bg-panel-2 px-3 text-sm text-fg">
             <input type="checkbox" name={q.id} checked={value === true} aria-invalid={error ? true : undefined} aria-describedby={error ? errId : undefined} onChange={(e) => onChange(e.target.checked)} className="size-5 accent-accent" />
             <span>{title}{q.required && <span aria-hidden="true" className="text-danger-fg"> *</span>}</span>
           </label>
@@ -374,7 +375,7 @@ function Success({ lang, slug, title, done, deadline, c, headingRef }: { lang: L
           <p data-testid="invite-code" className="w-fit rounded-[var(--radius-sm)] border-2 border-dashed border-accent bg-panel px-4 py-2 font-display text-3xl font-black tracking-wide text-fg tnum">{done.inviteCode}</p>
           <div className="flex flex-wrap gap-2">
             <CopyButton value={done.inviteCode} label={c.copy} copiedLabel={c.copied} />
-            <CopyButton value={link} label={c.copyLink} copiedLabel={c.copied} variant="ghost" />
+            <CopyButton value={link} label={c.copyLink} copiedLabel={c.copied} variant="soft" />
           </div>
         </section>
       )}
@@ -388,7 +389,9 @@ function Success({ lang, slug, title, done, deadline, c, headingRef }: { lang: L
       </section>
       <div className="flex flex-col gap-2 sm:flex-row">
         {done.teamId && <ButtonLink href={`/${lang}/me/teams/${done.teamId}`} size="lg" className="min-h-12 flex-1 sm:flex-none">{c.openTeam}</ButtonLink>}
-        <ButtonLink href={`/${lang}/me/events?tab=applied`} size="lg" className="min-h-12 flex-1 sm:flex-none" variant={done.teamId ? "secondary" : "primary"}>{c.toEvents}</ButtonLink>
+        done.teamId
+          ? <Link href={`/${lang}/me/events?tab=applied`} className={cx(pill.soft, "flex-1 sm:flex-none")}>{c.toEvents}</Link>
+          : <ButtonLink href={`/${lang}/me/events?tab=applied`} size="lg" className="min-h-12 flex-1 sm:flex-none">{c.toEvents}</ButtonLink>
       </div>
     </div>
   );

@@ -8,11 +8,12 @@ import { fill, isLocale, tf } from "@/i18n/config";
 import { teamView } from "@/lib/me/queries";
 import Avatar from "@/components/ui/Avatar";
 import Tag from "@/components/ui/Tag";
-import { ButtonLink } from "@/components/ui/Button";
+import { pill } from "@/components/me/pill";
 import CopyButton from "@/components/me/CopyButton";
 import LeaveTeamButton from "@/components/me/LeaveTeamButton";
 import Sticker from "@/components/Sticker";
-import { PageHeader, PageSkeleton, Section } from "@/components/me/parts";
+import { PageHeader, Section } from "@/components/me/parts";
+import RouteSkeleton from "@/components/me/RouteSkeleton";
 import { meContext } from "@/components/me/context";
 
 type Props = { params: Promise<{ lang: string; id: string }> };
@@ -65,7 +66,7 @@ async function Body({ params }: Props) {
         </div>
         <div className="grid gap-2 sm:flex sm:flex-wrap">
           <CopyButton value={v.code} label={t.copyCode} copiedLabel={t.copied} className="w-full sm:w-auto" />
-          <CopyButton value={invitePath} label={t.copyLink} copiedLabel={t.copied} variant="ghost" className="w-full sm:w-auto" />
+          <CopyButton value={invitePath} label={t.copyLink} copiedLabel={t.copied} variant="soft" className="w-full sm:w-auto" />
         </div>
       </div>
 
@@ -85,7 +86,7 @@ async function Body({ params }: Props) {
       </Section>
 
       <div className="flex flex-wrap gap-2">
-        <ButtonLink href={`/${lang}/me/events?tab=applied`} size="lg" variant="ghost">{t.back}</ButtonLink>
+        <Link href={`/${lang}/me/events?tab=applied`} className={pill.soft}>{t.back}</Link>
         {!v.eventOver && (
           <LeaveTeamButton teamId={v.id} backHref={`/${lang}/me/events?tab=applied`} trigger={t.leave} title={fill(t.leaveTitle, { team: v.name })} body={leaveBody}
             confirm={t.leaveConfirm} doneText={t.leaveDone} keep={c.event.keep} errors={c.errors as Record<string, string>} />
@@ -95,12 +96,17 @@ async function Body({ params }: Props) {
   );
 }
 
-export default async function TeamPage(props: Props) {
+/** Awaiting `params` (it carries the dynamic segment) must happen inside <Suspense>, so the guard lives in here. */
+async function Guard(props: Props) {
   const { lang } = await props.params;
   if (!isLocale(lang)) notFound();
+  return <Body {...props} />;
+}
+
+export default function TeamPage(props: Props) {
   return (
-    <Suspense fallback={<PageSkeleton label={copy[lang].loading} cards={2} />}>
-      <Body {...props} />
+    <Suspense fallback={<RouteSkeleton cards={2} />}>
+      <Guard {...props} />
     </Suspense>
   );
 }

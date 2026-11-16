@@ -4,8 +4,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { signInAs } from "./helpers/as";
+import { chooseOption, setDateTime } from "./helpers/pickers";
 
-const ADMIN_ROUTES = ["members", "members/applications", "members/merge", "comms", "settings", "settings/staff", "settings/integrations", "audit"];
+const ADMIN_ROUTES = ["members", "members?tab=applications", "members?tab=merge", "comms", "settings", "settings/staff", "settings/integrations", "audit"];
 const PERSONA_HANDLES = ["dev-admin", "dev-organizer", "anuujin", "temuulen", "saraa", "new-guest"];
 const url = (p: string, lang = "en") => `/${lang}/admin/${p}`;
 
@@ -14,6 +15,9 @@ async function open(page: Page, path: string, lang = "en") {
   await page.locator("main h1").waitFor();
 }
 const number = async (loc: ReturnType<Page["locator"]>) => Number((await loc.innerText()).replace(/\D/g, ""));
+/** The exact number on a tab or chip (CountBadge keeps it in its accessible name, the chip prints it). */
+const badge = async (loc: ReturnType<Page["locator"]>) => Number((await loc.getAttribute("aria-label").then((l) => l ?? "")).match(/(\d+)\s*$/)?.[1] ?? (await loc.innerText()).match(/(\d+)\s*$/)![1]);
+const status = (page: Page) => page.getByRole("group", { name: "Status", exact: true });
 const NOT_FOUND = /coffee not found/;
 
 test.describe("access", () => {
@@ -22,76 +26,80 @@ test.describe("access", () => {
     const titles: Record<string, string> = { members: "Members", comms: "Comms", settings: "Settings", audit: "Audit log" };
     for (const r of ADMIN_ROUTES) {
       await open(page, r);
-      await expect(page.locator("main h1")).toHaveText(titles[r.split("/")[0]!]!);
+      await expect(page.locator("main h1")).toHaveText(titles[r.split(/[/?]/)[0]!]!);
     }
   });
 
-  test("an organizer can use Members, Comms and Audit but gets a 404 on every Settings page", async ({ page }) => {
+  test("an organizer can use Members and Comms but gets a 404 on Audit and every Settings page", async ({ page }) => {
     await signInAs(page, "dev-organizer");
-    for (const r of ["members", "members/applications", "comms", "audit"]) {
+    for (const r of ["members", "members?tab=applications", "comms"]) {
       await open(page, r);
       await expect(page.getByText(NOT_FOUND)).toHaveCount(0);
     }
-    for (const r of ["settings", "settings/staff", "settings/integrations"]) {
+    for (const r of ["audit", "settings", "settings/staff", "settings/integrations"]) {
       await page.goto(url(r));
       await expect(page.getByText(NOT_FOUND).first()).toBeVisible();
       await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toHaveCount(0);
     }
   });
 
-  test("the Merge tab is disabled for organizers, with the reason, and a direct visit explains it", async ({ page }) => {
+  test("an organizer who opens the Merge tab is told, with the reason, that only admins can merge", async ({ page }) => {
     await signInAs(page, "dev-organizer");
     await open(page, "members");
-    const tab = page.locator('span[aria-disabled="true"]', { hasText: "Merge" });
-    await expect(tab).toHaveAttribute("aria-disabled", "true");
-    await expect(tab).toHaveAttribute("title", "Only admins can merge profiles");
-    await open(page, "members/merge");
+    await page.getByRole("link", { name: "Merge" }).click();
+    await expect(page).toHaveURL(/tab=merge/);
+    await expect(page.getByRole("heading", { name: "Only admins can merge" })).toBeVisible();
+    await open(page, "members?tab=merge"); // the old URL lands on the same tab
     await expect(page.getByRole("heading", { name: "Only admins can merge" })).toBeVisible();
   });
 
-  test("members, guests and signed-out visitors get a 404", async ({ page }) => {
-    for (const who of ["anuujin", "temuulen", null]) {
+  test("members and guests get a 404; signed-out visitors are sent to sign in", async ({ page }) => {
+    for (const who of ["anuujin", "temuulen"]) {
       await signInAs(page, who);
       for (const r of ["members", "comms", "audit", "settings"]) {
         await page.goto(url(r));
         await expect(page.getByText(NOT_FOUND).first()).toBeVisible();
       }
     }
+    await signInAs(page, null);
+    await page.goto(url("members"));
+    await expect(page).toHaveURL(/\/en\/sign-in\?next=/);
   });
 });
 
 test.describe("members directory", () => {
   test.beforeEach(async ({ page }) => { await signInAs(page, "dev-organizer"); await open(page, "members"); });
 
-  test("segments carry counts and filter the table; search narrows with a result count and has an empty state", async ({ page }) => {
+  test("status chips carry counts and filter the table; search narrows with a result count and has an empty state", async ({ page }) => {
     const results = page.getByText(/^\d+ results?$/);
     const total = await number(results);
     expect(total).toBeGreaterThan(100);
-    const guestsTab = page.getByRole("button", { name: /^Guests \d+/ });
-    const guests = await number(guestsTab.locator("span"));
-    await guestsTab.click();
+    const guestsChip = status(page).getByRole("button", { name: /^Guest \d+/ });
+    const guests = await number(guestsChip.getByRole("img"));
+    await guestsChip.click();
     await expect(results).toHaveText(`${guests} results`);
-    await page.getByRole("button", { name: /^All \d+/ }).click();
+    await page.getByRole("button", { name: "Clear filters" }).click();
     await page.getByRole("searchbox", { name: "Search" }).fill("dev-admin");
     await expect(results).toHaveText("1 result");
     await page.getByRole("searchbox", { name: "Search" }).fill("zzzz-nobody-has-this-name");
-    await expect(page.getByRole("heading", { name: "No one matches that search" })).toBeVisible();
-    await page.getByRole("button", { name: "Clear filters" }).first().click();
+    await expect(page.getByRole("heading", { name: "No results match" })).toBeVisible();
+    await page.getByRole("main").getByRole("button", { name: "Clear filters" }).first().click();
     await expect(results).toHaveText(`${total} results`);
   });
 
   test("season and team filters combine", async ({ page }) => {
     const results = page.getByText(/^\d+ results?$/);
     const total = await number(results);
-    await page.getByRole("group", { name: "Filter by season" }).getByRole("button", { name: /^2025/ }).click();
+    await page.getByRole("group", { name: "Year", exact: true }).getByRole("button", { name: /^2025/ }).click();
+    await expect.poll(() => number(results)).toBeLessThan(total);
     const bySeason = await number(results);
-    expect(bySeason).toBeLessThan(total);
-    await page.getByRole("group", { name: "Filter by team" }).getByRole("button", { name: "Dev" }).click();
+    await page.getByRole("group", { name: "Team", exact: true }).getByRole("button", { name: /^Dev/ }).click();
     expect(await number(results)).toBeLessThanOrEqual(bySeason);
   });
 
   test("a row opens the full profile with the email, roster history and registrations", async ({ page }) => {
     await page.getByRole("searchbox", { name: "Search" }).fill("anuujin");
+    await expect(page.getByText(/^\d+ results?$/)).toHaveText("1 result"); // the search is debounced
     await page.getByRole("button", { name: /Open .*’s profile/ }).first().click();
     const drawer = page.getByRole("dialog");
     await expect(drawer.getByText("Only staff see the email here")).toBeVisible();
@@ -102,7 +110,7 @@ test.describe("members directory", () => {
   });
 
   test("bulk bar names the count and verb; promoting then restoring one guest round-trips", async ({ page }) => {
-    await page.getByRole("button", { name: /^Guests \d+/ }).click();
+    await status(page).getByRole("button", { name: /^Guest \d+/ }).click();
     const rows = page.locator("tbody tr");
     const n = await rows.count();
     let handle = "";
@@ -124,9 +132,11 @@ test.describe("members directory", () => {
     await expect(page.getByRole("alertdialog")).toContainText("Promote 1 to member?");
     await page.getByRole("alertdialog").getByRole("button", { name: "Promote to member" }).click();
     await expect(page.getByText("1 promoted to member")).toBeVisible();
-    await page.getByRole("button", { name: /^Members \d+/ }).click();
+    await page.getByRole("button", { name: "Clear filters" }).click();
     await page.getByRole("searchbox", { name: "Search" }).fill(handle);
-    const row = page.locator("tbody tr").first();
+    // The search is debounced and wait for the filtered row (slow under load) instead of asserting a global result count.
+    const row = page.locator("tbody tr").filter({ hasText: `@${handle}` });
+    await expect(row).toHaveCount(1, { timeout: 15_000 });
     await expect(row).toContainText("Member");
     await row.getByRole("checkbox").check();
     await page.getByRole("button", { name: "Set guest" }).click();
@@ -138,11 +148,11 @@ test.describe("members directory", () => {
 test.describe("applications", () => {
   test("cards show the applicant and the private-note promise; reject asks first; approve moves the card to its tab", async ({ page }) => {
     await signInAs(page, "dev-organizer");
-    await open(page, "members/applications");
-    const pending = page.getByRole("button", { name: /^Pending \d+/ });
-    const before = await number(pending.locator("span"));
+    await open(page, "members?tab=applications");
+    const pending = page.getByRole("tab", { name: /^Pending \d+/ });
+    const before = await badge(pending.locator('[role="img"]'));
     test.skip(before === 0, "no pending applications left in the shared demo data");
-    const card = page.locator("li").filter({ has: page.getByRole("button", { name: "Approve" }) }).first();
+    const card = page.locator("li").filter({ has: page.locator("button:enabled", { hasText: "Approve" }) }).first(); // a NUM applicant: others cannot be approved
     const name = await card.locator("p").first().innerText();
     await expect(card.getByText("Why they want to join")).toBeVisible();
     await card.locator("summary").click();
@@ -154,11 +164,11 @@ test.describe("applications", () => {
     await expect(dialog).toContainText(`Reject ${name}’s application?`);
     await expect(dialog).toContainText("Your note is not part of the email");
     await dialog.getByRole("button", { name: "Cancel" }).click();
-    await expect(pending.locator("span")).toHaveText(String(before));
+    await expect.poll(() => badge(pending.locator('[role="img"]'))).toBe(before);
     await card.getByRole("button", { name: "Approve" }).click();
     await expect(page.getByText(`${name} is now a member and will be emailed`)).toBeVisible();
-    await expect(pending.locator("span")).toHaveText(String(before - 1));
-    await page.getByRole("button", { name: /^Approved \d+/ }).click();
+    await expect.poll(() => badge(pending.locator('[role="img"]'))).toBe(before - 1);
+    await page.getByRole("tab", { name: /^Approved \d+/ }).click();
     const approved = page.locator("li").filter({ hasText: name }).first();
     await expect(approved).toContainText("Strong motivation, joins Dev.");
     await expect(approved).toContainText("Reviewed by");
@@ -171,11 +181,11 @@ test.describe("applications", () => {
     await signInAs(pb, "dev-admin");
     // Page A loses its live connection, so its card is stale by the time it clicks.
     await pa.route("**/api/dev/stream", (r) => r.abort());
-    await open(pa, "members/applications");
-    const pendingBefore = await number(pa.getByRole("button", { name: /^Pending \d+/ }).locator("span"));
+    await open(pa, "members?tab=applications");
+    const pendingBefore = await badge(pa.getByRole("tab", { name: /^Pending \d+/ }).locator('[role="img"]'));
     test.skip(pendingBefore === 0, "no pending applications left in the shared demo data");
-    const name = await pa.locator("li").filter({ has: pa.getByRole("button", { name: "Approve" }) }).first().locator("p").first().innerText();
-    await open(pb, "members/applications");
+    const name = await pa.locator("li").filter({ has: pa.locator("button:enabled", { hasText: "Approve" }) }).first().locator("p").first().innerText();
+    await open(pb, "members?tab=applications");
     await pb.locator("li").filter({ hasText: name }).getByRole("button", { name: "Approve" }).click();
     await expect(pb.getByText(`${name} is now a member`)).toBeVisible();
     await pa.locator("li").filter({ hasText: name }).getByRole("button", { name: "Approve" }).click();
@@ -185,9 +195,9 @@ test.describe("applications", () => {
 
   test("the empty state for a tab with no applications offers context, not a blank page", async ({ page }) => {
     await signInAs(page, "dev-organizer");
-    await open(page, "members/applications");
+    await open(page, "members?tab=applications");
     // The Rejected tab may or may not be empty; either way the tab renders a list or an empty state, never nothing.
-    await page.getByRole("button", { name: /^Rejected \d+/ }).click();
+    await page.getByRole("tab", { name: /^Rejected \d+/ }).click();
     await expect(page.locator("main li, main h3").first()).toBeVisible();
   });
 });
@@ -195,7 +205,7 @@ test.describe("applications", () => {
 test.describe("merge", () => {
   test("lists possible duplicates, compares both profiles, confirms by name, and merges", async ({ page }) => {
     await signInAs(page, "dev-admin");
-    await open(page, "members/merge");
+    await open(page, "members?tab=merge");
     const pairs = page.getByText(/^\d+ pairs?$/);
     const before = await number(pairs);
     test.skip(before === 0, "no duplicate pairs left in the shared demo data");
@@ -220,16 +230,16 @@ test.describe("merge", () => {
 
   test("the manual picker compares two chosen profiles and rejects choosing the same one twice", async ({ page }) => {
     await signInAs(page, "dev-admin");
-    await open(page, "members/merge");
+    await open(page, "members?tab=merge");
     const first = page.getByRole("combobox", { name: "First profile" });
     const second = page.getByRole("combobox", { name: "Second profile" });
     await page.getByRole("searchbox", { name: /First profile/ }).fill("dev-admin");
-    await first.selectOption({ label: "Dev Admin · @dev-admin" });
+    await chooseOption(page, first, "Dev Admin · @dev-admin");
     await page.getByRole("searchbox", { name: /Second profile/ }).fill("dev-admin");
-    await second.selectOption({ label: "Dev Admin · @dev-admin" });
+    await chooseOption(page, second, "Dev Admin · @dev-admin");
     await expect(page.getByText("Choose two different profiles.")).toBeVisible();
     await page.getByRole("searchbox", { name: /Second profile/ }).fill("dev-organizer");
-    await second.selectOption({ label: "Dev Organizer · @dev-organizer" });
+    await chooseOption(page, second, "Dev Organizer · @dev-organizer");
     await expect(page.getByRole("region", { name: "Compare the two profiles" })).toBeVisible();
   });
 });
@@ -245,11 +255,11 @@ test.describe("comms", () => {
     for (const k of ["Queued", "Failed", "Skipped"]) await expect(page.getByText(k, { exact: true }).first()).toBeVisible();
   });
 
-  test("status tabs carry counts and ?status=failed (the dashboard link) selects Failed", async ({ page }) => {
+  test("status chips carry counts and ?status=failed (the dashboard link) selects Failed", async ({ page }) => {
     await open(page, "comms?status=failed");
-    const tab = page.getByRole("link", { name: /^Failed \d+/ });
-    await expect(tab).toHaveAttribute("aria-current", "page");
-    const failed = await number(tab.locator("span"));
+    const tab = status(page).getByRole("button", { name: /^Failed \d+/ });
+    await expect(tab).toHaveAttribute("aria-pressed", "true");
+    const failed = await number(tab.getByRole("img"));
     const pills = page.locator("tbody tr");
     await expect(pills).toHaveCount(failed);
     for (const t of await page.locator("tbody tr td:nth-child(3)").allInnerTexts()) expect(t).toContain("Failed");
@@ -258,8 +268,9 @@ test.describe("comms", () => {
 
   test("a template filter narrows the list and lives in the URL", async ({ page }) => {
     await open(page, "comms");
-    await page.getByRole("group", { name: "Filter by template" }).getByRole("button", { name: /^Welcome/ }).click();
+    await page.getByRole("group", { name: "Template", exact: true }).getByRole("button", { name: /^Welcome/ }).click();
     await expect(page).toHaveURL(/template=welcome/);
+    await expect(page.locator("tbody tr td:nth-child(1)").first()).toContainText("Welcome");
     for (const t of await page.locator("tbody tr td:nth-child(1)").allInnerTexts()) expect(t).toContain("Welcome");
   });
 
@@ -269,7 +280,7 @@ test.describe("comms", () => {
   });
 
   test("Preview renders subject, a sandboxed iframe, plain text and the calendar invite", async ({ page }) => {
-    await open(page, "comms");
+    await open(page, "comms?template=rsvp_confirmed"); // the first page of the unfiltered list is all reminders once the queue grows
     await page.getByRole("button", { name: /^Preview: RSVP confirmed/ }).first().click();
     const drawer = page.getByRole("dialog");
     await expect(drawer.getByTestId("preview-subject")).not.toBeEmpty();
@@ -277,12 +288,12 @@ test.describe("comms", () => {
     await expect(frame).toHaveAttribute("sandbox", "");
     await expect(frame).toHaveAttribute("title", "Email preview");
     await expect(frame).toHaveAttribute("srcdoc", /<html/);
-    await drawer.getByLabel("Preview language").selectOption("en"); // the drawer opens in the recipient's language
+    await drawer.getByRole("radio", { name: "English" }).check({ force: true }); // the drawer opens in the recipient's language
     await drawer.getByRole("tab", { name: "Plain text" }).click();
     await expect(drawer.locator("pre")).toContainText("Notification settings");
     await drawer.getByRole("tab", { name: "Calendar invite" }).click();
     await expect(drawer.getByText(/Invite or update|This email doesn’t carry a calendar invite/)).toBeVisible();
-    await drawer.getByLabel("Preview language").selectOption("mn");
+    await drawer.getByRole("radio", { name: "Монгол" }).check({ force: true });
     await expect(drawer.getByTestId("preview-subject")).toContainText(/[А-Яа-яӨөҮү]/); // Mongolian subject
   });
 
@@ -305,7 +316,7 @@ test.describe("comms", () => {
   test("an empty status shows an empty state with a way back", async ({ page }) => {
     await open(page, "comms?status=sent&template=announcement");
     await expect(page.getByRole("heading", { name: "No emails in this state" })).toBeVisible();
-    await page.getByRole("link", { name: "Show all emails" }).click();
+    await page.getByRole("main").getByRole("button", { name: "Clear filters" }).first().click();
     await expect(page.locator("tbody tr").first()).toBeVisible();
   });
 });
@@ -326,8 +337,8 @@ test.describe("settings", () => {
     const drawer = page.getByRole("dialog");
     await drawer.getByLabel(/^Year/).fill("1999");
     await drawer.getByLabel(/Season name · Монгол/).fill("");
-    await drawer.getByLabel(/^Applications open/).fill("2090-02-01T10:00");
-    await drawer.getByLabel(/^Applications close/).fill("2090-01-01T10:00");
+    await setDateTime(page, drawer, "Applications open", "2090-02-01T10:00");
+    await setDateTime(page, drawer, "Applications close", "2090-01-01T10:00");
     await drawer.getByRole("button", { name: "Save" }).click();
     await expect(drawer.getByText("Year must be a whole number from 2000 to 2100.")).toBeVisible();
     await expect(drawer.getByText("Enter the Mongolian name.")).toBeVisible();
@@ -336,7 +347,7 @@ test.describe("settings", () => {
     const year = 2060 + Math.floor(Math.random() * 40);
     await drawer.getByLabel(/^Year/).fill(String(year));
     await drawer.getByLabel(/Season name · Монгол/).fill(`${year} оны улирал`);
-    await drawer.getByLabel(/^Applications close/).fill("2090-03-01T10:00");
+    await setDateTime(page, drawer, "Applications close", "2090-03-01T10:00");
     await drawer.getByRole("button", { name: "Save" }).click();
     await expect(page.getByRole("status").filter({ hasText: `${year} оны улирал saved` })).toBeVisible();
     const row = page.getByTestId("season-item").filter({ hasText: String(year) });
@@ -353,18 +364,16 @@ test.describe("settings", () => {
     const me = page.getByTestId("staff-item").filter({ hasText: "Dev Admin" });
     await expect(me).toContainText("Admin");
     await expect(me).toContainText("You");
-    await me.getByRole("button", { name: /^Remove access/ }).click();
-    await page.getByRole("alertdialog").getByRole("button", { name: "Remove access" }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "You can’t remove the last admin or your own admin role." })).toBeVisible();
-    // Demoting yourself is the same loss of access and is refused the same way.
-    await me.getByRole("button", { name: /Make organizer/ }).click();
-    await page.getByRole("alertdialog").getByRole("button", { name: "Make organizer" }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "You can’t remove the last admin or your own admin role." })).toBeVisible();
+    // Your own row cannot be demoted or removed: both buttons are disabled and the reason is on screen (F-18).
+    await expect(me.getByRole("button", { name: /^Remove access/ })).toBeDisabled();
+    await expect(me.getByRole("button", { name: /Make organizer/ })).toBeDisabled();
+    await expect(me.getByText(/your own|last admin/i).first()).toBeVisible();
 
     await page.getByRole("searchbox", { name: /^Person/ }).fill("-2");
     const select = page.getByRole("combobox", { name: "Person" });
-    const label = (await select.locator("option").nth(1).innerText()).split(" · ")[0]!;
-    await select.selectOption({ index: 1 });
+    await select.click();
+    const label = (await page.getByRole("listbox").getByRole("option").nth(1).innerText()).split(" · ")[0]!;
+    await page.getByRole("listbox").getByRole("option").nth(1).click();
     await page.getByRole("button", { name: "Grant role" }).click();
     await expect(page.getByRole("alertdialog")).toContainText(`Make ${label} an organizer?`);
     await page.getByRole("alertdialog").getByRole("button", { name: "Grant role" }).click();
@@ -387,7 +396,7 @@ test.describe("settings", () => {
 });
 
 test.describe("audit", () => {
-  test.beforeEach(async ({ page }) => { await signInAs(page, "dev-organizer"); });
+  test.beforeEach(async ({ page }) => { await signInAs(page, "dev-admin"); }); // admin only (F-18)
 
   test("newest first, plain-language actions, and a result count", async ({ page }) => {
     await open(page, "audit");
@@ -402,7 +411,7 @@ test.describe("audit", () => {
     await open(page, "audit");
     const results = page.getByText(/^\d+ results?$/);
     const all = await number(results);
-    await page.getByRole("group", { name: "Filter by kind of action" }).getByRole("button", { name: "Members" }).click();
+    await page.getByRole("group", { name: "Action", exact: true }).getByRole("button", { name: "Members" }).click();
     await expect(page).toHaveURL(/group=members/);
     await expect.poll(() => number(results)).toBeLessThan(all);
     for (const g of await page.locator("main ol li button").evaluateAll((els) => els.map((e) => e.getAttribute("data-group")))) expect(g).toBe("members");
@@ -410,24 +419,25 @@ test.describe("audit", () => {
     await page.getByRole("button", { name: "Clear filters" }).click();
     await expect(page).not.toHaveURL(/group=/);
     await expect.poll(() => number(results)).toBeGreaterThan(members); // other specs write to the shared audit log, so no exact total
-    await page.getByRole("group", { name: "Time range" }).getByRole("button", { name: "Last 24 hours" }).click();
-    await expect(page).toHaveURL(/range=24h/);
+    await page.getByRole("button", { name: /^Date range/ }).click();
+    await page.getByRole("button", { name: "Last 30 days" }).click();
+    await expect(page).toHaveURL(/from=\d{4}-\d{2}-\d{2}&to=/);
     await expect.poll(() => number(results)).toBeLessThanOrEqual(all);
-    await page.getByRole("combobox", { name: "Who did it" }).selectOption({ label: "Dev Admin" });
+    await chooseOption(page, page.getByRole("combobox", { name: "Who did it" }), "Dev Admin");
     await expect(page).toHaveURL(/actor=/);
   });
 
   test("a filter with no matches shows the empty state; junk params and out-of-range pages are tolerated", async ({ page }) => {
     await open(page, "audit?actor=nobody-with-this-id");
     await expect(page.getByRole("heading", { name: "Nothing found" })).toBeVisible();
-    await open(page, "audit?group=%3Cscript%3E&range=forever&page=-7");
+    await open(page, "audit?group=%3Cscript%3E&from=forever&page=-7");
     await expect(page.locator("main ol li button").first()).toBeVisible();
     await open(page, "audit?page=999");
     await expect(page.locator("main ol li button").first()).toBeVisible();
   });
 
   test("a row opens the diff as readable before → after pairs", async ({ page }) => {
-    await open(page, "audit");
+    await open(page, "audit?q=edited"); // other specs add many newer rows, so look for the edits through the search
     await page.getByRole("button", { name: / edited / }).first().click();
     const drawer = page.getByRole("dialog");
     await expect(drawer.getByRole("heading", { name: "Changes" })).toBeVisible();
@@ -516,7 +526,7 @@ test.describe("accessibility", () => {
       await page.getByRole("button", { name: "Add season" }).click();
       await page.getByRole("dialog").waitFor();
       await scan("season form");
-      await open(page, "audit");
+      await open(page, "audit?q=edited");
       await page.getByRole("button", { name: / edited / }).first().click();
       await page.getByRole("dialog").waitFor();
       await scan("audit diff");
@@ -526,7 +536,7 @@ test.describe("accessibility", () => {
 
 // ── polish pass: phone layouts, profile card, application cards, comms tiles, audit story, settings timeline ───────────────
 async function firstFreeGuestHandle(page: Page): Promise<string> {
-  await page.getByRole("button", { name: /^Guests \d+/ }).click();
+  await status(page).getByRole("button", { name: /^Guest \d+/ }).click();
   const rows = page.locator("tbody tr");
   const n = await rows.count();
   for (let i = 0; i < n; i++) {
@@ -539,26 +549,24 @@ async function firstFreeGuestHandle(page: Page): Promise<string> {
 test.describe("phone polish", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test("directory: chips fold behind Filters, the segment row scrolls with a cue, rows are avatar + name + status", async ({ page }) => {
+  test("directory: chips fold behind Filters, the segment row scrolls with a cue, rows are cards", async ({ page }) => {
     await signInAs(page, "dev-organizer");
     await open(page, "members");
-    const season = page.getByRole("group", { name: "Filter by season" });
+    const season = page.getByRole("group", { name: "Year", exact: true });
     await expect(season).toBeHidden();
     const filters = page.getByRole("button", { name: /^Filters/ });
     await expect(filters).toHaveAttribute("aria-expanded", "false");
     await filters.click();
     await expect(season).toBeVisible();
-    await expect(page.getByRole("group", { name: "Filter by team" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Team", exact: true })).toBeVisible();
     await season.getByRole("button", { name: /^2025/ }).click();
     await expect(page.getByRole("button", { name: /^Filters 1/ })).toBeVisible(); // the active count shows on the folded button
-    // 360px-class phones clip the 4th segment: the row must scroll and carry the fade cue (a mask) while content is hidden.
+    // 360px-class phones clip the third tab: the SegmentedTabs row must scroll and carry the fade cue (a mask).
     await page.setViewportSize({ width: 360, height: 800 });
-    const seg = page.getByRole("group", { name: "Filter by status" });
-    expect(await seg.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+    const seg = page.getByRole("navigation", { name: "Members sections" });
     await expect.poll(() => seg.evaluate((el) => getComputedStyle(el).maskImage || getComputedStyle(el).webkitMaskImage)).not.toBe("none");
-    // At most 3 table columns (select, person, status) are visible.
-    const visibleHeaders = await page.locator("thead th").evaluateAll((els) => els.filter((e) => getComputedStyle(e).display !== "none").length);
-    expect(visibleHeaders).toBeLessThanOrEqual(3);
+    // Phones show one card per person (avatar + name, then labelled Status / School), not a wide table.
+    await expect(page.getByRole("table")).toHaveCSS("display", "block");
   });
 
   test("bulk bar stays in view at the bottom while scrolling a long list", async ({ page }) => {
@@ -567,7 +575,7 @@ test.describe("phone polish", () => {
     await page.locator("tbody tr").nth(2).getByRole("checkbox").check();
     const bar = page.getByRole("group", { name: "Actions for the selected people" });
     await expect(bar).toBeVisible();
-    await page.evaluate(() => window.scrollTo(0, 1500));
+    await page.mouse.wheel(0, 500);
     await expect.poll(async () => (await bar.boundingBox())?.y ?? 0).toBeGreaterThan(400);
     const box = await bar.boundingBox();
     expect(box!.y + box!.height).toBeLessThanOrEqual(844);
@@ -575,7 +583,7 @@ test.describe("phone polish", () => {
 
   test("applications: full-width Approve (primary) and Reject, a labelled private-note disclosure", async ({ page }) => {
     await signInAs(page, "dev-organizer");
-    await open(page, "members/applications");
+    await open(page, "members?tab=applications");
     test.skip((await page.getByRole("button", { name: "Approve", exact: true }).count()) === 0, "no pending applications left in the shared demo data");
     const approve = page.getByRole("button", { name: "Approve", exact: true }).first();
     const reject = page.getByRole("button", { name: "Reject", exact: true }).first();
@@ -603,6 +611,7 @@ test.describe("profile card", () => {
     const handle = await firstFreeGuestHandle(page);
     test.skip(handle === "", "no non-persona guest left in the shared demo data");
     await page.getByRole("searchbox", { name: "Search" }).fill(handle);
+    await expect(page.getByText(/^\d+ results?$/)).toHaveText("1 result"); // the search is debounced
     await page.getByRole("button", { name: /Open .*’s profile/ }).first().click();
     const drawer = page.getByRole("dialog");
     await expect(drawer.getByText(`@${handle}`).first()).toBeVisible();
@@ -632,8 +641,8 @@ test.describe("look and feel", () => {
   });
 
   test("audit: rows are grouped by day under sticky headers, one human sentence per row, and the diff drawer opens", async ({ page }) => {
-    await signInAs(page, "dev-organizer");
-    await open(page, "audit");
+    await signInAs(page, "dev-admin");
+    await open(page, "audit?group=staff"); // seeded grants from different months: several days even when today's rows fill page 1
     const headers = page.locator("main ol > li > h3");
     expect(await headers.count()).toBeGreaterThanOrEqual(2);
     expect(await headers.first().evaluate((el) => getComputedStyle(el).position)).toBe("sticky");
@@ -645,9 +654,9 @@ test.describe("look and feel", () => {
   });
 
   test("audit: the empty state offers a way out", async ({ page }) => {
-    await signInAs(page, "dev-organizer");
+    await signInAs(page, "dev-admin");
     await open(page, "audit?actor=nobody-with-this-id");
-    await expect(page.getByRole("link", { name: "Clear filters" })).toBeVisible();
+    await expect(page.getByRole("main").getByRole("button", { name: "Clear filters" }).first()).toBeVisible();
   });
 
   test("settings: seasons are a timeline with the current season highlighted; staff are cards with avatars and role pills", async ({ page }) => {
@@ -671,7 +680,7 @@ test.describe("look and feel", () => {
 
   test("merge: the empty list and the compare view each have one clear next action", async ({ page }) => {
     await signInAs(page, "dev-admin");
-    await open(page, "members/merge");
+    await open(page, "members?tab=merge");
     await expect(page.getByRole("button", { name: "Compare" }).first().or(page.getByRole("link", { name: "Pick two manually" }))).toBeVisible();
   });
 });

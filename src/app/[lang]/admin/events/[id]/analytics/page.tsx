@@ -9,6 +9,9 @@ import { requireStaffPage } from "@/lib/server/session";
 import AnalyticsView from "@/components/admin/events/AnalyticsView";
 import { AnalyticsSkeleton } from "@/components/admin/events/Skeletons";
 import { loadEvent } from "@/components/admin/events/load";
+import { adminMeta, type AdminMetaProps } from "@/lib/admin/meta";
+
+export const generateMetadata = ({ params }: AdminMetaProps) => adminMeta(params, "eventAnalytics");
 
 type Params = Promise<{ lang: string; id: string }>;
 

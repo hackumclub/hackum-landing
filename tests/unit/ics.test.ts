@@ -118,6 +118,13 @@ describe("googleCalendarUrl", () => {
     expect(p.get("location")).toBe("NUM, Ulaanbaatar");
   });
 
+  it("leaves out an empty location and an empty description instead of sending `location=`", () => {
+    const u = googleCalendarUrl({ ...base, location: "  ", description: "" });
+    expect(u).not.toContain("location=");
+    expect(u).not.toContain("details=");
+    expect(u).toContain("dates=20261201T100000Z/20261201T120000Z");
+  });
+
   it("keeps Cyrillic text intact", () => {
     const u = googleCalendarUrl({ ...base, title: "Хакатон 2026" });
     expect(new URL(u).searchParams.get("text")).toBe("Хакатон 2026");

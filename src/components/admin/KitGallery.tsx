@@ -6,7 +6,8 @@ import type { L } from "@/i18n/config";
 import { ALL_STATUSES } from "@/lib/status";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
-import Field, { Input, Select, Textarea } from "@/components/ui/Field";
+import Field, { Input, Textarea } from "@/components/ui/Field";
+import Select from "@/components/ui/Select";
 import BilingualField from "@/components/ui/BilingualField";
 import DateTimeField from "@/components/ui/DateTimeField";
 import StatusPill from "@/components/ui/StatusPill";
@@ -41,6 +42,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 export default function KitGallery({ d }: { d: Dict }) {
   const [title, setTitle] = useState<L>({ mn: "Knowledge Day #6: RAG чатбот бүтээх", en: "" });
   const [start, setStart] = useState<Date | null>(new Date("2026-11-20T10:30:00Z"));
+  const [kind, setKind] = useState("workshop");
   const [filters, setFilters] = useState<string[]>(["published"]);
   const [drawer, setDrawer] = useState(false);
   const cols: Column<Row>[] = [
@@ -80,7 +82,7 @@ export default function KitGallery({ d }: { d: Dict }) {
           <Field label="Capacity" error="Capacity must be between 1 and 5000." required>
             {(c) => <Input {...c} type="number" defaultValue={0} />}
           </Field>
-          <Field label="Kind">{(c) => <Select {...c} defaultValue="workshop">{Object.entries(d.admin.kinds).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select>}</Field>
+          <Field label="Kind">{(c) => <Select {...c} value={kind} onValueChange={setKind} options={Object.entries(d.admin.kinds).map(([k, v]) => ({ value: k, label: v }))} />}</Field>
           <Field label="Disabled">{(c) => <Input {...c} disabled defaultValue="Locked after publishing" />}</Field>
           <Field label="Notes for organizers" className="md:col-span-2">{(c) => <Textarea {...c} placeholder="Room 305 is booked until 21:00. Bring the HDMI adapter." />}</Field>
         </div>

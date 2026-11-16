@@ -31,6 +31,9 @@ const WALL = [POSTERS.meetup2, POSTERS.cv, POSTERS.quiz, POSTERS.git, POSTERS.ty
 const TILT = [-1.5, 1, -0.5];
 const plain = (s: string) => s.replace(/[[\]]/g, "");
 
+// Prerendered per locale from cached readers; nothing here is per-request, so this route may block (Next docs: instant.md, "Disabling instant").
+export const instant = false;
+
 export default async function Home({ params }: PageProps<"/[lang]">) {
   const { lang } = await params;
   if (!isLocale(lang)) notFound();

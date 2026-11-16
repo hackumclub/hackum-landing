@@ -10,6 +10,7 @@ test.describe("sign-in landing", () => {
 
   const pick = async (page: import("@playwright/test").Page, name: RegExp, url = "/en/sign-in") => {
     await page.goto(url);
+    await page.locator("details[data-demo-accounts] summary").click(); // the demo accounts are collapsed by default
     await page.locator("li", { hasText: name }).getByRole("button").click();
   };
 

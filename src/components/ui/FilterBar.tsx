@@ -1,6 +1,7 @@
 "use client";
 import { Search, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { FILTER_CONTROL } from "./control";
 import { cx } from "./cx";
 import FilterChips, { type FilterOption } from "./FilterChips";
 import FilterDisclosure from "./FilterDisclosure";
@@ -47,9 +48,9 @@ function DebouncedSearch({ search, debounceMs }: { search: NonNullable<FilterBar
   useEffect(() => () => clearTimeout(timer.current), []);
 
   return (
-    <label className="relative block w-full md:w-72">
+    <label className="relative block w-full md:w-80">
       <span className="sr-only">{search.label}</span>
-      <Search aria-hidden="true" size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-muted" />
+      <Search aria-hidden="true" size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fg-muted" />
       <input
         type="search"
         value={text}
@@ -60,7 +61,7 @@ function DebouncedSearch({ search, debounceMs }: { search: NonNullable<FilterBar
           clearTimeout(timer.current);
           timer.current = setTimeout(() => { emitted.current = v; onChange(v); }, debounceMs);
         }}
-        className="min-h-10 w-full rounded-full border border-line-strong bg-panel pl-10 pr-4 text-sm text-fg placeholder:text-fg-muted"
+        className={`min-h-10 w-full rounded-full border pl-11 pr-4 text-sm text-fg placeholder:text-fg-muted ${FILTER_CONTROL}`}
       />
     </label>
   );
@@ -72,17 +73,19 @@ function Bar({ search, chips, dateRange, onClear, activeCount, debounceMs = 250,
     <div className={cx("flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center", className)}>
       {search && <DebouncedSearch search={search} debounceMs={debounceMs} />}
       {hasFolded && (
-        <FilterDisclosure label={labels.filters} activeCount={activeCount} className="md:contents" contentClassName="gap-3 md:flex md:flex-wrap md:items-center">
-          {chips}
+        // From md the disclosure and its content are transparent (`contents`), so the date range and extra controls sit in
+        // the search row and the chip groups drop into their own full-width panel underneath.
+        <FilterDisclosure label={labels.filters} activeCount={activeCount} className="md:contents" contentClassName="gap-3 md:contents">
           {dateRange}
           {children}
+          {chips && <div className="grid gap-3 rounded-[var(--radius-md)] border border-line bg-panel p-3 md:order-1 md:basis-full md:p-4">{chips}</div>}
         </FilterDisclosure>
       )}
       {activeCount > 0 && (
         <button
           type="button"
           onClick={onClear}
-          className="inline-flex min-h-10 w-fit cursor-pointer items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-accent-fg hover:bg-accent-soft"
+          className="inline-flex min-h-10 w-fit cursor-pointer items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-accent-fg transition-colors duration-150 hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ops-accent)]"
         >
           <X aria-hidden="true" size={16} />
           {labels.clear}

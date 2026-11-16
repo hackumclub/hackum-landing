@@ -14,10 +14,11 @@ import { fill, tf, type L, type Locale } from "@/i18n/config";
 import type { AreaCopy } from "@/i18n/areas/admin-members";
 import { upsertSeasonAction } from "@/lib/members/actions";
 import { validateSeason, type SeasonErrors } from "@/lib/members/format";
-import { formatUb } from "@/lib/time";
+import { formatUbStable } from "@/lib/time";
 import { CARD } from "@/components/admin/members/card";
 import { NoticeBanner, errorText, focusFirstInvalid, type Notice } from "@/components/admin/members/shared";
 import type { SeasonDto } from "./data";
+import Tag from "@/components/ui/Tag";
 
 type Form = { year: string; label: L; opens: Date | null; closes: Date | null; current: boolean };
 const EMPTY: Form = { year: "", label: { mn: "", en: "" }, opens: null, closes: null, current: false };
@@ -38,7 +39,7 @@ export default function SeasonsManager({ seasons, lang, c, common, tz, closeLabe
   const current = seasons.find((s) => s.isCurrent);
   const editing = typeof mode === "number" ? seasons.find((s) => s.year === mode) : undefined;
   const years = useMemo(() => seasons.map((s) => s.year), [seasons]);
-  const date = (iso: string | null) => (iso ? formatUb(new Date(iso), lang, { month: "short", day: "numeric", year: "numeric" }) : "");
+  const date = (iso: string | null) => (iso ? formatUbStable(new Date(iso), lang, "date") : "");
 
   const openNew = () => { setForm({ ...EMPTY, year: String(Math.max(...years, new Date().getFullYear()) + 1) }); setErrors({}); setFormError(null); setMode("new"); };
   const openEdit = (s: SeasonDto) => {
@@ -90,7 +91,7 @@ export default function SeasonsManager({ seasons, lang, c, common, tz, closeLabe
                   <div className="grid min-w-0 gap-1">
                     <p className="flex flex-wrap items-center gap-2 font-semibold [overflow-wrap:anywhere] text-fg">
                       {tf(s.label, lang)}
-                      {s.isCurrent && <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold text-on-accent">{c.currentBadge}</span>}
+                      {s.isCurrent && <Tag tone="accent">{c.currentBadge}</Tag>}
                     </p>
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
                       <StatusPill status={WINDOW_PILL[s.window]} label={c.window[s.window]} />
@@ -119,8 +120,8 @@ export default function SeasonsManager({ seasons, lang, c, common, tz, closeLabe
           </Field>
           <fieldset className="grid gap-3">
             <legend className="mb-1 text-sm font-bold text-fg">{c.columns.window}</legend>
-            <DateTimeField name="opens" label={c.opens} tzLabel={tz} value={form.opens} onChange={(d) => setForm({ ...form, opens: d })} hint={c.windowHint} error={windowErr} />
-            <DateTimeField name="closes" label={c.closes} tzLabel={tz} value={form.closes} onChange={(d) => setForm({ ...form, closes: d })} />
+            <DateTimeField lang={lang} name="opens" label={c.opens} tzLabel={tz} value={form.opens} onChange={(d) => setForm({ ...form, opens: d })} hint={c.windowHint} error={windowErr} />
+            <DateTimeField lang={lang} name="closes" label={c.closes} tzLabel={tz} value={form.closes} onChange={(d) => setForm({ ...form, closes: d })} />
           </fieldset>
           <div className="grid gap-1">
             <label className="flex min-h-10 cursor-pointer items-center gap-2.5 text-sm font-semibold text-fg">

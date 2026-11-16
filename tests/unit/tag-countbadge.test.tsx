@@ -31,12 +31,12 @@ describe("Tag", () => {
     expect(el.closest("span")?.className).toContain("rounded-full");
     expect(el.closest("span")?.className).toContain("bg-neutral-soft");
   });
-  it("applies tone classes and renders an aria-hidden 16px icon next to the text", () => {
+  it("applies tone classes and renders an aria-hidden 14px icon next to the text", () => {
     const { container } = render(<Tag tone="ok" icon={Check}>Open</Tag>);
     expect(screen.getByText("Open")).toBeInTheDocument();
     expect(container.firstElementChild?.className).toContain("bg-ok-soft");
     const svg = container.querySelector("svg");
     expect(svg).toHaveAttribute("aria-hidden", "true");
-    expect(svg).toHaveAttribute("width", "16");
+    expect(svg).toHaveAttribute("width", "14");
   });
 });
