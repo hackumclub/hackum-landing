@@ -58,6 +58,14 @@
   --color-on-danger: var(--ops-on-danger);
   --color-danger-fg: var(--ops-danger-fg);
   --color-danger-soft: var(--ops-danger-soft);
+  --color-ember: var(--ops-ember);
+  --color-ember-fg: var(--ops-ember-fg);
+  --color-ember-soft: var(--ops-ember-soft);
+  --color-c1: var(--ops-c1);
+  --color-c2: var(--ops-c2);
+  --color-c3: var(--ops-c3);
+  --color-c4: var(--ops-c4);
+  --color-c5: var(--ops-c5);
   --radius-sm: 10px;
   --radius-md: 14px;
 }
@@ -263,6 +271,14 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
   --ops-on-danger: #ffffff;
   --ops-danger-fg: #c42b2b;
   --ops-danger-soft: #fdeceb;
+  --ops-ember: #c94d14;
+  --ops-ember-fg: #b23c08;
+  --ops-ember-soft: #fdeee6;
+  --ops-c1: #0074b0;
+  --ops-c2: #9c7f00;
+  --ops-c3: #008a68;
+  --ops-c4: #c94d14;
+  --ops-c5: #728494;
   color-scheme: light;
   background: var(--ops-canvas);
   color: var(--ops-fg);
@@ -289,6 +305,14 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
   --ops-on-danger: #071b29;
   --ops-danger-fg: #ff8f8f;
   --ops-danger-soft: #3a2533;
+  --ops-ember: #ff8a50;
+  --ops-ember-fg: #ff9a66;
+  --ops-ember-soft: #3b2a2a;
+  --ops-c1: #4db8ef;
+  --ops-c2: #e5bf03;
+  --ops-c3: #2fd3a6;
+  --ops-c4: #ff8a50;
+  --ops-c5: #8fa6b8;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -314,6 +338,14 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
     --ops-on-danger: #071b29;
     --ops-danger-fg: #ff8f8f;
     --ops-danger-soft: #3a2533;
+    --ops-ember: #ff8a50;
+    --ops-ember-fg: #ff9a66;
+    --ops-ember-soft: #3b2a2a;
+    --ops-c1: #4db8ef;
+    --ops-c2: #e5bf03;
+    --ops-c3: #2fd3a6;
+    --ops-c4: #ff8a50;
+    --ops-c5: #8fa6b8;
     color-scheme: dark;
   }
 }

@@ -33,9 +33,16 @@ const TEXT: [string, string][] = [
   ["warn-fg", "panel"], ["warn-fg", "warn-soft"],
   ["danger-fg", "panel"], ["danger-fg", "danger-soft"], ["on-danger", "danger"],
   ["fg", "neutral-soft"],
+  // Logo ember: text tone for "almost full / hot" states.
+  ["ember-fg", "canvas"], ["ember-fg", "panel"], ["ember-fg", "ember-soft"],
 ];
 // UI boundaries and focus rings: SC 1.4.11 → 3:1.
-const NON_TEXT: [string, string][] = [["line-strong", "panel"], ["line-strong", "canvas"], ["accent", "canvas"], ["accent", "panel"]];
+const NON_TEXT: [string, string][] = [
+  ["line-strong", "panel"], ["line-strong", "canvas"], ["accent", "canvas"], ["accent", "panel"],
+  // Chart marks drawn from the logo mesh (blue, yellow, green, ember) + neutral; each must stand out from both surfaces.
+  ...["c1", "c2", "c3", "c4", "c5"].flatMap((c): [string, string][] => [[c, "panel"], [c, "canvas"]]),
+  ["ember", "panel"],
+];
 
 describe.each(Object.entries(THEMES))("%s theme tokens", (_name, t) => {
   it.each(TEXT)("text %s on %s ≥ 4.5:1", (fg, bg) => {
