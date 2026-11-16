@@ -7,7 +7,7 @@ Status (2026-11-16): the app runs on a **local mock** of Supabase (`src/lib/mock
 ## 1. What I need from you (in this order)
 | # | You do | Why it blocks |
 |---|---|---|
-| 1 | **Pick the club domain** and tell me what it is (for example `hackum.mn`), and who controls its DNS | Clerk production (passkeys only work on a real domain), Resend (verified sender for SPF/DKIM), `SITE_URL`, calendar organizer address. Without a domain I can only run on `*.vercel.app` with Clerk's development instance and Resend's test sender (mail reaches only your own address). |
+| 1 | *(optional, see 1b)* **A domain you control**, and who controls its DNS | Clerk production (passkeys only work on a real domain), Resend (verified sender for SPF/DKIM), `SITE_URL`, calendar organizer address. Without a domain I can only run on `*.vercel.app` with Clerk's development instance and Resend's test sender (mail reaches only your own address). |
 | 2 | **Unpause / restore the Supabase project** (dashboard → project → Restore). Tell me the plan (Free is fine) | I cannot apply or test anything against it while it is paused. Free projects pause after 7 days of inactivity: I add a keep-alive, but the first restore is manual. |
 | 3 | **Create a Clerk application** (clerk.com, Free: 10,000 monthly users). Enable: Email code, Passkeys, optionally Google. Copy the two keys into `.env.local` | Sign-in. Use the **Development** instance first, create **Production** when the domain exists. |
 | 4 | **Connect Clerk to Supabase**: Clerk dashboard → Integrations → Supabase (activates the `role` claim) and Supabase dashboard → Authentication → Sign In / Providers → Third-Party Auth → Add **Clerk** with your Clerk domain | Row-level security reads the Clerk user id from the token. |
@@ -15,6 +15,19 @@ Status (2026-11-16): the app runs on a **local mock** of Supabase (`src/lib/mock
 | 6 | **Vercel**: confirm the project, add the env vars below to *Production* and *Preview*, add the custom domain | Deploy. Do **not** set `ADMIN_PREVIEW` in production (it would turn the demo sign-in back on). |
 | 7 | **Real data**: allow me to read `src/data/` (events, members, timeline, posters) and export the current newsletter subscriber list from the sheet behind `SUBSCRIBE_WEBHOOK_URL` as CSV (put it in a private folder, not git) | One-time import of the 2017–now history and subscribers. |
 | 8 | Optional later: university public IP range (campus Wi-Fi check-in), VAPID keys for web push | Check-in and push slices. |
+
+## 1b. Running on the Vercel address only (no custom domain)
+Decision (2026-11-16): the site lives on its `*.vercel.app` address and no custom domain is bought for now. What that changes:
+| Piece | Works? | Details |
+|---|---|---|
+| Supabase database, storage, row-level security | yes | domain independent |
+| Clerk sign-in (email code, Google) | **yes, in a Development instance** | [Clerk production instances need a domain you own and do not accept `vercel.app`](https://clerk.com/docs/guides/development/deployment/production). Use the development keys on Vercel until a domain exists. Clerk labels development mode and treats it as a test environment, so plan to switch later (a key swap plus a user re-sign-in, no code change). |
+| Passkeys | **limited** | In development a passkey is [tied to the domain it was created on](https://clerk.com/docs/guides/development/deployment/production) (Clerk's `accounts.dev`), so it works for testing but is not a stable member-facing feature. Email code stays the main sign-in until a domain exists. |
+| Clerk's own emails (the sign-in code) | yes | Clerk sends them itself. |
+| **App emails to members** (confirmations, reminders, decisions, announcements, calendar invites) | **no, not to other people** | [Resend's test sender `resend.dev` only delivers to the account owner's own address](https://resend.com/docs/knowledge-base/403-error-resend-dev-domain); sending to members needs a verified domain. Until then the app stays in **in-app mode**: every message still lands in the member's bell and notification page (already built), the outbox keeps queued mail without failing, and the composer says "email delivery is off until a sending domain is verified". |
+| Add to calendar | yes | the Google Calendar link and the personal calendar feed (webcal) are web features; only the emailed `.ics` invite needs email. |
+| Storage, polls, feedback, reports, PDF export | yes | domain independent |
+The one thing that unblocks real member email is **any domain you control** (a cheap one is enough: Resend needs three DNS records on it). Everything else is ready to run without one. Env: `SITE_URL` can stay unset (it defaults to the Vercel production address); set `EMAIL_DELIVERY=off` (default when no verified sender) and later `EMAIL_FROM`.
 
 ## 2. Environment variables
 | Name | Where it comes from | Public? | Used for |
