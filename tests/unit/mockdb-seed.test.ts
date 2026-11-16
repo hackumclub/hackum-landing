@@ -132,8 +132,8 @@ describe("profiles", () => {
 });
 
 describe("personas", () => {
-  it("lists the six dev personas", () => {
-    expect(PERSONAS.map((p) => p.handle)).toEqual(["dev-admin", "dev-organizer", "anuujin", "temuulen", "saraa", "new-guest"]);
+  it("lists the seven dev personas", () => {
+    expect(PERSONAS.map((p) => p.handle)).toEqual(["dev-admin", "dev-organizer", "anuujin", "temuulen", "saraa", "bayar", "new-guest"]);
     for (const p of PERSONAS) {
       expect(p.label.mn.length).toBeGreaterThan(0);
       expect(p.label.en.length).toBeGreaterThan(0);
@@ -146,6 +146,8 @@ describe("personas", () => {
     expect(prof("anuujin")).toMatchObject({ status: "member" });
     expect(prof("temuulen")).toMatchObject({ status: "guest" });
     expect(prof("saraa")).toMatchObject({ status: "alumni" });
+    expect(prof("bayar")).toMatchObject({ status: "guest", school_id: "num", major_track: "software" });
+    expect(prof("temuulen")).toMatchObject({ school_id: "must" });
     for (const h of ["anuujin", "temuulen", "saraa", "dev-admin", "dev-organizer"]) expect(prof(h).onboarded_at).not.toBeNull();
     expect(prof("new-guest")).toMatchObject({ status: "guest", onboarded_at: null, name: { mn: "", en: "" } });
     expect(PERSONAS.find((p) => p.handle === "dev-admin")?.role).toBe("admin");

@@ -18,6 +18,8 @@ import FilterBar from "@/components/ui/FilterBar";
 import FilterDisclosure from "@/components/ui/FilterDisclosure";
 import { Input } from "@/components/ui/Field";
 import StatusPill from "@/components/ui/StatusPill";
+import Tag from "@/components/ui/Tag";
+import { eventKindIcon } from "@/components/ui/icons";
 import Poster from "./Poster";
 import SegmentTabs from "./SegmentTabs";
 
@@ -101,12 +103,10 @@ export default function EventsList({ rows, lang, preset: initialPreset = null }:
             <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <Link href={href(lang, `/admin/events/${r.id}`)} className="min-w-0 font-bold text-fg hover:underline" aria-label={`${t.open}: ${title}`}>{title}</Link>
               {r.needsEn && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-neutral-soft px-2 py-0.5 text-xs font-semibold text-fg">
-                  <Languages aria-hidden="true" size={12} />{t.needsEn}
-                </span>
+                <Tag icon={Languages}>{t.needsEn}</Tag>
               )}
             </span>
-            <span className="text-xs text-fg-muted">{d.admin.kinds[r.kind]}<span className="md:hidden"> · {eventWhen({ starts_at: r.startsAt, approximate_date: r.approximate }, lang)}</span></span>
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-muted"><Tag icon={eventKindIcon(r.kind)}>{d.admin.kinds[r.kind]}</Tag><span className="md:hidden">{eventWhen({ starts_at: r.startsAt, approximate_date: r.approximate }, lang)}</span></span>
             <span className="text-xs font-semibold text-fg-muted sm:hidden">{registrationText(r)}</span>
             </div>
           </div>

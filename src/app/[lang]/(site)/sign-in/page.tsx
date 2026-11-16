@@ -41,6 +41,10 @@ const WHO: Record<string, Who> = {
     role: { mn: "Төгсөгч", en: "Alumni" }, lands: { mn: "Миний Hackum руу орно", en: "Opens your member app" }, icon: "grad-cap", wash: "var(--ops-ember-soft)",
     can: { mn: ["Төгсөгчдийн эвентэд оролцох", "Хуучин улирлуудаа харах", "Ментор тэмдэг авах"], en: ["Join alumni events", "See your past seasons", "Earn the mentor badge"] },
   },
+  bayar: {
+    role: { mn: "Зочин · МУИС", en: "Guest · NUM" }, lands: { mn: "Миний Hackum руу орно", en: "Opens your member app" }, icon: "ticket", wash: "var(--ops-ok-soft)",
+    can: { mn: ["Гишүүнчлэлд өргөдөл өгөх (МУИС)", "МУИС-ийн эвентэд бүртгүүлэх", "Хакатонд багтай өргөдөл өгөх"], en: ["Apply for membership (NUM student)", "RSVP to NUM-only events", "Apply to hackathons with a team"] },
+  },
   "new-guest": {
     role: { mn: "Шинэ хүн", en: "New here" }, lands: { mn: "Эхлээд танилцуулга бөглөнө", en: "Starts with onboarding" }, icon: "gift", wash: "var(--ops-ok-soft)",
     can: { mn: ["Нэр, сургуулиа бөглөх", "Анхны эвентээ сонгох", "Хэлээ тохируулах"], en: ["Add your name and school", "Pick your first event", "Choose your language"] },

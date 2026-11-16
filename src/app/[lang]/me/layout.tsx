@@ -5,7 +5,6 @@ import OpsRoot from "@/components/ui/OpsRoot";
 import Skeleton from "@/components/ui/Skeleton";
 import MeShell from "@/components/me/MeShell";
 import LiveRefresh from "@/components/live/LiveRefresh";
-import { getDictionary } from "@/i18n";
 import { copy } from "@/i18n/areas/me";
 import { isLocale, tf, type Locale } from "@/i18n/config";
 import { getStore, mockEnabled } from "@/lib/mockdb/store";
@@ -26,13 +25,12 @@ export async function generateMetadata({ params }: Omit<Props, "children">): Pro
 async function Frame({ lang, children }: { lang: Locale; children: ReactNode }) {
   const session = await getSession();
   const me = session ? getStore().read().profiles.find((p) => p.id === session.profileId) : undefined;
-  const d = getDictionary(lang);
   const c = copy[lang];
   return (
     <MeShell
       lang={lang} t={{ ...c.nav, brand: c.meta.brand }} skip={c.meta.skip}
       user={me ? { name: tf(me.name, lang) || me.handle, avatar: me.avatar_path } : null}
-      extras={<LiveRefresh labels={d.admin.live} />}
+      extras={<LiveRefresh />}
     >
       {children}
     </MeShell>

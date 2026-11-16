@@ -143,3 +143,61 @@ describe("DataTable row actions", () => {
     expect(screen.getAllByRole("checkbox")[0].className).toContain("size-5");
   });
 });
+
+describe("DataTable pagination and selection bar", () => {
+  const MANY: Row[] = Array.from({ length: 25 }, (_, i) => ({ id: `r${i + 1}`, name: `Row ${i + 1}`, rsvps: i + 1 }));
+  const mount = (rows: Row[] = MANY, selectionBar?: (ids: string[]) => React.ReactNode) =>
+    render(<DataTable rows={rows} columns={COLS} getId={(r) => r.id} caption="Events" selectable pageSize={10} selectionBar={selectionBar} empty={<p>None</p>} />);
+  const bodyRows = () => screen.getAllByRole("row").length - 1;
+
+  it("shows the first page and a Showing a–b of n line", () => {
+    mount();
+    expect(bodyRows()).toBe(10);
+    expect(screen.getByText("Row 1")).toBeInTheDocument();
+    expect(screen.queryByText("Row 11")).not.toBeInTheDocument();
+    expect(screen.getByText(/Showing 1–10 of 25/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "1" })).toHaveAttribute("aria-current", "page");
+  });
+  it("moves between pages with the page buttons", async () => {
+    mount();
+    await userEvent.click(screen.getByRole("button", { name: "3" }));
+    expect(bodyRows()).toBe(5);
+    expect(screen.getByText(/Showing 21–25 of 25/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "3" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "1" })).not.toHaveAttribute("aria-current");
+  });
+  it("renders no pager when everything fits on one page", () => {
+    mount(MANY.slice(0, 5));
+    expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
+  });
+  it("renders the selection bar only when ids are selected, and selection survives a page change", async () => {
+    mount(MANY, (ids) => <div>Bar: {ids.length} selected</div>);
+    expect(screen.queryByText(/Bar:/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole("checkbox")[1]);
+    await userEvent.click(screen.getAllByRole("checkbox")[2]);
+    expect(screen.getByText("Bar: 2 selected")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "2" }));
+    expect(screen.getByText("Bar: 2 selected")).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole("checkbox")[1]);
+    expect(screen.getByText("Bar: 3 selected")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "1" }));
+    expect(screen.getAllByRole("checkbox")[1]).toBeChecked();
+  });
+  it("sits above the phone tab bar", async () => {
+    mount(MANY, () => <div>Bar</div>);
+    await userEvent.click(screen.getAllByRole("checkbox")[1]);
+    expect(screen.getByText("Bar").parentElement?.className).toContain("bottom-[calc(var(--tab-bar,0px)+0.75rem)]");
+  });
+  it("goes back to page 1 when the number of rows changes", async () => {
+    const { rerender } = mount();
+    await userEvent.click(screen.getByRole("button", { name: "2" }));
+    expect(screen.getByText(/Showing 11–20 of 25/)).toBeInTheDocument();
+    rerender(<DataTable rows={MANY.slice(0, 18)} columns={COLS} getId={(r) => r.id} caption="Events" selectable pageSize={10} empty={<p>None</p>} />);
+    expect(screen.getByText(/Showing 1–10 of 18/)).toBeInTheDocument();
+  });
+  it("select-all selects every row across pages", async () => {
+    mount(MANY, (ids) => <div>Bar: {ids.length}</div>);
+    await userEvent.click(screen.getByRole("checkbox", { name: "Select all" }));
+    expect(screen.getByText("Bar: 25")).toBeInTheDocument();
+  });
+});

@@ -1,5 +1,5 @@
 // Copy for the public site's database-backed parts: event registration panel, event facts, extra ticket labels,
-// team names, live pill. Mongolian is the source; English is typed against it, so a missing key fails `tsc`.
+// team names. Mongolian is the source; English is typed against it, so a missing key fails `tsc`.
 // The shared dictionaries (src/i18n/mn.ts, en.ts) keep the rest of the public copy.
 import type { Dict } from "@/i18n";
 import type { Locale } from "@/i18n/config";
@@ -8,10 +8,9 @@ const mn = {
   ticket: {
     kinds: { Workshop: "Workshop", Meetup: "Уулзалт", "Knowledge Day": "Мэдлэгийн өдөр", Outing: "Аялал", Other: "Бусад" } as Record<string, string>,
     modes: { Hybrid: "Холимог" } as Record<string, string>,
-    statuses: { Live: "Шууд", Open: "Нээлттэй", Full: "Дүүрсэн", Soon: "Удахгүй", Cancelled: "Цуцлагдсан" } as Record<string, string>,
+    statuses: { Live: "Яг одоо болж байна", Open: "Нээлттэй", Full: "Дүүрсэн", Soon: "Удахгүй", Cancelled: "Цуцлагдсан" } as Record<string, string>,
   },
   teams: { Marketing: "Маркетинг", Dev: "Хөгжүүлэлт", Design: "Дизайн", Events: "Арга хэмжээ", Content: "Контент", Mentors: "Менторууд" } as Record<string, string>,
-  live: { live: "Шууд", reconnecting: "Дахин холбогдож байна" },
   facts: {
     title: "Эвентийн мэдээлэл",
     when: "Хэзээ",
@@ -102,10 +101,9 @@ const en: typeof mn = {
   ticket: {
     kinds: { Workshop: "Workshop", Meetup: "Meetup", "Knowledge Day": "Knowledge Day", Outing: "Outing", Other: "Other" },
     modes: { Hybrid: "Hybrid" },
-    statuses: { Live: "Live", Open: "Open", Full: "Full", Soon: "Soon", Cancelled: "Cancelled" },
+    statuses: { Live: "Happening now", Open: "Open", Full: "Full", Soon: "Soon", Cancelled: "Cancelled" },
   },
   teams: { Marketing: "Marketing", Dev: "Dev", Design: "Design", Events: "Events", Content: "Content", Mentors: "Mentors" },
-  live: { live: "Live", reconnecting: "Reconnecting" },
   facts: {
     title: "Event details",
     when: "When",

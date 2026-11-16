@@ -32,7 +32,7 @@ const mn = {
   },
   event: {
     seatsLeft: p("{n} суудал үлдсэн"), full: "Суудал дүүрсэн", waitlistOn: "Дүүрсэн · хүлээлгээр бүртгүүлнэ", going: p("{n} хүн ирнэ"),
-    live: "Болж байна", online: "Онлайн", hybrid: "Танхим + онлайн", onlineAfter: "Онлайн холбоос бүртгүүлсний дараа гарна",
+    live: "Яг одоо болж байна", online: "Онлайн", hybrid: "Танхим + онлайн", onlineAfter: "Онлайн холбоос бүртгүүлсний дараа гарна",
     joinOnline: "Онлайнаар орох", approx: "Огноо баталгаажаагүй", registered: "Бүртгүүлсэн", cover: "Эвентийн зураг",
     rsvp: "Ирнэ", joinWaitlist: "Хүлээлгэд орох", apply: "Өргөдөл өгөх", viewApplication: "Өргөдлөө харах", viewTeam: "Баг харах",
     cancel: "Бүртгэл цуцлах", leaveWaitlist: "Хүлээлгээс гарах", withdraw: "Өргөдлөө буцаах",
@@ -148,6 +148,9 @@ const mn = {
   },
   membership: {
     title: "Гишүүнчлэл",
+    schoolTitle: "Гишүүнчлэл МУИС-ийн оюутнуудад зориулагдсан", schoolLine: "Та зочноор нээлттэй эвентүүдэд оролцож, багтайгаар хакатонд өргөдөл өгч болно. МУИС-д сурдаг бол профайлдаа сургуулиа шинэчилнэ үү.",
+    majorTitle: "Эхлээд мэргэжлээ сонгоно уу", majorLine: "Гишүүнчлэлд өргөдөл өгөхөд мэргэжлийн чиглэл (программ хангамж, компьютерын ухаан гэх мэт) шаардлагатай.",
+    fixProfile: "Сургууль, мэргэжлээ шинэчлэх", browseEvents: "Нээлттэй эвентүүд үзэх",
     windowOpen: "{season}: өргөдөл {date} хүртэл нээлттэй", windowOpens: "{season}: өргөдөл {date}-нд нээгдэнэ", windowClosed: "Одоогоор өргөдөл хүлээж авахгүй байна",
     windowClosedLine: "Дараагийн улирлын өргөдөл нээгдэхэд имэйлээр мэдэгдэнэ.",
     formTitle: "Өргөдөл өгөх", motivation: "Яагаад Hackum-д нэгдэхийг хүсэж байна вэ?", motivationHint: "Дор хаяж 10 тэмдэгт. Юу сурах, юу хийхийг хүсэж буйгаа бичнэ үү.",
@@ -350,6 +353,9 @@ const en: typeof mn = {
   },
   membership: {
     title: "Membership",
+    schoolTitle: "Membership is for NUM students", schoolLine: "You can still join open events as a guest and apply to hackathons with a team. If you study at NUM, update your school in your profile.",
+    majorTitle: "Choose your major first", majorLine: "Applying for membership needs your major track (software, computer science and so on).",
+    fixProfile: "Update school and major", browseEvents: "Browse open events",
     windowOpen: "{season}: applications are open until {date}", windowOpens: "{season}: applications open {date}", windowClosed: "Applications are closed right now",
     windowClosedLine: "We'll email you when the next season opens.",
     formTitle: "Apply", motivation: "Why do you want to join Hackum?", motivationHint: "At least 10 characters. Say what you want to learn and do.",

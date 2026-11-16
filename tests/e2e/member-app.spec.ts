@@ -126,7 +126,6 @@ test.describe("events: RSVP and cancel", () => {
     await signInAs(page, "dev-organizer");
     await page.goto("/en/me/events?tab=going");
     const count = async () => Number(((await page.getByRole("link", { name: /^Going/ }).innerText()).match(/\d+/) ?? ["0"])[0]);
-    await expect(page.getByText("Live", { exact: true })).toBeVisible(); // the SSE pill is connected
     const before = await count();
 
     const other = await context.newPage();
@@ -378,8 +377,17 @@ test.describe("public RSVP panel", () => {
 });
 
 test.describe("membership", () => {
-  test("a guest applies (or sees the status of an application already in)", async ({ page }) => {
+  test("a guest from another school is told membership is for NUM students and gets no form", async ({ page }) => {
     await signInAs(page, "temuulen");
+    await page.goto("/en/me/membership");
+    await expect(page.getByRole("heading", { name: "Membership is for NUM students" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Submit application" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Update school and major" })).toHaveAttribute("href", "/en/me/profile");
+    await expect(page.getByRole("link", { name: "Browse open events" })).toBeVisible();
+  });
+
+  test("a NUM guest applies (or sees the status of an application already in)", async ({ page }) => {
+    await signInAs(page, "bayar");
     await page.goto("/en/me/membership");
     await expect(page.getByRole("heading", { level: 1, name: "Membership" })).toBeVisible();
     await expect(page.getByText(/applications are open until|applications open|Applications are closed/)).toBeVisible();

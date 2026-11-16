@@ -32,9 +32,10 @@ test.describe("events list", () => {
     await expect(page.locator(`[data-ticket]:not([hidden]) a[href="/en/events/${KD}"]`)).toBeVisible();
   });
 
-  test("shows the live pill", async ({ page }) => {
+  test("has no live/reconnecting pill (the realtime refresh is silent)", async ({ page }) => {
     await page.goto("/en/events");
-    await expect(page.getByRole("status").filter({ hasText: /Live|Reconnecting/ })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: /Live|Reconnecting/ })).toHaveCount(0);
   });
 });
 

@@ -1,26 +1,14 @@
 "use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cx } from "./cx";
+import SegmentedTabs from "./SegmentedTabs";
 
-/** Route-based tabs (each tab is a URL, so deep links and Back work). Active tab gets aria-current="page". */
-export default function TabNav({ label, tabs }: { label: string; tabs: { href: string; label: string; count?: number }[] }) {
-  const path = usePathname();
+/** Route-based tabs (each tab is a URL, so deep links and Back work). Active tab gets aria-current="page". Thin wrapper over SegmentedTabs. */
+export default function TabNav({ label, tabs, className }: { label: string; tabs: { href: string; label: string; count?: number }[]; className?: string }) {
   return (
-    <nav aria-label={label} className="-mx-1 overflow-x-auto border-b border-line max-md:[mask-image:linear-gradient(90deg,#000_calc(100%-36px),transparent)]">
-      <ul className="flex gap-1 px-1">
-        {tabs.map((t) => {
-          const active = path === t.href;
-          return (
-            <li key={t.href}>
-              <Link href={t.href} aria-current={active ? "page" : undefined} className={cx("inline-flex min-h-10 items-center gap-1.5 border-b-2 px-3 text-sm font-semibold whitespace-nowrap", active ? "border-accent text-fg" : "border-transparent text-fg-muted hover:text-fg")}>
-                {t.label}
-                {t.count !== undefined && <span className="tnum rounded-full bg-neutral-soft px-1.5 text-xs text-fg">{t.count}</span>}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <SegmentedTabs
+      ariaLabel={label}
+      className={className}
+      items={tabs.map((t) => ({ key: t.href, label: t.label, count: t.count }))}
+      hrefs={Object.fromEntries(tabs.map((t) => [t.href, t.href]))}
+    />
   );
 }

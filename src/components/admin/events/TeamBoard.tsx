@@ -8,6 +8,7 @@ import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import StatusPill from "@/components/ui/StatusPill";
+import Tag from "@/components/ui/Tag";
 import type { RegStatus } from "@/lib/status";
 
 /** Teams as cards: members, who is captain, what they are looking for, status mix, and accept / reject for the whole team. */
@@ -53,7 +54,7 @@ export default function TeamBoard({ lang, rows, teams, capacity, teamMin, teamMa
                   <li key={r.id} className="flex items-center gap-2.5">
                     <Avatar name={tf(r.name, lang)} src={r.avatar} size={28} />
                     <span className="min-w-0 flex-1 truncate text-sm text-fg">{tf(r.name, lang)}</span>
-                    {r.profileId === tm.captainId && <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-bold text-accent-fg">{t.captain}</span>}
+                    {r.profileId === tm.captainId && <Tag tone="accent">{t.captain}</Tag>}
                   </li>
                 ))}
               </ul>

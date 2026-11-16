@@ -3,7 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { CalendarDays, House, LogOut, Settings, UserRound, type LucideIcon } from "lucide-react";
+import { House, type LucideIcon } from "lucide-react";
+import { icons } from "@/components/ui/icons";
 import { switchLocale, type Locale } from "@/i18n/config";
 import type { MeCopy } from "@/i18n/areas/me";
 import Avatar, { initials } from "@/components/ui/Avatar";
@@ -18,9 +19,9 @@ const tabs = (lang: Locale): Tab[] => {
   const base = `/${lang}/me`;
   return [
     { key: "home", path: base, Icon: House, match: (p) => p === base },
-    { key: "events", path: `${base}/events`, Icon: CalendarDays, match: (p) => p.startsWith(`${base}/events`) || p.startsWith(`${base}/teams`) },
-    { key: "profile", path: `${base}/profile`, Icon: UserRound, match: (p) => p.startsWith(`${base}/profile`) || p.startsWith(`${base}/membership`) },
-    { key: "settings", path: `${base}/settings`, Icon: Settings, match: (p) => p.startsWith(`${base}/settings`) },
+    { key: "events", path: `${base}/events`, Icon: icons.event, match: (p) => p.startsWith(`${base}/events`) || p.startsWith(`${base}/teams`) },
+    { key: "profile", path: `${base}/profile`, Icon: icons.profile, match: (p) => p.startsWith(`${base}/profile`) || p.startsWith(`${base}/membership`) },
+    { key: "settings", path: `${base}/settings`, Icon: icons.settings, match: (p) => p.startsWith(`${base}/settings`) },
   ];
 };
 
@@ -50,13 +51,13 @@ function AccountMenu({ lang, t, user }: { lang: Locale; t: MeCopy["nav"]; user: 
       {open && (
         <div id="account-menu" className="absolute top-full right-0 z-40 mt-1 grid w-56 gap-0.5 rounded-[var(--radius-md)] border border-line bg-panel p-1.5 shadow-[var(--shadow-card)]">
           {user && <p className="truncate px-3 py-2 text-sm font-bold text-fg">{user.name}</p>}
-          <Link href={`/${lang}/me/profile`} className={item} onClick={() => setOpen(false)}><UserRound aria-hidden="true" size={16} />{t.profile}</Link>
-          <Link href={`/${lang}/me/settings`} className={item} onClick={() => setOpen(false)}><Settings aria-hidden="true" size={16} />{t.settings}</Link>
+          <Link href={`/${lang}/me/profile`} className={item} onClick={() => setOpen(false)}><icons.profile aria-hidden="true" size={20} />{t.profile}</Link>
+          <Link href={`/${lang}/me/settings`} className={item} onClick={() => setOpen(false)}><icons.settings aria-hidden="true" size={20} />{t.settings}</Link>
           <Link href={switchLocale(path, other)} hrefLang={other} lang={other} aria-label={t.switchLangLabel} className={item} onClick={() => setOpen(false)}>{t.switchLang}</Link>
           <form action={signInAs}>
             <input type="hidden" name="lang" value={lang} />
             <input type="hidden" name="handle" value="" />
-            <button type="submit" className={cx(item, "cursor-pointer")}><LogOut aria-hidden="true" size={16} />{t.signOut}</button>
+            <button type="submit" className={cx(item, "cursor-pointer")}><icons.logout aria-hidden="true" size={20} />{t.signOut}</button>
           </form>
         </div>
       )}
@@ -65,7 +66,7 @@ function AccountMenu({ lang, t, user }: { lang: Locale; t: MeCopy["nav"]; user: 
 }
 
 /**
- * Member app frame in the Hackum look: a floating frosted header (brand, pill tabs from 768px, live pill, account) and, on
+ * Member app frame in the Hackum look: a floating frosted header (brand, pill tabs from 768px, account) and, on
  * phones, a floating glass tab bar with a glossy active tab. Onboarding hides the tabs.
  */
 export default function MeShell({ lang, t, skip, extras, user, children }: {
@@ -81,7 +82,7 @@ export default function MeShell({ lang, t, skip, extras, user, children }: {
   return (
     <ToastProvider>
     <FlowProvider set={setFlow}>
-    <div className="ops-canvas flow-root min-h-dvh">
+    <div className={cx("ops-canvas flow-root min-h-dvh", tabBar && "max-md:[--tab-bar:calc(4.75rem+env(safe-area-inset-bottom))]")}>
       <a href="#main" className="sr-only z-[95] rounded-full bg-accent px-4 py-2 font-bold text-on-accent focus:not-sr-only focus:fixed focus:top-3 focus:left-3">{skip}</a>
       <header className="sticky top-3 z-30 mx-3 mt-3">
         <div className="mx-auto flex min-h-14 w-full max-w-4xl items-center gap-2 rounded-full border border-[var(--ops-line)] bg-[color-mix(in_srgb,var(--ops-panel)_74%,transparent)] px-3 shadow-[0_14px_34px_-22px_rgb(0_60_100/0.55)] backdrop-blur-xl">
@@ -97,7 +98,7 @@ export default function MeShell({ lang, t, skip, extras, user, children }: {
                   return (
                     <li key={key}>
                       <Link href={href} aria-current={active ? "page" : undefined} className={cx("inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-bold transition-colors duration-150", active ? "ops-gloss" : "text-fg-muted hover:bg-neutral-soft hover:text-fg")}>
-                        <Icon aria-hidden="true" size={18} />{label(key)}
+                        <Icon aria-hidden="true" size={20} />{label(key)}
                       </Link>
                     </li>
                   );

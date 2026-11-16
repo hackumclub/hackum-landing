@@ -7,6 +7,7 @@ import { copy } from "@/i18n/areas/me";
 import { fill, isLocale, tf } from "@/i18n/config";
 import { teamView } from "@/lib/me/queries";
 import Avatar from "@/components/ui/Avatar";
+import Tag from "@/components/ui/Tag";
 import { ButtonLink } from "@/components/ui/Button";
 import CopyButton from "@/components/me/CopyButton";
 import LeaveTeamButton from "@/components/me/LeaveTeamButton";
@@ -54,7 +55,7 @@ async function Body({ params }: Props) {
         </div>
         {v.lookingFor.length > 0 && (
           <p className="flex flex-wrap items-center gap-2 text-sm text-fg-muted">{t.lookingFor}:
-            {v.lookingFor.map((x) => <span key={x} className="rounded-full bg-neutral-soft px-2.5 py-0.5 text-xs font-bold text-fg">{x}</span>)}
+            {v.lookingFor.map((x) => <Tag key={x}>{x}</Tag>)}
           </p>
         )}
         <div className="grid gap-2 rounded-[var(--radius-sm)] p-4" style={{ background: "radial-gradient(120% 140% at 100% 0%, var(--ops-accent-soft), var(--ops-panel-2) 70%)" }}>
@@ -76,7 +77,7 @@ async function Body({ params }: Props) {
               <li key={m.profileId} className="flex items-center gap-3 rounded-[var(--radius-md)] border border-line bg-panel p-3">
                 <Avatar name={name} src={m.avatar} size={40} />
                 <span className="min-w-0 flex-1 truncate text-sm font-bold text-fg">{name}{m.you && <span className="font-normal text-fg-muted"> ({t.you})</span>}</span>
-                {m.captain && <span className="inline-flex items-center gap-1 rounded-full bg-warn-soft px-2.5 py-0.5 text-xs font-bold text-warn-fg"><Crown aria-hidden="true" size={12} />{t.captain}</span>}
+                {m.captain && <Tag tone="warn" icon={Crown}>{t.captain}</Tag>}
               </li>
             );
           })}

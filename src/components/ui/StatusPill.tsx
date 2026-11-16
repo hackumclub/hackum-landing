@@ -23,7 +23,6 @@ export const STATUS_STYLE = {
 export default function StatusPill({ status, label, className }: { status: Status; label: string; className?: string }) {
   return (
     <span className={cx("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold whitespace-nowrap", TONE[STATUS_STYLE[status]], className)}>
-      {status === "live" && <span aria-hidden="true" className="size-1.5 rounded-full bg-current motion-safe:animate-pulse" />}
       {label}
     </span>
   );

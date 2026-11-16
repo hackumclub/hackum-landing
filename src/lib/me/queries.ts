@@ -178,6 +178,8 @@ export type MembershipView = {
   window: { state: "open"; season: number; label: L; until: string } | { state: "opens"; season: number; label: L; from: string } | { state: "closed" };
   /** Never carries the staff review note. */
   app: { status: ApplicationStatus; season: number; created_at: string; reviewed_at: string | null } | null;
+  /** Membership is for NUM students who picked a major; anyone else stays a guest and is told why. */
+  eligibility: "ok" | "school" | "major";
   canApply: boolean;
   history: { season: number; label: L; team: string | null; role: L | null }[];
 };
@@ -191,6 +193,7 @@ export function membershipView(db: Db, profileId: string, now: Date): Membership
   const window: MembershipView["window"] = open
     ? { state: "open", season: open.year, label: open.label, until: open.application_closes_at ?? "" }
     : later ? { state: "opens", season: later.year, label: later.label, from: later.application_opens_at } : { state: "closed" };
+  const eligible: MembershipView["eligibility"] = me.school_id !== "num" ? "school" : !me.major_track ? "major" : "ok";
   const mine = db.membership_applications.filter((a) => a.profile_id === profileId).sort((a, b) => b.created_at.localeCompare(a.created_at));
   const row = (open ? mine.find((a) => a.season === open.year) : undefined) ?? mine[0];
   const label = (y: number): L => db.seasons.find((s) => s.year === y)?.label ?? { mn: String(y), en: String(y) };
@@ -198,7 +201,8 @@ export function membershipView(db: Db, profileId: string, now: Date): Membership
     status: me.status,
     window,
     app: row ? { status: row.status, season: row.season, created_at: row.created_at, reviewed_at: row.reviewed_at } : null,
-    canApply: me.status !== "member" && !!open && !mine.some((a) => a.season === open.year),
+    eligibility: eligible,
+    canApply: eligible === "ok" && me.status !== "member" && !!open && !mine.some((a) => a.season === open.year),
     history: db.memberships.filter((m) => m.profile_id === profileId).sort((a, b) => b.season - a.season).map((m) => ({ season: m.season, label: label(m.season), team: m.team, role: m.role_title })),
   };
 }

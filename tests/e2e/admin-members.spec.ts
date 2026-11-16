@@ -378,7 +378,7 @@ test.describe("settings", () => {
 
   test("integrations: five honest 'Local demo: simulated' cards, env var names, the state legend, and a reset button (not clicked)", async ({ page }) => {
     await open(page, "settings/integrations");
-    for (const n of ["Clerk", "Supabase", "Resend", "Scheduled jobs", "Live updates"]) await expect(page.getByRole("heading", { name: n, exact: true })).toBeVisible();
+    for (const n of ["Clerk", "Supabase", "Resend", "Scheduled jobs", "Instant updates"]) await expect(page.getByRole("heading", { name: n, exact: true })).toBeVisible();
     await expect(page.getByText("Local demo: simulated")).toHaveCount(5);
     for (const v of ["CLERK_SECRET_KEY", "RESEND_API_KEY", "CRON_SECRET", "NEXT_PUBLIC_SUPABASE_URL"]) await expect(page.getByText(v, { exact: true }).first()).toBeVisible();
     for (const s of ["Connected", "Misconfigured", "Failing"]) await expect(page.getByText(s, { exact: true })).toBeVisible();

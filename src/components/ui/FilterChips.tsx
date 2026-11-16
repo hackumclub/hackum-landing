@@ -4,7 +4,7 @@ import { cx } from "./cx";
 export type FilterOption = { value: string; label: string; count?: number };
 
 /** Multi-select filter chips (toggle buttons). Selection state is announced via aria-pressed. */
-export default function FilterBar({ label, options, value, onChange }: { label: string; options: FilterOption[]; value: string[]; onChange: (v: string[]) => void }) {
+export default function FilterChips({ label, options, value, onChange }: { label: string; options: FilterOption[]; value: string[]; onChange: (v: string[]) => void }) {
   return (
     <div role="group" aria-label={label} className="flex flex-wrap gap-2">
       {options.map((o) => {

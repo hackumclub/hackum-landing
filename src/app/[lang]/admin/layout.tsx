@@ -30,7 +30,7 @@ async function Frame({ lang, children }: { lang: Locale; children: ReactNode }) 
       lang={lang} t={d.admin} skip={d.nav.skip} close={d.ui.close}
       extras={
         <>
-          <LiveRefresh labels={d.admin.live} />
+          <LiveRefresh />
           <PersonaSwitcher lang={lang} personas={PERSONAS} current={session?.handle ?? null} labels={d.admin.persona} />
         </>
       }

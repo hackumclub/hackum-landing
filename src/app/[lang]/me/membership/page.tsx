@@ -73,6 +73,15 @@ async function Body({ params }: Props) {
         </Section>
       )}
 
+      {v.status !== "member" && v.eligibility !== "ok" && (
+        <EmptyState
+          sticker="lock"
+          title={v.eligibility === "school" ? t.schoolTitle : t.majorTitle}
+          line={v.eligibility === "school" ? t.schoolLine : t.majorLine}
+          action={<div className="flex flex-wrap justify-center gap-3"><ButtonLink href={`/${lang}/me/profile`} size="lg">{t.fixProfile}</ButtonLink><ButtonLink href={`/${lang}/me/events`} variant="secondary" size="lg">{t.browseEvents}</ButtonLink></div>}
+        />
+      )}
+
       {v.canApply && <MembershipForm c={t} errors={t.err} />}
 
       {v.history.length > 0 && (

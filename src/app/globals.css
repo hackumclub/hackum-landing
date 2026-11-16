@@ -295,6 +295,8 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
   --ops-gloss-a: #0078b8;
   --ops-gloss-b: #005b8c;
   --ops-on-gloss: #ffffff;
+  /* Floating panels (Drawer, popovers): lifted off the page, not just outlined. */
+  --shadow-float: 0 1px 0 rgb(255 255 255 / 0.6) inset, 0 28px 64px -16px rgb(7 27 41 / 0.38), 0 8px 20px -8px rgb(7 27 41 / 0.2);
   color-scheme: light;
   background: var(--ops-canvas);
   color: var(--ops-fg);
@@ -329,6 +331,7 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
   --ops-c3: #2fd3a6;
   --ops-c4: #ff8a50;
   --ops-c5: #8fa6b8;
+  --shadow-float: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 28px 70px -14px rgb(0 0 0 / 0.7), 0 8px 24px -8px rgb(0 0 0 / 0.5);
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -362,6 +365,7 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
     --ops-c3: #2fd3a6;
     --ops-c4: #ff8a50;
     --ops-c5: #8fa6b8;
+    --shadow-float: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 28px 70px -14px rgb(0 0 0 / 0.7), 0 8px 24px -8px rgb(0 0 0 / 0.5);
     color-scheme: dark;
   }
 }

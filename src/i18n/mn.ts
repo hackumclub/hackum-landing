@@ -200,7 +200,6 @@ export const mn = {
       viewSite: "Нийтийн сайт", switchLang: "English", switchLangLabel: "Switch to English",
     },
     theme: { group: "Өнгөний горим", system: "Системийн дагуу", light: "Цайвар", dark: "Бараан" },
-    live: { live: "Шууд", reconnecting: "Холбогдож байна…" },
     persona: { viewingAs: "Хэн болж харах", signedOut: "Нэвтрээгүй" },
     sample: { title: "Демо өгөгдөл", text: "Энэ нь зөвхөн таны компьютер дээрх орон нутгийн демо сан. Өөрчлөлт бодит бүртгэлд нөлөөлөхгүй, сервер дахин асахад анхны байдалдаа орно." },
     dashboard: {
@@ -236,7 +235,7 @@ export const mn = {
     kinds: { hackathon: "Хакатон", workshop: "Workshop", meetup: "Meetup", competition: "Тэмцээн", knowledge_day: "Knowledge Day", outing: "Зугаалга", other: "Бусад" },
   },
   status: {
-    draft: "Ноорог", published: "Нийтэлсэн", live: "Болж байна", cancelled: "Цуцалсан", completed: "Дууссан", archived: "Архив",
+    draft: "Ноорог", published: "Нийтэлсэн", live: "Яг одоо болж байна", cancelled: "Цуцалсан", completed: "Дууссан", archived: "Архив",
     applied: "Өргөдөл өгсөн", going: "Ирнэ", waitlisted: "Хүлээлгэд", rejected: "Татгалзсан", attended: "Ирсэн", no_show: "Ирээгүй",
     guest: "Зочин", member: "Гишүүн", alumni: "Төгсөгч", pending: "Хүлээгдэж буй", approved: "Зөвшөөрсөн", withdrawn: "Буцаасан",
   },

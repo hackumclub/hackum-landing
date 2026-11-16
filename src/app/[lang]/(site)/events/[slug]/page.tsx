@@ -9,7 +9,7 @@ import { getDictionary } from "@/i18n";
 import EventTicket from "@/components/EventTicket";
 import EventTabs from "@/components/EventTabs";
 import EventFacts from "@/components/public/EventFacts";
-import LivePill from "@/components/public/LivePill";
+import LiveRefresh from "@/components/live/LiveRefresh";
 import RsvpSection from "@/components/public/RsvpSection";
 import RsvpSkeleton from "@/components/public/RsvpSkeleton";
 
@@ -49,7 +49,7 @@ export default async function Page({ params }: PageProps<"/[lang]/events/[slug]"
       <div className="relative mx-auto max-w-[1000px] px-6 pt-10">
         <div className="flex items-center justify-between gap-4">
           <Link href={href(lang, "/events")} className="text-sm font-bold text-brand-dark">← {d.event.back}</Link>
-          {showCard ? <LivePill lang={lang} /> : null}
+          {showCard ? <LiveRefresh /> : null}
         </div>
         <div className="mt-16"><EventTicket e={e} lang={lang} dict={ticket} size="hero" /></div>
         {e.participants || e.url ? (

@@ -17,6 +17,7 @@ export const PERSONAS: { handle: string; label: L; role: string }[] = [
   { handle: "anuujin", label: { mn: "Гишүүн (Ануужин)", en: "Member (Anuujin)" }, role: "member" },
   { handle: "temuulen", label: { mn: "Зочин (Тэмүүлэн)", en: "Guest (Temuulen)" }, role: "guest" },
   { handle: "saraa", label: { mn: "Төгсөгч (Сараа)", en: "Alumni (Saraa)" }, role: "alumni" },
+  { handle: "bayar", label: { mn: "Зочин (Баяр, МУИС)", en: "Guest (Bayar, NUM)" }, role: "guest" },
   { handle: "new-guest", label: { mn: "Шинэ зочин (бүртгэл дуусаагүй)", en: "New guest (not onboarded)" }, role: "guest" },
 ];
 
@@ -220,6 +221,7 @@ export function buildSeed(now: Date): Db {
   const anuujin = mkProfile({ handle: "anuujin", name: { mn: "Болдын Ануужин", en: "Anuujin Bold" }, status: "member", grad: 2027, createdAgo: 300 * DAY, seenAgo: HOUR, visibility: "public" });
   const temuulen = mkProfile({ handle: "temuulen", name: { mn: "Доржийн Тэмүүлэн", en: "Temuulen Dorj" }, status: "guest", grad: 2028, createdAgo: 40 * DAY, seenAgo: 3 * HOUR, visibility: "members" });
   const saraa = mkProfile({ handle: "saraa", name: { mn: "Ганбаатарын Сараа", en: "Saraa Ganbaatar" }, status: "alumni", grad: 2024, createdAgo: 200 * DAY, seenAgo: 2 * DAY, locale: "en", visibility: "public" });
+  const bayar = mkProfile({ handle: "bayar", name: { mn: "Лхагвын Баяр", en: "Bayar Lkhagva" }, status: "guest", grad: 2028, createdAgo: 12 * DAY, seenAgo: 6 * HOUR, visibility: "members" });
   mkProfile({ handle: "new-guest", name: { mn: "", en: "" }, status: "guest", grad: null, onboarded: false, bare: true, createdAgo: 20 * MIN, seenAgo: 5 * MIN, visibility: "members" });
 
   const academic = (p: Profile, school: string, school_id: SchoolId, major: string, major_track: MajorTrack, program_index: string | null = null) =>
@@ -228,6 +230,7 @@ export function buildSeed(now: Date): Db {
   academic(organizer, "МУИС · ШУС", "num", "Мэдээллийн технологи", "it", "D 061304");
   academic(anuujin, "МУИС · ШУС", "num", "Программ хангамж", "software", "D 061302");
   academic(temuulen, "ШУТИС", "must", "Мэдээллийн технологи", "it");
+  academic(bayar, "МУИС · ШУС", "num", "Программ хангамж", "software", "D 061302");
   academic(saraa, "МУИС · ШУС", "num", "Компьютерийн ухаан", "cs", "D 061301");
 
   const members: Profile[] = [];
@@ -236,7 +239,7 @@ export function buildSeed(now: Date): Db {
     members.push(mkProfile({ ...n, status: "member", grad: int(2026, 2029), createdAgo: int(10, 400) * DAY, seenAgo: seen(), announcements: announcementsFor() }));
   }
   const guests: Profile[] = [];
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < 69; i++) {
     const n = genName();
     guests.push(mkProfile({ ...n, status: "guest", grad: i === 0 ? 2030 : int(2026, 2030), createdAgo: int(3, 300) * DAY, seenAgo: seen(), announcements: announcementsFor() }));
   }
@@ -762,7 +765,7 @@ function addRecentPastEvents(db: Db, nowMs: number) {
   ];
   const persona = (handle: string) => db.profiles.find((p) => p.handle === handle)?.id;
   const staff = new Set(db.staff_roles.map((r) => r.profile_id));
-  const pool = db.profiles.filter((p) => p.clerk_user_id && p.onboarded_at && !p.deleted_at && !staff.has(p.id) && p.handle !== "new-guest" && p.handle !== "temuulen" && p.handle !== "anuujin" && p.handle !== "saraa");
+  const pool = db.profiles.filter((p) => p.clerk_user_id && p.onboarded_at && !p.deleted_at && !staff.has(p.id) && p.handle !== "new-guest" && p.handle !== "temuulen" && p.handle !== "bayar" && p.handle !== "anuujin" && p.handle !== "saraa");
   defs.forEach((d, i) => {
     const start = nowMs - d.daysAgo * DAY + 11 * HOUR; // 19:00 Ulaanbaatar
     const event: EventRow = {

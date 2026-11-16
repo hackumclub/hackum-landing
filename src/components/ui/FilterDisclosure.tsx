@@ -7,7 +7,7 @@ import { cx } from "./cx";
  * Wraps a screen's filter chips so they fold behind one "Filters" button on phones (three rows of chips pushed the
  * data off-screen) and stay fully visible from tablet width up. Opens by itself when a filter is already active.
  */
-export default function FilterDisclosure({ label, activeCount, children, className }: { label: string; activeCount: number; children: ReactNode; className?: string }) {
+export default function FilterDisclosure({ label, activeCount, children, className, contentClassName }: { label: string; activeCount: number; children: ReactNode; className?: string; contentClassName?: string }) {
   const [open, setOpen] = useState(activeCount > 0);
   const id = useId();
   return (
@@ -21,7 +21,7 @@ export default function FilterDisclosure({ label, activeCount, children, classNa
         {activeCount > 0 && <span className="tnum grid min-w-5 place-items-center rounded-full bg-accent px-1.5 text-xs text-on-accent">{activeCount}</span>}
         <ChevronDown aria-hidden="true" size={16} className={cx("transition-transform duration-150", open && "rotate-180")} />
       </button>
-      <div id={id} className={cx(open ? "grid" : "hidden", "gap-3 md:grid")}>{children}</div>
+      <div id={id} className={cx(open ? "grid" : "hidden", contentClassName ?? "gap-3 md:grid")}>{children}</div>
     </div>
   );
 }

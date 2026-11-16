@@ -202,7 +202,6 @@ export const en: Dict = {
       viewSite: "Public site", switchLang: "Монгол", switchLangLabel: "Монгол хэл рүү шилжих",
     },
     theme: { group: "Colour theme", system: "Match system", light: "Light", dark: "Dark" },
-    live: { live: "Live", reconnecting: "Reconnecting…" },
     persona: { viewingAs: "View as", signedOut: "Signed out" },
     sample: { title: "Demo data", text: "This is a local demo database on your machine. Changes don’t affect real registrations and reset when the server restarts." },
     dashboard: {
@@ -238,7 +237,7 @@ export const en: Dict = {
     kinds: { hackathon: "Hackathon", workshop: "Workshop", meetup: "Meetup", competition: "Competition", knowledge_day: "Knowledge Day", outing: "Outing", other: "Other" },
   },
   status: {
-    draft: "Draft", published: "Published", live: "Live now", cancelled: "Cancelled", completed: "Completed", archived: "Archived",
+    draft: "Draft", published: "Published", live: "Happening now", cancelled: "Cancelled", completed: "Completed", archived: "Archived",
     applied: "Applied", going: "Going", waitlisted: "Waitlisted", rejected: "Rejected", attended: "Attended", no_show: "No-show",
     guest: "Guest", member: "Member", alumni: "Alumni", pending: "Pending", approved: "Approved", withdrawn: "Withdrawn",
   },

@@ -3,18 +3,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { CalendarDays, ExternalLink, History, LayoutDashboard, Mail, Menu, Palette, Settings, Users, type LucideIcon } from "lucide-react";
+import { ExternalLink, Menu, Palette, type LucideIcon } from "lucide-react";
 import type { Dict } from "@/i18n";
 import { switchLocale, type Locale } from "@/i18n/config";
 import { adminNav, type AdminNavKey } from "@/lib/admin/nav";
 import IconButton from "@/components/ui/IconButton";
 import Drawer from "@/components/ui/Drawer";
+import { icons } from "@/components/ui/icons";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import Sticker from "@/components/Sticker";
 import { cx } from "@/components/ui/cx";
 
 const ICON: Record<AdminNavKey, LucideIcon> = {
-  dashboard: LayoutDashboard, events: CalendarDays, members: Users, comms: Mail, settings: Settings, audit: History, kit: Palette,
+  dashboard: icons.dashboard, events: icons.event, members: icons.member, comms: icons.comms, settings: icons.settings, audit: icons.audit, kit: Palette,
 };
 
 type T = Dict["admin"];
@@ -31,7 +32,7 @@ function SideNav({ lang, t, onNavigate }: { lang: Locale; t: T; onNavigate?: () 
           const active = key === "dashboard" ? path === href : path === href || path.startsWith(`${href}/`);
           const inner = (
             <>
-              <Icon aria-hidden="true" size={18} />
+              <Icon aria-hidden="true" size={20} />
               <span className="flex-1">{t.nav[key]}</span>
               {!ready && <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold text-[var(--ops-on-chrome)]">{t.nav.soon}</span>}
             </>
