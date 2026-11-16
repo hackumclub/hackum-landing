@@ -200,3 +200,22 @@
 
 ## Parallelism
 Tasks 2 → 3 → 4 are sequential (shared interfaces). Task 5 needs 2–4. Tasks 6, 8, 9, 11 can run in parallel agents after 5; 7 after 4 and 6 (bell); 10 after 2 and 9; 12 after 4 and 9; 13 last. Shared files (`AdminShell`, `DataTable`, i18n areas) are owned by Tasks 7, 4 and per-area files respectively; agents must not edit another task's owned file without a message to the owner.
+
+---
+
+## Audit follow-ups: Tasks 14–21
+
+A walkthrough of every flow as seven kinds of user (signed-out, new guest, other-school guest, NUM member, alumni, sub-leader, club leader) produced 31 findings (4 P0). The findings, flow maps, route inventory and the full task text (steps, files, tests) are in **`docs/superpowers/audits/2026-11-16-user-flows.md`** (§5 = Tasks 14–21; they are part of this plan). `tests/e2e/nav-crawl.spec.ts` guards navigation: each fixed finding's `test.fixme` must be turned back on by the task that fixes it.
+
+### Work split (disjoint file ownership; each agent runs only its own e2e specs plus `nav-crawl`)
+| Agent | Tasks and findings | Owns |
+|---|---|---|
+| A: sign-in, join, public chrome | 5, 14, 10 (public part), F-06, F-12, F-29 | `src/app/[lang]/(site)/{sign-in,join,code-of-conduct}`, `src/components/auth/*`, `Header.tsx`, `Footer.tsx`, `(site)/layout.tsx`, `public/RsvpPanel.tsx`, `src/lib/server/auth-actions.ts`, `i18n/areas/public.ts` |
+| B: guard, shells, notifications | 15, 7, 6, 17, 20 (F-09, F-19, F-21 shells), F-18 | `src/proxy.ts`, `src/lib/server/session.ts`, `src/lib/admin/nav.ts`, `AdminShell.tsx`, `MeShell.tsx`, `components/shell/*`, `components/notifications/*`, `/me/notifications`, `/admin/inbox`, `ThemeToggle.tsx`, layouts, `i18n.ts` locale switch, `StaffManager.tsx`, `admin/audit/page.tsx` |
+| C: profile, member events | 8, 16, 10 (member part), 18 (member copy: F-13, F-20, F-23), F-22, F-26, F-27 | `/me/profile`, `/me/settings`, `/me/membership`, `/me/events/**`, `components/me/*` (except shell), `components/profile/*`, `/api/avatar`, `src/lib/me/*`, `i18n/areas/me.ts`, `src/lib/site-url.ts` |
+| D1: forms hub, admin events | 9, 10 (admin part), 18 (events: F-15, F-30, F-31), F-24 | `/admin/forms/**`, `components/admin/forms/*`, `components/admin/events/{EventForm,StatusActions,EventPreview,EventHeader}.tsx`, `src/lib/events/*`, `i18n/areas/admin-events.ts`, public event page fallback copy (`en.ts`/`mn.ts` line ~115 only) |
+| D2: analytics, dashboard | 11, F-17 | `/admin/analytics`, `components/charts/*`, `components/admin/Dashboard.tsx`, `/admin/page.tsx` |
+| G (second wave): admin lists | 12, 19 (F-16, F-25, F-28), 13 | members, registrations, comms, audit table, events list |
+| Deferred | 21 (event-day tooling, message attendees, per-registration actions) | needs its own spec: it changes the rule layer |
+
+Task 1 is done; Tasks 2–4 done (domain, NUM picker, shared UI).
