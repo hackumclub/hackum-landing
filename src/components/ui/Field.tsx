@@ -5,8 +5,8 @@ import { cx } from "./cx";
 export type FieldControlProps = { id: string; "aria-describedby"?: string; "aria-invalid"?: true; required?: boolean };
 
 /** Label + control + hint/error, wired with ids so the hint and error are announced with the control. */
-export default function Field({ label, hint, error, required, className, children }: {
-  label: ReactNode; hint?: ReactNode; error?: ReactNode; required?: boolean; className?: string;
+export default function Field({ label, labelAction, hint, error, required, className, children }: {
+  label: ReactNode; labelAction?: ReactNode; hint?: ReactNode; error?: ReactNode; required?: boolean; className?: string;
   children: (control: FieldControlProps) => ReactNode;
 }) {
   const id = useId();
@@ -14,11 +14,15 @@ export default function Field({ label, hint, error, required, className, childre
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
   return (
-    <div className={cx("grid gap-1.5", className)}>
-      <label htmlFor={id} className="text-sm font-semibold text-fg">
-        {label}
-        {required && <span aria-hidden="true" className="text-danger-fg"> *</span>}
-      </label>
+    <div className={cx("grid content-start gap-1.5", className)}>
+      {/* Fixed-height label row so sibling fields line up whether or not one has an action. */}
+      <div className="flex min-h-6 items-center justify-between gap-2">
+        <label htmlFor={id} className="text-sm font-semibold text-fg">
+          {label}
+          {required && <span aria-hidden="true" className="text-danger-fg"> *</span>}
+        </label>
+        {labelAction}
+      </div>
       {children({ id, "aria-describedby": describedBy, "aria-invalid": error ? true : undefined, required })}
       {error && <p id={errorId} className="text-sm font-semibold text-danger-fg">{error}</p>}
       {hint && <p id={hintId} className="text-sm text-fg-muted">{hint}</p>}

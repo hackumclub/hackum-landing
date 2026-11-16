@@ -21,3 +21,6 @@ export const switchLocale = (pathname: string, to: Locale) => {
 
 /** Replace {name} placeholders. Kept as plain strings so dictionaries stay serialisable to client components. */
 export const fill = (s: string, vars: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? `{${k}}`));
+
+/** Content with the spec's fallback rule: an empty translation shows the Mongolian source instead of a blank. */
+export const tf = (v: L, lang: Locale) => (v[lang]?.trim() ? v[lang] : v.mn);
