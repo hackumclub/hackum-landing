@@ -258,6 +258,125 @@ test.describe("hackathon application", () => {
   });
 });
 
+test.describe("app-like polish", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("Home: the next event is a ticket with a countdown and quick actions (calendar, directions, cancel)", async ({ page }) => {
+    await signInAs(page, "anuujin");
+    await page.goto(HOME());
+    const ticket = page.getByRole("article", { name: "Your next event" });
+    test.skip((await ticket.count()) === 0, "needs an upcoming RSVP in the seed");
+    await expect(ticket.getByRole("link", { name: "Calendar", exact: true })).toHaveAttribute("href", /\/api\/events\/[^/]+\/ics$/);
+    await expect(ticket.getByRole("link", { name: "Directions" })).toHaveAttribute("href", /google\.com\/maps\/search/);
+    await expect(ticket.getByRole("button", { name: "Cancel RSVP" })).toBeVisible();
+    await expect(ticket.getByText(/tomorrow|today|in \d+ (days?|hours?|minutes?)/)).toBeVisible();
+    for (const control of [ticket.getByRole("link", { name: "Calendar", exact: true }), ticket.getByRole("link", { name: "Directions" }), ticket.getByRole("button", { name: "Cancel RSVP" })]) {
+      expect((await control.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+    }
+    const poster = await ticket.locator("img").first().boundingBox();
+    expect(poster?.height ?? 0).toBeGreaterThan(200); // the poster is large, not a thumbnail
+  });
+
+  test("event cards share one poster size on every tab", async ({ page }) => {
+    await signInAs(page, "temuulen");
+    for (const tab of ["upcoming", "going"]) {
+      await page.goto(`/en/me/events?tab=${tab}`);
+      await page.locator("main h1").first().waitFor();
+      const heights = await page.locator("article").evaluateAll((els) => els.map((el) => Math.round(el.firstElementChild?.getBoundingClientRect().height ?? 0)));
+      if (heights.length > 1) expect(new Set(heights).size, `${tab}: ${heights.join(",")}`).toBe(1);
+    }
+  });
+
+  test("apply flow: step indicator, sticky Back/Next bar, tab bar steps aside, review summarises the answers", async ({ page }) => {
+    await signInAs(page, "dev-organizer");
+    await resetApplication(page);
+    const tabs = page.locator('nav[aria-label="Main menu"]:visible');
+    await expect(tabs).toHaveCount(0); // the flow owns the bottom of the screen
+    await expect(page.getByRole("list", { name: "Application progress" }).getByRole("listitem")).toHaveCount(3);
+    await expect(page.getByText("Step 1 of 3")).toBeVisible();
+    const next = page.getByRole("button", { name: "Continue" });
+    const box = await next.boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    expect((box?.y ?? 0) + (box?.height ?? 0)).toBeGreaterThan(844 - 100); // pinned to the bottom edge
+    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeGreaterThan(0);
+    await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
+
+    await page.getByLabel(/Your main skills/).fill("Go, Postgres");
+    await page.getByLabel(/Hackathon experience/).selectOption({ label: "Intermediate" });
+    await next.click();
+    await expect(page.getByText("Step 2 of 3")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Back" })).toBeVisible();
+    // `force`: in `next dev` the round dev-tools badge sits over the bottom-left corner and would swallow the click (not present in production).
+    await page.getByRole("button", { name: "Back" }).dispatchEvent("click");
+    await expect(page.getByLabel(/Your main skills/)).toHaveValue("Go, Postgres"); // going back keeps the answers
+    await next.click();
+    await page.getByText("On my own").click();
+    await next.click();
+    await expect(page.getByRole("heading", { name: "Review and submit" })).toBeVisible();
+    await expect(page.getByText("Go, Postgres")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Edit: Questions" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Submit application" })).toBeVisible();
+  });
+
+  test("settings are grouped into icon cards with 44px switches", async ({ page }) => {
+    await signInAs(page, "temuulen");
+    await page.goto("/en/me/settings");
+    for (const name of ["Notifications", "Language", "Privacy", "Calendar feed", "Theme", "Install the app"]) await expect(page.getByRole("heading", { name, level: 2 })).toBeVisible();
+    for (const sw of await page.getByRole("switch").all()) {
+      const row = await sw.locator("xpath=ancestor::label").boundingBox();
+      expect(row?.height ?? 0).toBeGreaterThanOrEqual(44);
+    }
+  });
+
+  test("empty and blocked states pair a sticker with one action", async ({ page }) => {
+    await signInAs(page, "temuulen");
+    await page.goto("/en/me/events?tab=past");
+    const empty = page.locator("main img").last(); // the Manul
+    await expect(empty).toBeVisible();
+    await expect(page.getByRole("link", { name: "See upcoming events" })).toHaveCount(1);
+    await page.goto("/en/me/events/alumni-night/apply");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Event page" })).toBeVisible();
+  });
+});
+
+test.describe("sign-in picker", () => {
+  test("reads as who you are signing in as: initials, role chip, what you can do, where you land", async ({ page }) => {
+    await signInAs(page, null);
+    await page.goto("/en/sign-in");
+    const member = page.locator("li", { hasText: /Member \(Anuujin\)/ });
+    await expect(member.getByText("Signing in as")).toBeVisible();
+    await expect(member.getByText("Member", { exact: true })).toBeVisible();
+    await expect(member.getByText("What you can do")).toBeVisible();
+    await expect(member.getByText("Opens your member app")).toBeVisible();
+    await expect(member.getByText("AB", { exact: true })).toBeVisible();
+    await expect(page.locator("li", { hasText: /Dev admin/ }).getByText("Opens the backoffice")).toBeVisible();
+    const ability = await member.locator("ul li").count();
+    expect(ability).toBeGreaterThanOrEqual(3);
+  });
+});
+
+test.describe("public RSVP panel", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+  test("big glossy primary button, fact chips with icons, seats bar with count", async ({ page }) => {
+    await signInAs(page, "temuulen");
+    await page.goto("/en/events/alumni-night");
+    await page.waitForLoadState("networkidle");
+    const go = page.getByRole("button", { name: "I’m going" });
+    await expect(go).toBeVisible();
+    expect((await go.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(56);
+    expect(await go.evaluate((el) => el.classList.contains("btn-primary"))).toBe(true);
+    const facts = page.getByRole("region", { name: "Event details" });
+    await expect(facts.locator("svg")).not.toHaveCount(0);
+    await expect(facts.getByText("When")).toBeVisible();
+    await signInAs(page, "anuujin");
+    await page.goto("/en/events/knowledge-day-rag");
+    await expect(page.getByRole("heading", { name: "Registration" })).toBeVisible();
+    await expect(page.getByText(/\d+ of \d+ seats left/)).toBeVisible();
+    await expect(page.locator("section", { hasText: "Registration" }).getByText(/^\d+\/\d+$/)).toBeVisible();
+  });
+});
+
 test.describe("membership", () => {
   test("a guest applies (or sees the status of an application already in)", async ({ page }) => {
     await signInAs(page, "temuulen");
@@ -331,13 +450,13 @@ test.describe("profile and settings", () => {
 for (const width of [360, 768, 1280]) {
   test.describe(`layout at ${width}px`, () => {
     test.use({ viewport: { width, height: 800 } });
-    const paths = ["/en/me", "/mn/me", "/en/me/events", "/en/me/events?tab=past", "/en/me/profile", "/en/me/settings", "/en/me/membership", "/en/me/events/devhack-2027/apply"];
+    const paths = ["/en/me", "/mn/me", "/en/me/events", "/en/me/events?tab=past", "/en/me/profile", "/en/me/settings", "/en/me/membership", "/en/me/events/devhack-2027/apply", "/en/sign-in", "/mn/sign-in", "/en/events/knowledge-day-rag"];
 
     test("no horizontal scroll on any screen", async ({ page }) => {
       await signInAs(page, "anuujin");
       for (const p of paths) {
         await page.goto(p);
-        await page.locator("main h1").first().waitFor();
+        await page.locator("h1").first().waitFor();
         await page.waitForLoadState("networkidle");
         const sw = await page.evaluate(() => document.documentElement.scrollWidth);
         expect(sw, `${p} overflows at ${width}px`).toBeLessThanOrEqual(width);
@@ -368,13 +487,14 @@ for (const scheme of ["light", "dark"] as const) {
     const pages: [string, string][] = [
       ["anuujin", "/en/me"], ["temuulen", "/mn/me"], ["temuulen", "/en/me/events"], ["anuujin", "/en/me/events?tab=going"],
       ["anuujin", "/en/me/profile"], ["temuulen", "/en/me/settings"], ["temuulen", "/en/me/membership"], ["dev-organizer", "/en/me/events/devhack-2027/apply"],
+      ["", "/en/sign-in"], ["temuulen", "/en/events/alumni-night"], ["anuujin", "/en/events/knowledge-day-rag"],
     ];
     for (const [who, path] of pages) {
       test(`no WCAG 2.2 A/AA violations on ${path} as ${who}`, async ({ page }) => {
         await page.emulateMedia({ colorScheme: scheme });
         await signInAs(page, who);
         await page.goto(path);
-        await page.locator("main h1").first().waitFor();
+        await page.locator("h1").first().waitFor();
         await page.waitForLoadState("networkidle");
         const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).exclude("nextjs-portal").analyze();
         expect(violations.map((v) => `${v.id}: ${v.nodes.length} × ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);

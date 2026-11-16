@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Languages, Search } from "lucide-react";
+import { Languages, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { fill, href, tf, type L, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
@@ -9,13 +9,16 @@ import { plural } from "@/i18n/plural";
 import type { EventKind, RegMode } from "@/lib/mockdb/types";
 import type { EventStatus, Status } from "@/lib/status";
 import { eventWhen } from "@/lib/events/format";
+import { PRESET_TEST, type Preset } from "@/lib/events/list-presets";
 import Button, { ButtonLink } from "@/components/ui/Button";
 import CapacityBar from "@/components/ui/CapacityBar";
 import DataTable, { type Column } from "@/components/ui/DataTable";
 import EmptyState from "@/components/ui/EmptyState";
 import FilterBar from "@/components/ui/FilterBar";
+import FilterDisclosure from "@/components/ui/FilterDisclosure";
 import { Input } from "@/components/ui/Field";
 import StatusPill from "@/components/ui/StatusPill";
+import Poster from "./Poster";
 import SegmentTabs from "./SegmentTabs";
 
 export type ListRow = {
@@ -35,23 +38,27 @@ export type ListRow = {
   accepted: number;
   legacy: number | null;
   needsEn: boolean;
+  cover: string | null;
+  /** Title is missing in English (the dashboard's "missing English text" count). */
+  noEnTitle: boolean;
 };
 
 const STATUS_TABS: EventStatus[] = ["draft", "published", "completed", "cancelled", "archived"];
 const norm = (s: string) => s.toLowerCase().trim();
 
-export default function EventsList({ rows, lang }: { rows: ListRow[]; lang: Locale }) {
+export default function EventsList({ rows, lang, preset: initialPreset = null }: { rows: ListRow[]; lang: Locale; preset?: Preset | null }) {
   const d = getDictionary(lang);
   const t = copy[lang].list;
   const [tab, setTab] = useState<EventStatus | "all">("all");
   const [kinds, setKinds] = useState<string[]>([]);
   const [q, setQ] = useState("");
+  const [preset, setPreset] = useState<Preset | null>(initialPreset);
 
   const inTab = (r: ListRow) => tab === "all" || r.stored === tab;
   const inSearch = useMemo(() => {
     const needle = norm(q);
-    return (r: ListRow) => !needle || [r.title.mn, r.title.en, r.slug].some((s) => norm(s).includes(needle));
-  }, [q]);
+    return (r: ListRow) => (!preset || PRESET_TEST[preset](r)) && (!needle || [r.title.mn, r.title.en, r.slug].some((s) => norm(s).includes(needle)));
+  }, [q, preset]);
 
   const tabCounts = useMemo(() => {
     const c = Object.fromEntries(STATUS_TABS.map((s) => [s, 0])) as Record<EventStatus, number>;
@@ -65,8 +72,8 @@ export default function EventsList({ rows, lang }: { rows: ListRow[]; lang: Loca
   }));
 
   const visible = rows.filter((r) => inTab(r) && inSearch(r) && (kinds.length === 0 || kinds.includes(r.kind)));
-  const filtered = tab !== "all" || kinds.length > 0 || q.trim() !== "";
-  const clear = () => { setTab("all"); setKinds([]); setQ(""); };
+  const filtered = tab !== "all" || kinds.length > 0 || q.trim() !== "" || preset !== null;
+  const clear = () => { setTab("all"); setKinds([]); setQ(""); setPreset(null); };
 
   if (rows.length === 0) {
     return (
@@ -88,7 +95,9 @@ export default function EventsList({ rows, lang }: { rows: ListRow[]; lang: Loca
       cell: (r) => {
         const title = tf(r.title, lang);
         return (
-          <div className="grid min-w-0 gap-0.5">
+          <div className="flex min-w-0 items-center gap-3">
+            <Poster path={r.cover} sizes="48px" className="aspect-[4/5] w-10 md:w-11" />
+            <div className="grid min-w-0 gap-0.5">
             <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <Link href={href(lang, `/admin/events/${r.id}`)} className="min-w-0 font-bold text-fg hover:underline" aria-label={`${t.open}: ${title}`}>{title}</Link>
               {r.needsEn && (
@@ -99,6 +108,7 @@ export default function EventsList({ rows, lang }: { rows: ListRow[]; lang: Loca
             </span>
             <span className="text-xs text-fg-muted">{d.admin.kinds[r.kind]}<span className="md:hidden"> · {eventWhen({ starts_at: r.startsAt, approximate_date: r.approximate }, lang)}</span></span>
             <span className="text-xs font-semibold text-fg-muted sm:hidden">{registrationText(r)}</span>
+            </div>
           </div>
         );
       },
@@ -134,7 +144,19 @@ export default function EventsList({ rows, lang }: { rows: ListRow[]; lang: Loca
           <Search aria-hidden="true" size={16} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-fg-muted" />
           <Input id="events-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.searchPlaceholder} className="pl-9" />
         </div>
-        <FilterBar label={t.kindLabel} options={kindOptions} value={kinds} onChange={setKinds} />
+        <FilterDisclosure label={t.filters} activeCount={kinds.length + (preset ? 1 : 0)} className="md:contents">
+          <div className="flex flex-wrap items-center gap-2">
+          {preset && (
+            <button
+              type="button" onClick={() => setPreset(null)} aria-label={fill(t.presetClear, { name: t.presets[preset] })}
+              className="inline-flex min-h-9 w-fit cursor-pointer items-center gap-1.5 rounded-full border border-accent bg-accent-soft px-3 text-sm font-semibold text-accent-fg"
+            >
+              {t.presets[preset]}<X aria-hidden="true" size={14} />
+            </button>
+          )}
+          <FilterBar label={t.kindLabel} options={kindOptions} value={kinds} onChange={setKinds} />
+          </div>
+        </FilterDisclosure>
       </div>
       <p role="status" className="text-sm font-semibold text-fg-muted">{plural(lang, visible.length, t.results)}</p>
       <DataTable

@@ -10,7 +10,8 @@ import { formatUb } from "@/lib/time";
 import { ButtonLink } from "@/components/ui/Button";
 import StatusPill from "@/components/ui/StatusPill";
 import BadgeGrid from "@/components/me/BadgeGrid";
-import { Card, PageHeader, PageSkeleton, Section } from "@/components/me/parts";
+import EmptyState from "@/components/ui/EmptyState";
+import { PageHeader, PageSkeleton, Section } from "@/components/me/parts";
 import { meContext } from "@/components/me/context";
 
 type Props = { params: Promise<{ lang: string }> };
@@ -56,7 +57,7 @@ async function Body({ params }: Props) {
 
       <Section title={t.events} id="events">
         {v.attended.length === 0 ? (
-          <Card className="grid justify-items-start gap-2"><p className="text-sm text-fg-muted">{t.eventsEmpty}</p><ButtonLink href={`/${lang}/me/events`} size="lg" variant="secondary">{t.eventsEmptyAction}</ButtonLink></Card>
+          <EmptyState sticker="sleepy" title={t.eventsEmptyTitle} line={t.eventsEmpty} action={<ButtonLink href={`/${lang}/me/events`} size="lg">{t.eventsEmptyAction}</ButtonLink>} />
         ) : (
           <ul className="grid gap-2">
             {v.attended.map((e) => (

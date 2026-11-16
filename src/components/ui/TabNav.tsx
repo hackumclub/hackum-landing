@@ -7,7 +7,7 @@ import { cx } from "./cx";
 export default function TabNav({ label, tabs }: { label: string; tabs: { href: string; label: string; count?: number }[] }) {
   const path = usePathname();
   return (
-    <nav aria-label={label} className="-mx-1 overflow-x-auto border-b border-line">
+    <nav aria-label={label} className="-mx-1 overflow-x-auto border-b border-line max-md:[mask-image:linear-gradient(90deg,#000_calc(100%-36px),transparent)]">
       <ul className="flex gap-1 px-1">
         {tabs.map((t) => {
           const active = path === t.href;

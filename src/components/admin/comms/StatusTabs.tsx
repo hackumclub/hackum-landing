@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { cx } from "@/components/ui/cx";
+import ScrollRow from "@/components/admin/members/ScrollRow";
 
 export type StatusTab = { value: string; label: string; count: number; href: string };
 
 /** Status tabs as plain links (every tab is a URL: deep links from the dashboard, Back and reload all work). */
 export default function StatusTabs({ label, tabs, active }: { label: string; tabs: StatusTab[]; active: string }) {
   return (
-    <nav aria-label={label} className="-mx-1 overflow-x-auto border-b border-line">
+    <nav aria-label={label} className="min-w-0 border-b border-line">
+      <ScrollRow className="-mx-1">
       <ul className="flex gap-1 px-1">
         {tabs.map((t) => (
           <li key={t.value}>
@@ -18,6 +20,7 @@ export default function StatusTabs({ label, tabs, active }: { label: string; tab
           </li>
         ))}
       </ul>
+      </ScrollRow>
     </nav>
   );
 }

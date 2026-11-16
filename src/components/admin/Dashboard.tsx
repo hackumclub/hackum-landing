@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { AlertTriangle, ImageOff, Inbox, Languages, UserPlus, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ChevronRight, ImageOff, Inbox, Languages, UserPlus, type LucideIcon } from "lucide-react";
 import type { Dict } from "@/i18n";
 import { fill, tf, type Locale } from "@/i18n/config";
 import { plural } from "@/i18n/plural";
 import { formatUb } from "@/lib/time";
 import { kpiDelta, type AttentionKind, type Dashboard as Data, type UpcomingEvent } from "@/lib/admin/dashboard";
-import { isAdminRouteReady } from "@/lib/admin/nav";
+import { isAdminRouteReady, type AdminNavKey } from "@/lib/admin/nav";
 import KpiCard, { type Delta } from "@/components/ui/KpiCard";
 import StatusPill from "@/components/ui/StatusPill";
 import CapacityBar from "@/components/ui/CapacityBar";
@@ -28,6 +28,11 @@ const ATTENTION_ICON: Record<AttentionKind, LucideIcon> = {
   failed_emails: AlertTriangle, pending_applications: Inbox, pending_members: UserPlus, missing_cover: ImageOff, needs_en: Languages,
 };
 
+/** Which admin section fixes each kind of item: a row only becomes a link when that section exists. */
+const ATTENTION_SECTION: Record<AttentionKind, AdminNavKey> = {
+  failed_emails: "comms", pending_applications: "events", pending_members: "members", missing_cover: "events", needs_en: "events",
+};
+
 function SectionCard({ id, title, action, className, children }: { id: string; title: string; action?: React.ReactNode; className?: string; children: React.ReactNode }) {
   return (
     <section aria-labelledby={id} className={`rounded-[var(--radius-md)] border border-line bg-panel ${className ?? ""}`}>
@@ -40,17 +45,17 @@ function SectionCard({ id, title, action, className, children }: { id: string; t
   );
 }
 
-function EventRow({ e, lang, t, d }: { e: UpcomingEvent; lang: Locale; t: T; d: Dict }) {
+function EventRow({ e, lang, t, d, linked }: { e: UpcomingEvent; lang: Locale; t: T; d: Dict; linked: boolean }) {
   const title = tf(e.title, lang);
-  return (
-    <li className="flex gap-3 border-t border-line px-4 py-3 first:border-t-0">
-      <time dateTime={e.startsAt.toISOString()} className="grid h-14 w-16 shrink-0 content-center rounded-[var(--radius-sm)] bg-panel-2 text-center leading-tight">
-        <span className="text-xs font-semibold whitespace-nowrap text-fg-muted">{formatUb(e.startsAt, lang, { month: "short" })}</span>
+  const body = (
+    <>
+      <time dateTime={e.startsAt.toISOString()} className="grid h-14 w-16 shrink-0 content-center rounded-[var(--radius-sm)] bg-accent-soft text-center leading-tight">
+        <span className="text-xs font-semibold whitespace-nowrap text-accent-fg">{formatUb(e.startsAt, lang, { month: "short" })}</span>
         <span className="tnum font-display text-xl font-bold text-fg">{formatUb(e.startsAt, lang, { day: "numeric" })}</span>
       </time>
       <div className="grid min-w-0 flex-1 grid-cols-1 gap-1.5">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <p className="min-w-0 truncate font-semibold text-fg" title={title}>{title}</p>
+          <p className="min-w-0 font-semibold text-fg [overflow-wrap:anywhere]">{title}</p>
           <StatusPill status={e.status} label={d.status[e.status]} />
         </div>
         <p className="text-sm text-fg-muted">
@@ -67,6 +72,18 @@ function EventRow({ e, lang, t, d }: { e: UpcomingEvent; lang: Locale; t: T; d: 
           />
         )}
       </div>
+    </>
+  );
+  return (
+    <li className="border-t border-line first:border-t-0">
+      {linked ? (
+        <Link href={`/${lang}/admin/events/${e.id}`} className="group flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-panel-2">
+          {body}
+          <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-fg-muted transition-transform duration-150 group-hover:translate-x-0.5" />
+        </Link>
+      ) : (
+        <div className="flex gap-3 px-4 py-3">{body}</div>
+      )}
     </li>
   );
 }
@@ -97,7 +114,7 @@ export default function Dashboard({ data, lang, d }: { data: Data; lang: Locale;
                 action={eventsReady ? <ButtonLink href={`/${lang}/admin/events/new`}>{t.createEvent}</ButtonLink> : undefined} />
             </div>
           ) : (
-            <ul>{data.upcoming.map((e) => <EventRow key={e.id} e={e} lang={lang} t={t} d={d} />)}</ul>
+            <ul>{data.upcoming.map((e) => <EventRow key={e.id} e={e} lang={lang} t={t} d={d} linked={eventsReady} />)}</ul>
           )}
         </SectionCard>
 
@@ -113,12 +130,23 @@ export default function Dashboard({ data, lang, d }: { data: Data; lang: Locale;
               {data.attention.map((a) => {
                 const Icon = ATTENTION_ICON[a.kind];
                 const urgent = a.kind === "failed_emails";
+                const label = plural(lang, a.count, t.attentionItems[a.kind]);
+                const chip = (
+                  <span aria-hidden="true" className={urgent ? "grid size-9 shrink-0 place-items-center rounded-full bg-danger-soft text-danger-fg" : "grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent-fg"}>
+                    <Icon size={16} />
+                  </span>
+                );
                 return (
-                  <li key={a.kind} className="flex min-h-12 items-center gap-3 border-t border-line px-4 py-2.5 first:border-t-0">
-                    <span aria-hidden="true" className={urgent ? "grid size-8 place-items-center rounded-full bg-danger-soft text-danger-fg" : "grid size-8 place-items-center rounded-full bg-neutral-soft text-fg"}>
-                      <Icon size={16} />
-                    </span>
-                    <span className="text-sm text-fg">{plural(lang, a.count, t.attentionItems[a.kind])}</span>
+                  <li key={a.kind} className="border-t border-line first:border-t-0">
+                    {isAdminRouteReady(lang, ATTENTION_SECTION[a.kind]) ? (
+                      <Link href={a.href} className="group flex min-h-14 items-center gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-panel-2">
+                        {chip}
+                        <span className="flex-1 text-sm font-semibold text-fg">{label}</span>
+                        <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-fg-muted transition-transform duration-150 group-hover:translate-x-0.5" />
+                      </Link>
+                    ) : (
+                      <div className="flex min-h-14 items-center gap-3 px-4 py-2.5">{chip}<span className="flex-1 text-sm text-fg">{label}</span></div>
+                    )}
                   </li>
                 );
               })}

@@ -7,6 +7,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import DataTable, { type Column } from "@/components/ui/DataTable";
 import EmptyState from "@/components/ui/EmptyState";
 import FilterBar from "@/components/ui/FilterBar";
+import FilterDisclosure from "@/components/ui/FilterDisclosure";
 import { Input } from "@/components/ui/Field";
 import StatusPill from "@/components/ui/StatusPill";
 import { fill, tf, type Locale } from "@/i18n/config";
@@ -76,7 +77,7 @@ export default function MembersDirectory({ data, lang, c, common, status }: {
       cell: (m) => (
         <PersonCell name={displayName(m, lang)} sub={`@${m.handle}`}>
           <button type="button" onClick={() => setOpenId(m.id)} aria-label={fill(t.openProfile, { name: displayName(m, lang) })}
-            className="max-w-[16rem] cursor-pointer truncate text-left font-semibold text-fg underline-offset-2 hover:text-accent-fg hover:underline">{displayName(m, lang)}</button>
+            className="max-w-[16rem] min-h-8 cursor-pointer truncate text-left font-semibold text-fg underline-offset-2 hover:text-accent-fg hover:underline max-sm:max-w-[10.5rem]">{displayName(m, lang)}</button>
         </PersonCell>
       ),
     },
@@ -125,40 +126,31 @@ export default function MembersDirectory({ data, lang, c, common, status }: {
       ]} />
 
       <div className="grid gap-3">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <FilterBar label={t.seasonFilter} value={seasonSel} onChange={setSeasonSel} options={data.seasons.map((s) => ({ value: String(s.year), label: String(s.year), count: s.count }))} />
-          <FilterBar label={t.teamFilter} value={teamSel} onChange={setTeamSel} options={data.teams.map((x) => ({ value: x, label: x }))} />
-        </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-full max-w-md">
-            <Search aria-hidden="true" size={16} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-fg-muted" />
-            <Input type="search" aria-label={t.searchLabel} placeholder={t.searchPlaceholder} value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" autoComplete="off" />
+          <div className="relative w-full md:max-w-md md:flex-1">
+            <Search aria-hidden="true" size={16} className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-fg-muted" />
+            <Input type="search" aria-label={t.searchLabel} placeholder={t.searchPlaceholder} value={q} onChange={(e) => setQ(e.target.value)} className="min-h-11 rounded-full pl-10" autoComplete="off" />
           </div>
-          {filtering && <Button variant="ghost" size="sm" icon={<X aria-hidden="true" size={14} />} onClick={clearFilters}>{t.clear}</Button>}
-          <p aria-live="polite" className="tnum ml-auto text-sm font-semibold text-fg-muted">{plural(lang, rows.length, common.results)}</p>
+          <p aria-live="polite" className="tnum text-sm font-semibold text-fg-muted md:ml-auto">{plural(lang, rows.length, common.results)}</p>
         </div>
+        <FilterDisclosure label={t.filtersLabel} activeCount={seasonSel.length + teamSel.length}>
+          <div className="grid gap-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span aria-hidden="true" className="w-14 text-sm font-semibold text-fg-muted">{t.seasonShort}</span>
+              <FilterBar label={t.seasonFilter} value={seasonSel} onChange={setSeasonSel} options={data.seasons.map((s) => ({ value: String(s.year), label: String(s.year), count: s.count }))} />
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span aria-hidden="true" className="w-14 text-sm font-semibold text-fg-muted">{t.teamShort}</span>
+              <FilterBar label={t.teamFilter} value={teamSel} onChange={setTeamSel} options={data.teams.map((x) => ({ value: x, label: x }))} />
+            </div>
+          </div>
+        </FilterDisclosure>
+        {filtering && <Button variant="ghost" size="sm" className="w-fit" icon={<X aria-hidden="true" size={14} />} onClick={clearFilters}>{t.clear}</Button>}
       </div>
 
       <NoticeBanner notice={notice} onDismiss={() => setNotice(null)} dismissLabel={common.dismiss} />
 
-      {picked.length > 0 && (
-        <div role="group" aria-label={t.bulk.group} className="flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] border border-line bg-accent-soft px-3 py-2">
-          <p className="tnum mr-auto text-sm font-bold text-accent-fg">{plural(lang, picked.length, t.bulk.selected)}</p>
-          {BULK.map(({ status: target, key }) => (
-            <ConfirmDialog
-              key={target}
-              trigger={<Button variant="secondary" size="sm" disabled={pending}>{t.bulk[key]}</Button>}
-              title={fill(t.bulk.confirmTitle[target], { n: picked.length })}
-              body={fill(t.bulk.confirmBody[target], { n: picked.length })}
-              confirmLabel={t.bulk[key]}
-              cancelLabel={common.cancel}
-              onConfirm={() => runBulk(target)}
-            />
-          ))}
-          <Button variant="ghost" size="sm" onClick={() => { setSelected([]); setSelectionKey((k) => k + 1); }}>{t.bulk.clear}</Button>
-        </div>
-      )}
-
+      <div className="[&_input[type=checkbox]]:size-5">
       <DataTable<MemberDto>
         key={selectionKey}
         rows={rows}
@@ -169,14 +161,35 @@ export default function MembersDirectory({ data, lang, c, common, status }: {
         selectLabel={t.selectRow}
         selectAllLabel={t.selectAll}
         onSelectionChange={setSelected}
-        empty={<EmptyState sticker="search" title={t.emptyTitle} line={t.emptyLine} action={filtering ? <Button variant="secondary" onClick={clearFilters}>{t.emptyAction}</Button> : undefined} />}
+        empty={<EmptyState sticker="search" title={t.emptyTitle} line={t.emptyLine} action={<Button variant="secondary" onClick={clearFilters}>{t.emptyAction}</Button>} />}
       />
+      </div>
+
+      {picked.length > 0 && (
+        <div role="group" aria-label={t.bulk.group} className="sticky bottom-3 z-20 flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] border border-accent bg-panel px-3 py-2.5 shadow-[var(--shadow-card)]">
+          <p className="tnum mr-auto text-sm font-bold text-accent-fg max-sm:w-full">{plural(lang, picked.length, t.bulk.selected)}</p>
+          {BULK.map(({ status: target, key }) => (
+            <ConfirmDialog
+              key={target}
+              trigger={<Button variant="secondary" disabled={pending}>{t.bulk[key]}</Button>}
+              title={fill(t.bulk.confirmTitle[target], { n: picked.length })}
+              body={fill(t.bulk.confirmBody[target], { n: picked.length })}
+              confirmLabel={t.bulk[key]}
+              cancelLabel={common.cancel}
+              onConfirm={() => runBulk(target)}
+            />
+          ))}
+          <Button variant="ghost" onClick={() => { setSelected([]); setSelectionKey((k) => k + 1); }}>{t.bulk.clear}</Button>
+        </div>
+      )}
 
       <MemberDrawer
         member={data.members.find((m) => m.id === openId) ?? null}
         now={now}
         lang={lang}
         c={{ ...c.drawer, never: t.never }}
+        common={common}
+        bulk={t.bulk}
         status={status}
         onClose={() => setOpenId(null)}
       />

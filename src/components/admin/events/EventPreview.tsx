@@ -6,6 +6,7 @@ import { copy } from "@/i18n/areas/admin-events";
 import type { FormState } from "@/lib/events/admin-form";
 import { formatUb } from "@/lib/time";
 import { buttonClass } from "@/components/ui/Button";
+import Poster from "./Poster";
 
 /** Compact "how it looks publicly" card for the form: date tile, title, tagline, venue, seats. Updates as you type. */
 export default function EventPreview({ lang, state, publicSlug, isDraft }: { lang: Locale; state: FormState; publicSlug: string | null; isDraft: boolean }) {
@@ -17,8 +18,12 @@ export default function EventPreview({ lang, state, publicSlug, isDraft }: { lan
   const seats = state.unlimited ? t.unlimited : state.capacity.trim() ? fill(t.seats, { n: state.capacity.trim() }) : t.unlimited;
   const start = state.starts_at;
   return (
-    <aside aria-labelledby="preview-title" className="grid content-start gap-3 rounded-[var(--radius-md)] border border-line bg-panel p-4 xl:sticky xl:top-20">
-      <h2 id="preview-title" className="font-display text-base font-bold text-fg">{t.title}</h2>
+    <aside aria-labelledby="preview-title" className="grid content-start gap-3 rounded-[var(--radius-md)] border border-line bg-panel p-4 xl:sticky xl:top-20 xl:self-start">
+      <h2 id="preview-title" className="font-display text-lg font-bold text-fg">{t.title}</h2>
+      <div className="relative">
+        <Poster path={state.cover_path} sizes="340px" className="aspect-[4/3] w-full rounded-[var(--radius-md)]" />
+        {!state.cover_path.trim() && <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-xs font-semibold text-fg-muted">{t.noPoster}</p>}
+      </div>
       <div className="flex gap-3">
         <div className="grid h-14 w-16 shrink-0 content-center rounded-[var(--radius-sm)] bg-panel-2 text-center leading-tight">
           <span className="text-xs font-semibold whitespace-nowrap text-fg-muted">{start ? formatUb(start, lang, { month: "short" }) : "—"}</span>

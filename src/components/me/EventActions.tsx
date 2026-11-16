@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { Check, Loader2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -55,8 +55,8 @@ export function RsvpButton({ eventId, label, doneLabel, waitlistDoneLabel, error
 }
 
 /** Cancel / leave waitlist / withdraw application. The dialog names the event and says what will happen. */
-export function CancelButton({ eventId, trigger, title, body, confirm, keep, doneText, errors, variant = "secondary" }: {
-  eventId: string; trigger: string; title: string; body: string; confirm: string; keep: string; doneText: string; errors: Errors; variant?: "secondary" | "ghost";
+export function CancelButton({ eventId, trigger, title, body, confirm, keep, doneText, errors, variant = "secondary", className, icon }: {
+  eventId: string; trigger: string; title: string; body: string; confirm: string; keep: string; doneText: string; errors: Errors; variant?: "secondary" | "ghost"; className?: string; icon?: ReactNode;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -74,9 +74,9 @@ export function CancelButton({ eventId, trigger, title, body, confirm, keep, don
     });
   }
   return (
-    <div className="grid gap-1.5">
+    <div className="grid min-w-0 gap-1.5">
       <ConfirmDialog
-        trigger={<Button variant={variant} size="lg" disabled={state !== "idle"}>{trigger}</Button>}
+        trigger={<Button variant={variant} size="lg" disabled={state !== "idle"} icon={icon} className={className}>{trigger}</Button>}
         title={title} body={body} confirmLabel={confirm} cancelLabel={keep} tone="danger" onConfirm={run}
       />
       <p role="alert" className="text-sm font-semibold text-danger-fg empty:hidden">{error}</p>

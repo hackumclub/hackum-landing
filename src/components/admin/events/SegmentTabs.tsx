@@ -9,7 +9,7 @@ export type SegmentOption<T extends string> = { value: T; label: string; count?:
  */
 export default function SegmentTabs<T extends string>({ label, options, value, onChange }: { label: string; options: SegmentOption<T>[]; value: T; onChange: (v: T) => void }) {
   return (
-    <div role="group" aria-label={label} className="-mx-1 flex gap-1 overflow-x-auto border-b border-line px-1">
+    <div role="group" aria-label={label} className="-mx-1 flex gap-1 overflow-x-auto border-b border-line px-1 max-md:[mask-image:linear-gradient(90deg,#000_calc(100%-36px),transparent)]">
       {options.map((o) => {
         const on = o.value === value;
         return (

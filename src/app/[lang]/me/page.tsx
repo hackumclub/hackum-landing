@@ -39,7 +39,7 @@ async function Body({ params }: Props) {
         </Section>
       )}
 
-      {data.next && <Section title={h.nextTitle} id="next"><NextEventCard vm={data.next} lang={lang} c={c} now={now} /></Section>}
+      {data.next && <Section title={h.nextTitle} id="next"><NextEventCard vm={data.next} lang={lang} c={c} d={d} now={now} /></Section>}
 
       {data.attention.length > 0 && <Section title={h.attentionTitle} id="attention"><AttentionList items={data.attention} lang={lang} c={c} /></Section>}
 

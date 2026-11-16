@@ -22,7 +22,7 @@ export function useToast(closeLabel: string): { show: (text: string, tone?: Toas
   }, []);
 
   const node = (
-    <div role={toast?.tone === "error" ? "alert" : "status"} className="pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex justify-center px-4">
+    <div role={toast?.tone === "error" ? "alert" : "status"} className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4">
       {toast && (
         <p
           key={toast.id}

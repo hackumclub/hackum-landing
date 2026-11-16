@@ -4,6 +4,7 @@ import { CalendarSync } from "lucide-react";
 import type { MeCopy } from "@/i18n/areas/me";
 import { buttonClass } from "@/components/ui/Button";
 import CopyButton from "./CopyButton";
+import { IconCard } from "./parts";
 
 const noSubscribe = () => () => {};
 
@@ -14,17 +15,13 @@ export default function CalendarFeed({ path, siteOrigin, c }: { path: string; /*
   const https = `${origin}${path}`;
   const webcal = `webcal://${origin.replace(/^https?:\/\//, "")}${path}`;
   return (
-    <div className="grid gap-4 rounded-[var(--radius-md)] border border-line bg-panel p-4 md:p-5">
-      <div className="grid gap-1">
-        <h2 className="font-display text-lg font-bold text-fg">{c.calTitle}</h2>
-        <p className="text-sm text-fg-muted">{c.calLine}</p>
-      </div>
+    <IconCard id="calendar" icon="link" tone="accent" title={c.calTitle} line={c.calLine}>
       <p className="rounded-[var(--radius-sm)] bg-panel-2 px-3 py-2 text-sm break-all text-fg" data-testid="calendar-https">{https}</p>
-      <div className="flex flex-wrap gap-2">
-        <a href={webcal} className={buttonClass("primary", "lg")}><CalendarSync aria-hidden="true" size={16} />{c.calWebcal}</a>
-        <CopyButton value={https} label={`${c.calHttps}: ${c.calCopy}`} copiedLabel={c.calCopied} />
+      <div className="grid gap-2 sm:flex sm:flex-wrap">
+        <a href={webcal} className={buttonClass("primary", "lg", "w-full sm:w-auto")}><CalendarSync aria-hidden="true" size={16} />{c.calWebcal}</a>
+        <CopyButton value={https} label={`${c.calHttps}: ${c.calCopy}`} copiedLabel={c.calCopied} className="w-full sm:w-auto" />
       </div>
       <p className="text-sm text-fg-muted">{c.calPrivate}</p>
-    </div>
+    </IconCard>
   );
 }

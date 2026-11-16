@@ -1,14 +1,15 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { Check, Lock, X } from "lucide-react";
+import { Check, GraduationCap, Lock, Quote, X } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
-import Button from "@/components/ui/Button";
+import Button, { ButtonLink } from "@/components/ui/Button";
+import { cx } from "@/components/ui/cx";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import EmptyState from "@/components/ui/EmptyState";
 import { Textarea } from "@/components/ui/Field";
 import StatusPill from "@/components/ui/StatusPill";
-import { fill, tf, type Locale } from "@/i18n/config";
+import { fill, href, tf, type Locale } from "@/i18n/config";
 import { plural } from "@/i18n/plural";
 import type { Dict } from "@/i18n";
 import type { AreaCopy } from "@/i18n/areas/admin-members";
@@ -17,6 +18,7 @@ import { relativeTime } from "@/lib/members/format";
 import type { ApplicationStatus } from "@/lib/status";
 import { formatUb } from "@/lib/time";
 import type { ApplicationDto, ApplicationsData } from "./data";
+import { CARD } from "@/components/admin/members/card";
 import { NoticeBanner, Segments, errorText, type Notice } from "./shared";
 
 type Tab = "pending" | "approved" | "rejected";
@@ -31,18 +33,19 @@ function Card({ a, lang, now, c, status, busy, cancelLabel, onReview }: {
   const name = nameOf(a, lang);
   const pending = a.status === "pending";
   return (
-    <li className="grid gap-3 rounded-[var(--radius-md)] border border-line bg-panel p-4">
+    <li className={cx(CARD, "grid gap-4 p-4 md:p-5", pending && "border-l-4 border-l-warn-fg")}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <Avatar name={name} size={40} />
+          <Avatar name={name} size={52} />
           <div className="grid min-w-0">
-            <p className="truncate font-semibold text-fg">{name}</p>
+            <p className="font-display text-lg font-bold [overflow-wrap:anywhere] text-fg">{name}</p>
             <p className="text-sm text-fg-muted">
+              <GraduationCap aria-hidden="true" size={14} className="mr-1.5 inline align-[-2px]" />
               {[a.person.school, a.person.gradYear ? fill(c.gradYear, { year: a.person.gradYear }) : null, plural(lang, a.person.attended, c.pastEvents)].filter(Boolean).join(" · ")}
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-sm text-fg-muted">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
           <StatusPill status={a.status} label={status[a.status]} />
           <span>{fill(c.season, { label: tf(a.seasonLabel, lang) })}</span>
           <span aria-hidden="true">·</span>
@@ -50,34 +53,34 @@ function Card({ a, lang, now, c, status, busy, cancelLabel, onReview }: {
         </div>
       </div>
 
-      <div className="grid gap-1">
-        <p className="text-xs font-semibold text-fg-muted">{c.motivation}</p>
-        <p className="text-sm leading-relaxed whitespace-pre-line text-fg">{a.motivation}</p>
-      </div>
+      <figure className="grid gap-1.5 rounded-[var(--radius-sm)] border-l-4 border-accent bg-panel-2 px-4 py-3">
+        <figcaption className="flex items-center gap-1.5 text-xs font-semibold text-fg-muted"><Quote aria-hidden="true" size={13} />{c.motivation}</figcaption>
+        <blockquote className="text-base leading-relaxed whitespace-pre-line text-fg [overflow-wrap:anywhere]">{a.motivation}</blockquote>
+      </figure>
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-semibold text-fg-muted">{c.interests}</span>
         {a.interests.length === 0 ? <span className="text-sm text-fg-muted">{c.noInterests}</span> : a.interests.map((i) => (
-          <span key={i} className="rounded-full bg-neutral-soft px-2.5 py-0.5 text-xs font-semibold text-fg">{i}</span>
+          <span key={i} className="rounded-full bg-accent-soft px-3 py-1 text-sm font-semibold text-accent-fg">{i}</span>
         ))}
       </div>
 
       {pending ? (
-        <div className="grid gap-3 border-t border-line pt-3">
-          <details className="group rounded-[var(--radius-sm)] border border-line bg-panel-2 px-3 py-2">
-            <summary className="flex min-h-8 cursor-pointer list-none items-center gap-1.5 text-sm font-semibold text-fg">
-              <Lock aria-hidden="true" size={13} />{c.noteLabel}
+        <div className="grid gap-3 border-t border-line pt-4">
+          <details className="group rounded-[var(--radius-sm)] border border-line bg-panel-2 px-3 py-1.5">
+            <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 text-sm font-semibold text-fg">
+              <Lock aria-hidden="true" size={14} className="shrink-0" />{c.noteSummary}
               {note.trim() && <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent-fg">1</span>}
             </summary>
-            <div className="mt-2 grid gap-1.5">
+            <div className="mt-2 grid gap-1.5 pb-2">
               <Textarea aria-label={c.noteLabel} aria-describedby={`${a.id}-note-hint`} rows={2} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} className="min-h-16!" />
               <p id={`${a.id}-note-hint`} className="text-sm text-fg-muted">{c.noteHint}</p>
             </div>
           </details>
-          <div className="flex flex-wrap gap-2">
-            <Button icon={<Check aria-hidden="true" size={16} />} disabled={busy} onClick={() => onReview(true, note)}>{c.approve}</Button>
+          <div className="grid gap-2 sm:flex sm:flex-row-reverse sm:justify-start">
+            <Button size="lg" className="w-full sm:w-auto sm:min-w-44" icon={<Check aria-hidden="true" size={18} />} disabled={busy} onClick={() => onReview(true, note)}>{c.approve}</Button>
             <ConfirmDialog
-              trigger={<Button variant="secondary" icon={<X aria-hidden="true" size={16} />} disabled={busy}>{c.reject}</Button>}
+              trigger={<Button variant="secondary" size="lg" className="w-full sm:w-auto sm:min-w-36" icon={<X aria-hidden="true" size={18} />} disabled={busy}>{c.reject}</Button>}
               title={fill(c.rejectTitle, { name })}
               body={c.rejectBody}
               confirmLabel={c.rejectConfirm}
@@ -88,7 +91,7 @@ function Card({ a, lang, now, c, status, busy, cancelLabel, onReview }: {
           </div>
         </div>
       ) : (
-        <div className="grid gap-1 border-t border-line pt-3 text-sm">
+        <div className="grid gap-1.5 border-t border-line pt-3 text-sm">
           <p className="text-fg-muted">
             {fill(c.reviewedBy, { who: a.reviewer ?? c.reviewerUnknown, when: a.reviewedAt ? relativeTime(new Date(a.reviewedAt), now, lang) : "—" })}
           </p>
@@ -148,7 +151,12 @@ export default function ApplicationsQueue({ data, lang, c, common, status }: {
       ]} />
       <NoticeBanner notice={notice} onDismiss={() => setNotice(null)} dismissLabel={common.dismiss} />
       {shown.length === 0 ? (
-        <EmptyState sticker={tab === "pending" ? "sleepy" : "smug"} title={c.emptyTitle[tab]} line={c.emptyLine[tab]} />
+        <EmptyState
+          sticker={tab === "pending" ? "sleepy" : "smug"} title={c.emptyTitle[tab]} line={c.emptyLine[tab]}
+          action={tab === "pending"
+            ? <ButtonLink variant="secondary" href={href(lang, "/admin/members")}>{c.emptyAction.pending}</ButtonLink>
+            : <Button variant="secondary" onClick={() => setTab("pending")}>{c.emptyAction[tab]}</Button>}
+        />
       ) : (
         <ul className="grid gap-3">
           {shown.map((a) => <Card key={a.id} a={a} lang={lang} now={now} c={c} status={status} busy={busy} cancelLabel={common.cancel} onReview={(approve, note) => review(a, approve, note)} />)}

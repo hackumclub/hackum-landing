@@ -10,6 +10,9 @@ import DemoPill from "@/components/admin/DemoPill";
 import Stage from "@/components/ops/Stage";
 import Icon3D from "@/components/Icon3D";
 import { mockEnabled } from "@/lib/mockdb/store";
+import { ButtonLink } from "@/components/ui/Button";
+import { isAdminRouteReady } from "@/lib/admin/nav";
+import { Plus } from "lucide-react";
 
 const SCENARIOS: Scenario[] = ["default", "empty", "error", "slow"];
 
@@ -32,7 +35,12 @@ export default async function DashboardPage({ params, searchParams }: { params: 
         compact
         title={t.title}
         lead={<Suspense fallback={<span className="inline-block h-5 w-48" />}><Today lang={lang} /></Suspense>}
-        actions={mockEnabled() ? <DemoPill title={getDictionary(lang).admin.sample.title} text={getDictionary(lang).admin.sample.text} /> : undefined}
+        actions={(
+          <>
+            {isAdminRouteReady(lang, "events") && <ButtonLink href={`/${lang}/admin/events/new`} icon={<Plus aria-hidden="true" size={16} />}>{t.createEvent}</ButtonLink>}
+            {mockEnabled() && <DemoPill title={getDictionary(lang).admin.sample.title} text={getDictionary(lang).admin.sample.text} />}
+          </>
+        )}
         art={<Icon3D name="chart" sizes="224px" className="w-24 rotate-3 drop-shadow-[0_18px_22px_rgb(0_30_60/0.45)] md:w-52" />}
       />
       <Suspense fallback={<DashboardSkeleton label={t.loading} />}>

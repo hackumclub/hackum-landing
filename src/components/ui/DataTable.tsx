@@ -12,19 +12,21 @@ export type Column<T> = {
   /** Right-aligned with tabular figures. */
   numeric?: boolean;
   /** Hide on narrow screens so the table stays readable at 360px without page-level horizontal scroll. */
-  hideBelow?: "sm" | "md" | "lg";
+  hideBelow?: "sm" | "md" | "lg" | "xl";
 };
 
-const HIDE = { sm: "hidden sm:table-cell", md: "hidden md:table-cell", lg: "hidden lg:table-cell" } as const;
+const HIDE = { sm: "hidden sm:table-cell", md: "hidden md:table-cell", lg: "hidden lg:table-cell", xl: "hidden xl:table-cell" } as const;
 type Sort = { key: string; dir: "ascending" | "descending" } | null;
 
 /**
  * Client-side table for ≤500 rows (larger sets paginate on the server). Sticky header, sortable columns with
  * aria-sort, optional row selection with a labelled select-all.
  */
-export default function DataTable<T>({ rows, columns, getId, caption, empty, selectable = false, selectLabel = "Select", selectAllLabel = "Select all", onSelectionChange }: {
+export default function DataTable<T>({ rows, columns, getId, caption, empty, selectable = false, selectLabel = "Select", selectAllLabel = "Select all", onSelectionChange, onRowClick }: {
   rows: T[]; columns: Column<T>[]; getId: (row: T) => string; caption: string; empty: ReactNode;
   selectable?: boolean; selectLabel?: string; selectAllLabel?: string; onSelectionChange?: (ids: string[]) => void;
+  /** Pointer convenience: clicking the row (not a button, link or checkbox inside it) opens it. Keyboard users keep the row's own button/link. */
+  onRowClick?: (row: T) => void;
 }) {
   const [sort, setSort] = useState<Sort>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -64,7 +66,7 @@ export default function DataTable<T>({ rows, columns, getId, caption, empty, sel
                   aria-label={selectAllLabel}
                   checked={allSelected}
                   onChange={() => updateSelection(allSelected ? new Set() : new Set(allIds))}
-                  className="size-4 accent-[var(--ops-accent)]"
+                  className="size-5 cursor-pointer accent-[var(--ops-accent)]"
                 />
               </th>
             )}
@@ -91,7 +93,11 @@ export default function DataTable<T>({ rows, columns, getId, caption, empty, sel
             const id = getId(row);
             const isSel = selected.has(id);
             return (
-              <tr key={id} className={cx("border-t border-line", isSel ? "bg-accent-soft" : "hover:bg-panel-2")}>
+              <tr
+                key={id}
+                className={cx("border-t border-line", isSel ? "bg-accent-soft" : "hover:bg-panel-2", onRowClick && "cursor-pointer")}
+                onClick={onRowClick ? (e) => { if (!(e.target as HTMLElement).closest("a,button,input,label,select,textarea")) onRowClick(row); } : undefined}
+              >
                 {selectable && (
                   <td className="px-3 py-2.5">
                     <input
@@ -103,7 +109,7 @@ export default function DataTable<T>({ rows, columns, getId, caption, empty, sel
                         if (isSel) next.delete(id); else next.add(id);
                         updateSelection(next);
                       }}
-                      className="size-4 accent-[var(--ops-accent)]"
+                      className="size-5 cursor-pointer accent-[var(--ops-accent)]"
                     />
                   </td>
                 )}

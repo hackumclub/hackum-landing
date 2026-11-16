@@ -30,7 +30,7 @@ async function Body({ lang, searchParams }: { lang: Locale; searchParams: Props[
   return (
     <>
       <AuditFilters filter={filter} actors={data.actors} path={path} c={c.audit} />
-      <AuditTable rows={data.rows} total={data.total} now={data.now} lang={lang} c={c.audit} common={c.common} closeLabel={d.ui.close} clearHref={path} filtered={filtered} />
+      <AuditTable rows={data.rows} total={data.total} now={data.now} lang={lang} c={c.audit} common={c.common} closeLabel={d.ui.close} clearHref={path} filtered={filtered} homeHref={href(lang, "/admin")} />
       <AuditPager page={data.page} pages={data.pages} from={data.from} to={data.to} total={data.total} hrefFor={hrefFor} c={c.audit} />
     </>
   );

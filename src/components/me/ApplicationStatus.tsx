@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { PageHeader } from "./parts";
-import { Users } from "lucide-react";
+import { PageHeader, Timeline, type TimelineItem } from "./parts";
+import { Hourglass, Mail, Send, Users } from "lucide-react";
 import type { Dict } from "@/i18n";
 import type { MeCopy } from "@/i18n/areas/me";
 import { fill, tf, type Locale } from "@/i18n/config";
@@ -26,12 +26,19 @@ export default function ApplicationStatus({ vm, lang, d, c, deadline, team, team
     ? { trigger: c.event.leaveWaitlist, title: c.event.leaveWaitlistTitle, body: fill(c.event.leaveWaitlistBody, { pos: String(reg.waitPos ?? 1) }) }
     : reg.status === "applied" ? { trigger: c.event.withdraw, title: c.event.withdrawTitle, body: c.event.withdrawBody }
       : { trigger: c.event.cancel, title: c.event.cancelTitle, body: c.event.cancelBody };
+  const pastReview = reg.status !== "applied";
+  const decided = reg.status === "going" || reg.status === "rejected" || reg.status === "attended";
+  const steps: TimelineItem[] = [
+    { state: "done", icon: Send, title: a.timelineSent },
+    { state: pastReview ? "done" : "current", icon: Hourglass, title: a.timelineReview, line: reg.status === "applied" ? line ?? undefined : undefined },
+    { state: decided ? "done" : pastReview ? "current" : "todo", icon: Mail, title: decided || reg.status === "waitlisted" ? d.status[reg.status] : a.timelineDecision, line: pastReview ? line ?? undefined : undefined },
+  ];
   return (
     <div className="grid gap-4">
       <PageHeader title={title} lead={a.statusTitle} sticker={reg.status === "going" ? "rsvp" : reg.status === "rejected" ? "comfort" : reg.status === "waitlisted" ? "queue" : "writing"} />
       <div className="grid gap-3 rounded-[var(--radius-md)] border border-line bg-panel p-4 md:p-5">
         <p className="flex flex-wrap items-center gap-2 font-bold text-fg"><StatusPill status={reg.status} label={d.status[reg.status]} />{head}</p>
-        {line && <p className="text-sm text-fg-muted">{line}</p>}
+        <Timeline label={a.statusTitle} items={steps} />
         {team && (
           <Link href={`/${lang}/me/teams/${team.id}`} className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-accent-fg hover:underline">
             <Users aria-hidden="true" size={16} />{fill(c.event.teamLine, { team: team.name })}

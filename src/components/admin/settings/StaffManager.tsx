@@ -2,9 +2,9 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { ShieldCheck, UserMinus, UserPlus } from "lucide-react";
-import Button from "@/components/ui/Button";
+import Button, { ButtonLink } from "@/components/ui/Button";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import DataTable, { type Column } from "@/components/ui/DataTable";
+import Avatar from "@/components/ui/Avatar";
 import EmptyState from "@/components/ui/EmptyState";
 import Field, { Select } from "@/components/ui/Field";
 import { cx } from "@/components/ui/cx";
@@ -13,8 +13,9 @@ import type { AreaCopy } from "@/i18n/areas/admin-members";
 import { grantRoleAction } from "@/lib/members/actions";
 import type { StaffRoleName } from "@/lib/mockdb/types";
 import { formatUb } from "@/lib/time";
-import { NoticeBanner, PersonCell, PersonPicker, errorText, personName, type Notice } from "@/components/admin/members/shared";
-import type { StaffData, StaffDto } from "./data";
+import { CARD } from "@/components/admin/members/card";
+import { NoticeBanner, PersonPicker, errorText, personName, type Notice } from "@/components/admin/members/shared";
+import type { StaffData } from "./data";
 
 /** Role pills reuse existing tones (admin = ink, organizer = accent): no new colours. */
 export function RolePill({ role, label }: { role: StaffRoleName; label: string }) {
@@ -45,55 +46,62 @@ export default function StaffManager({ data, lang, c, common }: { data: StaffDat
     router.refresh();
   });
 
-  const columns: Column<StaffDto>[] = [
-    {
-      key: "person", header: c.columns.person, sortValue: (s) => personName(s, lang).toLowerCase(),
-      cell: (s) => <PersonCell name={personName(s, lang)} sub={`@${s.handle}`}><span className="flex items-center gap-2 truncate font-semibold">{personName(s, lang)}{s.isYou && <span className="rounded-full bg-neutral-soft px-2 py-0.5 text-xs font-bold text-fg">{c.you}</span>}</span></PersonCell>,
-    },
-    { key: "role", header: c.columns.role, sortValue: (s) => s.role, cell: (s) => <RolePill role={s.role} label={c.roles[s.role]} /> },
-    {
-      key: "since", header: c.columns.since, hideBelow: "md", sortValue: (s) => s.grantedAt,
-      cell: (s) => <span className="grid"><span>{formatUb(new Date(s.grantedAt), lang, { year: "numeric", month: "short", day: "numeric" })}</span>{s.grantedBy && <span className="text-xs text-fg-muted">{fill(c.grantedBy, { who: s.grantedBy })}</span>}</span>,
-    },
-    {
-      key: "actions", header: c.columns.actions,
-      cell: (s) => {
-        const name = personName(s, lang);
-        const target: StaffRoleName = s.role === "admin" ? "organizer" : "admin";
-        return (
-          <span className="flex flex-wrap gap-1.5">
-            <ConfirmDialog
-              trigger={<Button size="sm" variant="secondary" disabled={pending} aria-label={`${target === "admin" ? c.makeAdmin : c.makeOrganizer}: ${name}`}>{target === "admin" ? c.makeAdmin : c.makeOrganizer}</Button>}
-              title={fill(c.grantTitle[target], { name })}
-              body={c.grantBody[target]}
-              confirmLabel={target === "admin" ? c.makeAdmin : c.makeOrganizer}
-              cancelLabel={common.cancel}
-              onConfirm={() => run(s.id, target, fill(c.roleChanged, { name, role: c.roles[target] }))}
-            />
-            <ConfirmDialog
-              trigger={<Button size="sm" variant="ghost" icon={<UserMinus aria-hidden="true" size={14} />} disabled={pending} aria-label={`${c.remove}: ${name}`}>{c.remove}</Button>}
-              title={fill(c.removeTitle, { name })}
-              body={fill(c.removeBody, { name })}
-              confirmLabel={c.removeConfirm}
-              cancelLabel={common.cancel}
-              tone="danger"
-              onConfirm={() => run(s.id, null, fill(c.removed, { name }))}
-            />
-          </span>
-        );
-      },
-    },
-  ];
-
   return (
     <div className="grid gap-6">
       <p className="max-w-2xl text-sm text-fg-muted">{c.lead}</p>
       <NoticeBanner notice={notice} onDismiss={() => setNotice(null)} dismissLabel={common.dismiss} />
-      <DataTable<StaffDto> rows={data.staff} columns={columns} getId={(s) => s.id} caption={c.caption} empty={<EmptyState sticker="sleepy" title={c.emptyTitle} line={c.emptyLine} />} />
+      {data.staff.length === 0 ? (
+        <EmptyState sticker="sleepy" title={c.emptyTitle} line={c.emptyLine} action={<ButtonLink variant="secondary" href="#add-staff">{c.emptyAction}</ButtonLink>} />
+      ) : (
+        <ul aria-label={c.caption} className="grid gap-3 md:grid-cols-2">
+          {data.staff.map((s) => {
+            const name = personName(s, lang);
+            const target: StaffRoleName = s.role === "admin" ? "organizer" : "admin";
+            return (
+              <li key={s.id} data-testid="staff-item" className={cx(CARD, "grid content-start gap-4 p-4 md:p-5", s.isYou && "border-accent")}>
+                <div className="flex items-center gap-3">
+                  <Avatar name={name} size={52} />
+                  <div className="grid min-w-0 flex-1 gap-0.5">
+                    <p className="flex flex-wrap items-center gap-2 font-semibold [overflow-wrap:anywhere] text-fg">
+                      {name}
+                      {s.isYou && <span className="rounded-full bg-neutral-soft px-2 py-0.5 text-xs font-bold text-fg">{c.you}</span>}
+                    </p>
+                    <p className="text-sm break-all text-fg-muted">@{s.handle}</p>
+                  </div>
+                  <RolePill role={s.role} label={c.roles[s.role]} />
+                </div>
+                <p className="text-sm text-fg-muted">
+                  {formatUb(new Date(s.grantedAt), lang, { year: "numeric", month: "short", day: "numeric" })}
+                  {s.grantedBy && <> · {fill(c.grantedBy, { who: s.grantedBy })}</>}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <ConfirmDialog
+                    trigger={<Button variant="secondary" disabled={pending} aria-label={`${target === "admin" ? c.makeAdmin : c.makeOrganizer}: ${name}`}>{target === "admin" ? c.makeAdmin : c.makeOrganizer}</Button>}
+                    title={fill(c.grantTitle[target], { name })}
+                    body={c.grantBody[target]}
+                    confirmLabel={target === "admin" ? c.makeAdmin : c.makeOrganizer}
+                    cancelLabel={common.cancel}
+                    onConfirm={() => run(s.id, target, fill(c.roleChanged, { name, role: c.roles[target] }))}
+                  />
+                  <ConfirmDialog
+                    trigger={<Button variant="ghost" icon={<UserMinus aria-hidden="true" size={14} />} disabled={pending} aria-label={`${c.remove}: ${name}`}>{c.remove}</Button>}
+                    title={fill(c.removeTitle, { name })}
+                    body={fill(c.removeBody, { name })}
+                    confirmLabel={c.removeConfirm}
+                    cancelLabel={common.cancel}
+                    tone="danger"
+                    onConfirm={() => run(s.id, null, fill(c.removed, { name }))}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
-      <section aria-labelledby="add-staff" className="grid gap-3 rounded-[var(--radius-md)] border border-line bg-panel p-4">
+      <section id="add-staff" aria-labelledby="add-staff-h" className={cx(CARD, "grid scroll-mt-20 gap-3 p-4 md:p-5")}>
         <div className="grid gap-0.5">
-          <h2 id="add-staff" className="font-display text-base font-bold text-fg">{c.add}</h2>
+          <h2 id="add-staff-h" className="font-display text-base font-bold text-fg">{c.add}</h2>
           <p className="text-sm text-fg-muted">{c.addLead}</p>
         </div>
         <div className="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_14rem_auto]">

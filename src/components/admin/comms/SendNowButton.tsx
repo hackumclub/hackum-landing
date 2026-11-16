@@ -25,7 +25,7 @@ export default function SendNowButton({ c, common }: { c: AreaCopy["comms"]; com
   return (
     <div className="grid justify-items-start gap-1.5 sm:justify-items-end">
       <Button icon={<Send aria-hidden="true" size={16} />} onClick={run} disabled={pending} aria-busy={pending}>{pending ? c.sending : c.sendNow}</Button>
-      <p role="status" data-testid="send-result" className={cx("max-w-sm text-sm font-semibold sm:text-right", result?.tone === "error" ? "text-danger-fg" : "text-ok-fg", !result && "sr-only")}>{result?.text ?? ""}</p>
+      <p role="status" data-testid="send-result" className={cx(result ? "max-w-sm rounded-[var(--radius-sm)] bg-panel px-3 py-1.5 text-sm font-semibold shadow-[var(--shadow-soft)] sm:text-right" : "sr-only", result?.tone === "error" ? "text-danger-fg" : "text-ok-fg")}>{result?.text ?? ""}</p>
     </div>
   );
 }

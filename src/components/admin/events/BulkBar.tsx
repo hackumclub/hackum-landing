@@ -17,12 +17,15 @@ export default function BulkBar({ lang, count, application, hasTeam, wholeTeam, 
   const left = capacity === null ? null : Math.max(0, capacity - taken - adding);
   const status = over > 0 ? fill(t.over, { n: over, max: capacity ?? 0 }) : capacity === null ? fill(t.fitsUnlimited, { adding }) : fill(t.fits, { adding, left: left ?? 0 });
   return (
-    <div role="group" aria-label={t.groupLabel} className="sticky bottom-3 z-20 grid gap-3 rounded-[var(--radius-md)] border border-line-strong bg-panel p-3 shadow-[var(--shadow-card)] md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
-      <div className="flex items-center gap-3">
+    <div
+      role="group" aria-label={t.groupLabel} data-testid="bulk-bar"
+      className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 grid gap-2 rounded-[var(--radius-md)] border border-line-strong bg-panel p-3 shadow-[0_18px_40px_-12px_rgb(7_27_41/0.55)] md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center md:gap-3"
+    >
+      <div className="flex items-center justify-between gap-3 md:justify-start">
         <p className="text-sm font-bold text-fg">{plural(lang, count, t.selected)}</p>
-        <button type="button" onClick={onClear} className="cursor-pointer rounded text-sm font-semibold text-accent-fg hover:underline">{t.clear}</button>
+        <button type="button" onClick={onClear} className="min-h-8 cursor-pointer rounded px-1 text-sm font-semibold text-accent-fg hover:underline">{t.clear}</button>
       </div>
-      <div className="grid gap-1.5">
+      <div className="grid gap-1">
         {application && hasTeam && (
           <label className="flex min-h-9 items-center gap-2 text-sm font-semibold text-fg">
             <input type="checkbox" checked={wholeTeam} onChange={(e) => onWholeTeam(e.target.checked)} className="size-4 accent-[var(--ops-accent)]" />
@@ -35,12 +38,12 @@ export default function BulkBar({ lang, count, application, hasTeam, wholeTeam, 
       <div className="flex flex-wrap gap-2">
         {application ? (
           <>
-            <Button disabled={pending || over > 0} aria-describedby={over > 0 ? "bulk-status" : undefined} onClick={() => onDecide("accept")}>{t.accept}</Button>
-            <Button variant="secondary" disabled={pending} onClick={() => onDecide("waitlist")}>{t.waitlist}</Button>
-            <Button variant="secondary" disabled={pending} onClick={() => onDecide("reject")}>{t.reject}</Button>
+            <Button className="flex-1 md:flex-none" disabled={pending || over > 0} aria-describedby={over > 0 ? "bulk-status" : undefined} onClick={() => onDecide("accept")}>{t.accept}</Button>
+            <Button className="flex-1 md:flex-none" variant="secondary" disabled={pending} onClick={() => onDecide("waitlist")}>{t.waitlist}</Button>
+            <Button className="flex-1 md:flex-none" variant="secondary" disabled={pending} onClick={() => onDecide("reject")}>{t.reject}</Button>
           </>
         ) : (
-          <Button disabled={pending || over > 0} aria-describedby={over > 0 ? "bulk-status" : undefined} onClick={() => onDecide("accept")}>{t.promote}</Button>
+          <Button className="flex-1 md:flex-none" disabled={pending || over > 0} aria-describedby={over > 0 ? "bulk-status" : undefined} onClick={() => onDecide("accept")}>{t.promote}</Button>
         )}
       </div>
     </div>

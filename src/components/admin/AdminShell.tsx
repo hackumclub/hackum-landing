@@ -25,7 +25,7 @@ function SideNav({ lang, t, onNavigate }: { lang: Locale; t: T; onNavigate?: () 
   return (
     <nav aria-label={t.nav.label}>
       <ul className="grid gap-1">
-        {adminNav(lang).map(({ key, href, ready }) => {
+        {adminNav(lang).filter((item) => item.key !== "kit").map(({ key, href, ready }) => {
           const Icon = ICON[key];
           // Sections below the first level (e.g. /admin/events/<id>) keep their parent highlighted.
           const active = key === "dashboard" ? path === href : path === href || path.startsWith(`${href}/`);
@@ -61,7 +61,7 @@ function Brand({ t, lang, tone = "page", compact = false }: { t: T; lang: Locale
   return (
     <Link href={`/${lang}/admin`} className={cx("inline-flex items-center gap-2.5 font-display text-lg font-black", tone === "chrome" ? "text-[var(--ops-on-chrome)]" : "text-fg")}>
       <Image src="/img/brand/logo-128.png" alt="" width={34} height={34} className="rounded-full ring-2 ring-white/70" />
-      <span className={compact ? "sr-only min-[440px]:not-sr-only" : undefined}>{t.brand}</span>
+      <span className={cx("whitespace-nowrap", compact && "sr-only min-[440px]:not-sr-only")}>{t.brand}</span>
     </Link>
   );
 }

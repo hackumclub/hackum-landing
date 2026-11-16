@@ -6,9 +6,11 @@ import { fill } from "@/i18n/config";
 import { applyForMembershipAction } from "@/lib/me/actions";
 import { useToast } from "./Toast";
 import Button from "@/components/ui/Button";
+import Icon3D from "@/components/Icon3D";
 import Field, { Textarea } from "@/components/ui/Field";
 import { cx } from "@/components/ui/cx";
 import { useFocusFirstError } from "./focus";
+import { StickyBar } from "./parts";
 
 export const TEAM_KEYS = ["Marketing", "Dev", "Design", "Events", "Content", "Mentors"] as const;
 const MIN = 10;
@@ -43,7 +45,7 @@ export default function MembershipForm({ c, errors }: { c: MeCopy["membership"];
 
   return (
     <form ref={form} onSubmit={submit} noValidate className="grid gap-4 rounded-[var(--radius-md)] border border-line bg-panel p-4 md:p-5">
-      <h2 className="font-display text-lg font-bold text-fg">{c.formTitle}</h2>
+      <div className="flex items-center gap-3"><Icon3D name="rocket" sizes="64px" className="size-12 shrink-0 drop-shadow-[0_6px_8px_rgb(0_40_70/0.25)]" /><h2 className="font-display text-xl font-bold text-fg">{c.formTitle}</h2></div>
       <Field label={c.motivation} required error={fieldErr.motivation}
         hint={<><span>{c.motivationHint}</span> <span className={cx("tnum", len > MAX && "font-bold text-danger-fg")}>{fill(c.counter, { n: len, max: MAX })}</span></>}>
         {(ctl) => <Textarea {...ctl} name="motivation" rows={5} value={text} onChange={(e) => setText(e.target.value)} />}
@@ -55,7 +57,7 @@ export default function MembershipForm({ c, errors }: { c: MeCopy["membership"];
           {TEAM_KEYS.map((k) => {
             const on = teams.includes(k);
             return (
-              <label key={k} className={cx("inline-flex min-h-11 cursor-pointer items-center rounded-full border px-4 text-sm font-semibold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent", on ? "border-accent bg-accent-soft text-accent-fg" : "border-line-strong bg-panel text-fg")}>
+              <label key={k} className={cx("inline-flex min-h-11 cursor-pointer items-center rounded-full border-2 px-4 text-sm font-semibold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent", on ? "border-accent bg-accent-soft text-accent-fg" : "border-line bg-panel-2 text-fg")}>
                 <input type="checkbox" name="team_interest" value={k} checked={on} onChange={() => setTeams((t) => (on ? t.filter((x) => x !== k) : [...t, k]))} className="sr-only" />
                 {c.teams[k]}
               </label>
@@ -64,9 +66,9 @@ export default function MembershipForm({ c, errors }: { c: MeCopy["membership"];
         </div>
       </fieldset>
       <p role="alert" className="text-sm font-bold text-danger-fg empty:hidden">{topErr}</p>
-      <div className="flex items-center gap-3">
-        <Button type="submit" size="lg" disabled={pending || sent} aria-busy={pending}>{pending ? c.submitting : c.submit}</Button>
-      </div>
+      <StickyBar aboveTabs label={c.formTitle}>
+        <Button type="submit" size="lg" disabled={pending || sent} aria-busy={pending} className="min-h-12 flex-1 text-lg md:flex-none md:px-10">{pending ? c.submitting : c.submit}</Button>
+      </StickyBar>
     </form>
   );
 }

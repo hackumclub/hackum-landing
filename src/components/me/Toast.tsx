@@ -19,7 +19,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={show}>
       {children}
       {/* Always mounted so assistive tech registers the live region before the first message. */}
-      <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center px-4 md:bottom-6">
+      <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-40 z-50 flex justify-center px-4 md:bottom-6">
         {message && <p className="pointer-events-auto max-w-sm rounded-[var(--radius-md)] bg-fg px-4 py-3 text-sm font-semibold text-canvas shadow-[var(--shadow-card)]">{message}</p>}
       </div>
     </ToastContext.Provider>

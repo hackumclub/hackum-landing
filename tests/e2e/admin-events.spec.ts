@@ -394,3 +394,122 @@ for (const scheme of ["light", "dark"] as const) {
     expect(drawer.violations.map((v) => `drawer ${v.id}: ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
   });
 }
+
+test.describe("polish: phone flow", () => {
+  test.use({ viewport: { width: 390, height: 800 } });
+  test.beforeEach(async ({ page }) => signInAs(page, "dev-admin"));
+
+  test("list: kind chips fold behind Filters, poster thumbnails, no horizontal scroll", async ({ page }) => {
+    await page.goto("/en/admin/events");
+    await expect(page.getByRole("link", { name: /Open: DevHack 2027/ })).toBeVisible();
+    const chip = page.getByRole("button", { name: /^Hackathon \d+$/ });
+    await expect(chip).toBeHidden();
+    const filters = page.getByRole("button", { name: /^Filters/ });
+    await expect(filters).toHaveAttribute("aria-expanded", "false");
+    await filters.click();
+    await expect(chip).toBeVisible();
+    await chip.click();
+    await expect(page.getByRole("button", { name: /^Filters 1/ })).toBeVisible(); // active count badge
+    await filters.click();
+    await expect(chip).toBeHidden();
+    await expect(page.locator('img[src*="registration-32h"]').first()).toBeAttached(); // real poster thumbnail
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  });
+
+  test("event form: grouped cards, sticky save bar always on screen, unsaved state, discard dialog", async ({ page }) => {
+    const id = await eventId(page, "DevHack 2027");
+    await page.goto(`/en/admin/events/${id}`);
+    for (const name of ["Basics", "When & where", "Registration", "Application questions", "Teams", "Publishing"]) {
+      await expect(page.getByRole("heading", { level: 2, name })).toBeAttached();
+    }
+    const bar = page.getByTestId("form-bar");
+    const inViewport = async () => { const b = await bar.boundingBox(); return !!b && b.y >= 0 && b.y + b.height <= 800; };
+    await expect(bar).toBeVisible();
+    expect(await inViewport()).toBe(true); // at the top of a very long page
+    await expect(bar).toContainText("All changes saved");
+    await expect(bar.getByRole("button", { name: "Save changes" })).toBeDisabled();
+
+    await page.locator('input[name="tagline.mn"]:visible').fill("Шинэ уриа үг");
+    await expect(bar).toContainText("Unsaved changes");
+    await expect(bar.getByRole("button", { name: "Save changes" })).toBeEnabled();
+    await page.mouse.wheel(0, 1500);
+    expect(await inViewport()).toBe(true); // still reachable after scrolling
+
+    await bar.getByRole("button", { name: "Cancel" }).click();
+    const dialog = page.getByRole("alertdialog");
+    await expect(dialog).toContainText("Discard unsaved changes?");
+    await expect(dialog).toContainText("DevHack 2027");
+    await dialog.getByRole("button", { name: "Keep editing" }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(bar).toContainText("Unsaved changes");
+  });
+
+  test("poster library fills the cover and the live preview shows it", async ({ page }) => {
+    await page.goto("/en/admin/events/new");
+    const preview = page.getByRole("complementary", { name: "How it looks publicly" });
+    await expect(preview.locator("img")).toHaveCount(0);
+    await page.getByRole("button", { name: "Use poster: git workshop" }).click();
+    await expect(page.locator('input[name="cover_path"]')).toHaveValue("/img/posters/git-workshop.jpg");
+    await expect(preview.locator('img[src*="git-workshop"]')).toBeAttached();
+    await page.locator('input[name="cover_path"]').fill("/img/posters/nope.jpg");
+    await expect(page.getByText("No image found at this path")).toBeVisible();
+  });
+
+  test("registrations: filters fold, only name + status in the table, selection bar sticks to the bottom", async ({ page }) => {
+    const id = await eventId(page, "DevHack 2027");
+    await page.goto(`/en/admin/events/${id}/registrations`);
+    await expect(page.getByRole("heading", { name: "At a glance" })).toBeVisible();
+    await expect(page.locator("dl img").first()).toBeAttached(); // 3D icons on the glance cards
+    const solo = page.getByRole("button", { name: "Solo" });
+    await expect(solo).toBeHidden();
+    await page.getByRole("button", { name: /^Filters/ }).click();
+    await expect(solo).toBeVisible();
+    await solo.click();
+    await expect(page.getByRole("button", { name: /^Filters 1/ })).toBeVisible();
+
+    const headers = page.getByRole("columnheader");
+    const visible: string[] = [];
+    for (const h of await headers.all()) if (await h.isVisible()) visible.push(((await h.innerText()) || "").trim());
+    expect(visible.filter(Boolean)).toEqual(["Name", "Status"]); // checkbox column has no text
+
+    await page.getByRole("checkbox", { name: "Select row" }).first().check();
+    const bar = page.getByTestId("bulk-bar");
+    await expect(bar).toBeVisible();
+    for (const dy of [0, 600, 1800]) {
+      await page.mouse.wheel(0, dy);
+      const b = await bar.boundingBox();
+      expect(b && b.y + b.height <= 800 && b.y + b.height >= 700, `bar bottom after scrolling ${dy}`).toBe(true);
+    }
+    await bar.getByRole("button", { name: "Clear selection" }).click();
+  });
+
+  test("empty and no-result states carry exactly one action", async ({ page }) => {
+    await page.goto("/en/admin/events?state=empty");
+    const empty = page.getByRole("heading", { name: "No events yet" }).locator("..");
+    await expect(empty.getByRole("link")).toHaveCount(1);
+    const id = await eventId(page, "DevHack 2027");
+    await page.goto(`/en/admin/events/${id}/comms`);
+    await expect(page.getByRole("heading", { name: "Emails for this event" })).toBeVisible();
+  });
+});
+
+test.describe("polish: desktop", () => {
+  test.beforeEach(async ({ page }) => signInAs(page, "dev-admin"));
+
+  test("dashboard deep links open the list already filtered, and the filter can be removed", async ({ page }) => {
+    await page.goto("/en/admin/events?filter=missing_cover");
+    const results = page.getByRole("status").filter({ hasText: /\d+ results?/ });
+    await expect(page.getByRole("button", { name: "Remove filter: No poster" })).toBeVisible();
+    const filtered = Number((await results.innerText()).match(/\d+/)![0]);
+    await page.getByRole("button", { name: "Remove filter: No poster" }).click();
+    expect(Number((await results.innerText()).match(/\d+/)![0])).toBeGreaterThan(filtered);
+  });
+
+  test("comms empty state sends you to registrations", async ({ page }) => {
+    const title = `E2E Comms ${stamp()}`;
+    await createDraft(page, title);
+    await page.locator('a[href*="/admin/events/"][href$="/comms"]').click();
+    await page.getByRole("link", { name: "Open registrations" }).click();
+    await expect(page.getByRole("heading", { name: "No registrations yet" })).toBeVisible();
+  });
+});

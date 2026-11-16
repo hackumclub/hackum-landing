@@ -32,7 +32,7 @@ export default function BadgeGrid({ badges, c }: { badges: Badge[]; c: MeCopy["b
             <div className="relative grid size-24 place-items-center">
               <Icon3D name={BADGE_ART[b.id]} dir="badges" sizes="96px" className={cx("size-24 drop-shadow-[0_10px_12px_rgb(0_40_70/0.3)]", !b.earned && "opacity-50 grayscale")} />
             </div>
-            {!b.earned && !b.comingSoon && <Progress badge={b} />}
+            {!b.earned && !b.comingSoon ? <Progress badge={b} /> : <div aria-hidden="true" className="h-1.5" />}
             <span className="sr-only">{fill(sr, { name: info.name, tier, have: b.progress.have, need: b.progress.need, left })}</span>
             <div aria-hidden="true" className="grid gap-1">
               <p className={cx("text-sm font-bold", b.earned ? "text-fg" : "text-fg-muted")}>{info.name}</p>

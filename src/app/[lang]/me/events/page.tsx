@@ -41,8 +41,8 @@ async function Body({ params, searchParams }: Props) {
   return (
     <div className="grid gap-5">
       <PageHeader sticker="rsvp" title={t.title} />
-      <nav aria-label={t.tabs} className="-mx-3 overflow-x-auto px-3 md:mx-0 md:px-0">
-        <ul className="flex gap-1.5">
+      <nav aria-label={t.tabs} className="-mx-3 overflow-x-auto px-3 max-md:[mask-image:linear-gradient(90deg,#000_calc(100%-28px),transparent)] md:mx-0 md:px-0">
+        <ul className="flex gap-1.5 pr-6 md:pr-0">
           {TABS.map((k) => {
             const active = k === tab;
             return (

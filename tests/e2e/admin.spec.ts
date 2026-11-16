@@ -64,3 +64,26 @@ test("an organizer sees the dashboard with live demo data and the demo-data mark
   await expect(page.getByText("Demo data").first()).toBeVisible();
   await expect(page.getByText("Needs attention")).toBeVisible();
 });
+
+test("dashboard: needs-attention rows and event rows are links to where the work is done", async ({ page }) => {
+  await page.goto("/en/admin");
+  const apps = page.getByRole("link", { name: /hackathon applications? to review/ });
+  await expect(apps).toHaveAttribute("href", "/en/admin/events?filter=applications");
+  await expect(page.getByRole("link", { name: /emails? failed to send/ })).toHaveAttribute("href", "/en/admin/comms?status=failed");
+  await apps.click();
+  await expect(page.getByRole("button", { name: "Remove filter: Applications to review" })).toBeVisible();
+
+  await page.goto("/en/admin");
+  const event = page.getByRole("link", { name: /Knowledge Day: Building RAG Systems/ });
+  await expect(event).toHaveAttribute("href", /\/en\/admin\/events\/e_\d+$/);
+  await event.click();
+  await expect(page.getByRole("heading", { level: 1, name: "Knowledge Day: Building RAG Systems" })).toBeVisible();
+});
+
+test("dashboard keeps no horizontal scroll with linked rows at 360px in dark mode", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/en/admin");
+  await page.locator("main h1").waitFor();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+});

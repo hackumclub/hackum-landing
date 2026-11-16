@@ -395,7 +395,7 @@ a:hover .roll > :last-child, button:hover .roll > :last-child, a:focus-visible .
   .ops-stage {
     border-radius: 40px;
     background:
-      radial-gradient(60% 120% at 100% 0%, rgb(19 163 234 / 0.85) 0%, rgb(19 163 234 / 0) 62%),
+      radial-gradient(60% 120% at 100% 0%, rgb(19 163 234 / 1) 0%, rgb(19 163 234 / 0) 64%),
       radial-gradient(50% 90% at 88% 108%, rgb(0 171 132 / 0.42) 0%, rgb(0 171 132 / 0) 62%),
       linear-gradient(135deg, var(--ops-stage-a) 0%, var(--ops-stage-b) 55%, var(--ops-stage-c) 100%);
   }

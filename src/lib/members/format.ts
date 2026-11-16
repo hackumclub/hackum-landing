@@ -1,7 +1,7 @@
 // Pure formatting helpers for the members / comms / settings / audit areas. No React, no store access.
 import type { Locale } from "@/i18n/config";
 import type { NotifStatus } from "@/lib/mockdb/types";
-import { formatUb } from "@/lib/time";
+import { formatUb, toUbInput } from "@/lib/time";
 
 const MIN = 60_000, HOUR = 3_600_000, DAY = 86_400_000;
 
@@ -9,13 +9,19 @@ const MIN = 60_000, HOUR = 3_600_000, DAY = 86_400_000;
 export function relativeTime(then: Date, now: Date, lang: Locale): string {
   const diff = then.getTime() - now.getTime();
   const abs = Math.abs(diff);
-  const rtf = new Intl.RelativeTimeFormat(lang === "mn" ? "mn" : "en", { numeric: "auto" });
   if (abs < MIN) return lang === "mn" ? "дөнгөж сая" : "just now";
   const sign = Math.sign(diff);
-  if (abs < HOUR) return rtf.format(sign * Math.round(abs / MIN), "minute");
-  if (abs < DAY) return rtf.format(sign * Math.round(abs / HOUR), "hour");
-  if (abs < 30 * DAY) return rtf.format(sign * Math.round(abs / DAY), "day");
-  return rtf.format(sign * Math.round(abs / (30 * DAY)), "month");
+  const [n, unit] = abs < HOUR ? [Math.round(abs / MIN), "minute"] as const
+    : abs < DAY ? [Math.round(abs / HOUR), "hour"] as const
+    : abs < 30 * DAY ? [Math.round(abs / DAY), "day"] as const
+    : [Math.round(abs / (30 * DAY)), "month"] as const;
+  if (lang === "mn") {
+    // Intl's Mongolian relative-time data is missing in many runtimes (it falls back to English), so the words live here.
+    if (unit === "day" && n === 1) return sign < 0 ? "өчигдөр" : "маргааш";
+    const word = { minute: "минутын", hour: "цагийн", day: "өдрийн", month: "сарын" }[unit];
+    return `${n} ${word} ${sign < 0 ? "өмнө" : "дараа"}`;
+  }
+  return new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(sign * n, unit);
 }
 
 export type SeasonWindow = "open" | "scheduled" | "closed" | "none";
@@ -56,6 +62,27 @@ const ENTITY: Record<string, EntityKind> = {
   notification: "notification", notifications: "notification",
 };
 export const entityKind = (entity: string): EntityKind => ENTITY[entity] ?? "other";
+
+/** The Ulaanbaatar calendar day ("2026-11-16") an instant falls on: audit rows are grouped by the day the club lived it. */
+export const dayKey = (iso: string) => toUbInput(new Date(iso)).slice(0, 10);
+
+/** Consecutive runs of rows that share a UB day; keeps the incoming order (newest first stays newest first). */
+export function groupByDay<T extends { at: string }>(rows: T[]): { key: string; items: T[] }[] {
+  const groups: { key: string; items: T[] }[] = [];
+  for (const r of rows) {
+    const key = dayKey(r.at);
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(r); else groups.push({ key, items: [r] });
+  }
+  return groups;
+}
+
+export type DayRelation = "today" | "yesterday" | "date";
+export function dayRelation(key: string, now: Date): DayRelation {
+  const today = dayKey(now.toISOString());
+  if (key === today) return "today";
+  return key === dayKey(new Date(now.getTime() - 86_400_000).toISOString()) ? "yesterday" : "date";
+}
 
 export type DiffPair = { key: string; before: unknown; after: unknown; changed: boolean };
 /** `{ status: ["draft", "published"] }` is a change; any other value is shown as what was set. */

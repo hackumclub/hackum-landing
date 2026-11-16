@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Field, { Select } from "@/components/ui/Field";
 import FilterBar from "@/components/ui/FilterBar";
+import FilterDisclosure from "@/components/ui/FilterDisclosure";
 import type { AreaCopy } from "@/i18n/areas/admin-members";
 import { AUDIT_GROUPS, withQuery } from "@/lib/members/format";
 import { RANGES, type AuditFilter, type Range } from "./filter";
@@ -19,7 +20,8 @@ export default function AuditFilters({ filter, actors, path, c }: { filter: Audi
   };
   const active = filter.groups.length > 0 || filter.actor !== null || filter.range !== null;
   return (
-    <div role="search" aria-label={c.filters} className="grid gap-3">
+    <div role="search" aria-label={c.filters}>
+    <FilterDisclosure label={c.filtersLabel} activeCount={filter.groups.length + (filter.range ? 1 : 0) + (filter.actor ? 1 : 0)}>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <FilterBar label={c.groupLabel} value={filter.groups} onChange={(v) => go({ groups: AUDIT_GROUPS.filter((g) => v.includes(g)) })} options={AUDIT_GROUPS.map((g) => ({ value: g, label: c.groups[g] }))} />
         <FilterBar label={c.rangeLabel} value={filter.range ? [filter.range] : []} options={RANGES.map((r) => ({ value: r, label: c.ranges[r] }))}
@@ -36,6 +38,7 @@ export default function AuditFilters({ filter, actors, path, c }: { filter: Audi
         </Field>
         {active && <Button variant="ghost" size="sm" icon={<X aria-hidden="true" size={14} />} onClick={() => go({ groups: [], actor: null, range: null })} className="mb-1">{c.clear}</Button>}
       </div>
+    </FilterDisclosure>
     </div>
   );
 }

@@ -12,6 +12,8 @@ import TabNav from "@/components/ui/TabNav";
 import StatusActions from "./StatusActions";
 import Stage from "@/components/ops/Stage";
 import Icon3D from "@/components/Icon3D";
+import Poster from "./Poster";
+import { posterSrc } from "@/lib/events/posters";
 
 /** Title, status, kind · date, the status actions, and the section tabs. Server-rendered from the store. */
 export default function EventHeader({ db, event, now, lang }: { db: Db; event: EventRow; now: Date; lang: Locale }) {
@@ -30,15 +32,17 @@ export default function EventHeader({ db, event, now, lang }: { db: Db; event: E
       </Link>
       <Stage
         compact
-        title={title}
+        title={<span className="max-md:block max-md:pr-4">{title}</span>}
         lead={
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-2 max-md:pr-6">
             <StatusPill status={shown} label={d.status[shown]} />
             <span>{fill(t.meta, { kind: d.admin.kinds[event.kind], when: eventWhen(event, lang) })}</span>
           </span>
         }
         actions={<StatusActions lang={lang} eventId={event.id} title={title} status={event.status} people={people} />}
-        art={<Icon3D name="calendar" sizes="208px" className="w-24 rotate-3 drop-shadow-[0_18px_22px_rgb(0_30_60/0.45)] md:w-40" />}
+        art={posterSrc(event.cover_path)
+          ? <Poster path={event.cover_path} sizes="160px" className="aspect-[4/5] w-full rotate-3 rounded-[var(--radius-sm)] ring-4 ring-white/80 shadow-[0_18px_30px_-10px_rgb(0_30_60/0.6)] md:w-32" />
+          : <Icon3D name="calendar" sizes="208px" className="w-24 rotate-3 drop-shadow-[0_18px_22px_rgb(0_30_60/0.45)] md:w-40" />}
       />
       <TabNav
         label={t.tabsLabel}

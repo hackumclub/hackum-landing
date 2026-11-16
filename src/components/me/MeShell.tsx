@@ -10,6 +10,7 @@ import Avatar, { initials } from "@/components/ui/Avatar";
 import { cx } from "@/components/ui/cx";
 import { signInAs } from "@/lib/server/auth-actions";
 import { ToastProvider } from "./Toast";
+import { FlowProvider } from "./flow";
 
 type Tab = { key: "home" | "events" | "profile" | "settings"; path: string; Icon: LucideIcon; match: (p: string) => boolean };
 
@@ -72,10 +73,14 @@ export default function MeShell({ lang, t, skip, extras, user, children }: {
 }) {
   const path = usePathname();
   const onboarding = path.endsWith("/me/onboarding");
+  // The application form brings its own bottom bar, so the tab bar steps aside while it is on screen (see ./flow).
+  const [flow, setFlow] = useState(false);
+  const tabBar = !onboarding && !flow;
   const items = tabs(lang);
   const label = (k: Tab["key"]) => t[k];
   return (
     <ToastProvider>
+    <FlowProvider set={setFlow}>
     <div className="ops-canvas flow-root min-h-dvh">
       <a href="#main" className="sr-only z-[95] rounded-full bg-accent px-4 py-2 font-bold text-on-accent focus:not-sr-only focus:fixed focus:top-3 focus:left-3">{skip}</a>
       <header className="sticky top-3 z-30 mx-3 mt-3">
@@ -107,7 +112,7 @@ export default function MeShell({ lang, t, skip, extras, user, children }: {
         </div>
       </header>
       <main id="main" className={cx("mx-auto w-full max-w-4xl px-3 pt-4 md:px-4 md:pb-12", onboarding ? "pb-10" : "pb-32")}>{children}</main>
-      {!onboarding && (
+      {tabBar && (
         <nav aria-label={t.label} className="fixed inset-x-3 bottom-3 z-30 rounded-[28px] border border-[var(--ops-line)] bg-[color-mix(in_srgb,var(--ops-panel)_86%,transparent)] pb-[env(safe-area-inset-bottom)] shadow-[0_18px_40px_-18px_rgb(0_60_100/0.6)] backdrop-blur-xl md:hidden">
           <ul className="mx-auto grid max-w-md grid-cols-4">
             {items.map(({ key, path: href, Icon, match }) => {
@@ -125,6 +130,7 @@ export default function MeShell({ lang, t, skip, extras, user, children }: {
         </nav>
       )}
     </div>
+    </FlowProvider>
     </ToastProvider>
   );
 }

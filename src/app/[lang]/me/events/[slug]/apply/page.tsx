@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { Lock } from "lucide-react";
 import { copy } from "@/i18n/areas/me";
 import { fill, isLocale, tf } from "@/i18n/config";
 import { cardVm } from "@/lib/me/queries";
 import { eventForViewer } from "@/lib/mockdb/queries";
 import { formatUb } from "@/lib/time";
 import { ButtonLink } from "@/components/ui/Button";
-import Sticker from "@/components/Sticker";
+import EmptyState from "@/components/ui/EmptyState";
 import ApplyFlow from "@/components/me/ApplyFlow";
 import ApplicationStatus from "@/components/me/ApplicationStatus";
-import { PageSkeleton } from "@/components/me/parts";
+import { PageHeader, PageSkeleton } from "@/components/me/parts";
 import { meContext } from "@/components/me/context";
 
 type Props = { params: Promise<{ lang: string; slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -39,11 +38,9 @@ async function Body({ params, searchParams }: Props) {
 
   if (ev.reg_mode !== "application") {
     return (
-      <div className="grid justify-items-center gap-3 rounded-[var(--radius-md)] border border-line bg-panel px-6 py-10 text-center">
-        <Sticker name="rsvp" className="w-24" sizes="96px" />
-        <h1 className="font-display text-lg font-bold text-fg">{a.notApplication}</h1>
-        <p className="max-w-sm text-sm text-fg-muted">{a.notApplicationLine}</p>
-        <ButtonLink href={`/${lang}/events/${ev.slug}`} size="lg">{a.eventPage}</ButtonLink>
+      <div className="grid gap-5">
+        <PageHeader title={title} lead={a.title} sticker="rsvp" />
+        <EmptyState sticker="rsvp" title={a.notApplication} line={a.notApplicationLine} action={<ButtonLink href={`/${lang}/events/${ev.slug}`} size="lg">{a.eventPage}</ButtonLink>} />
       </div>
     );
   }
@@ -56,14 +53,17 @@ async function Body({ params, searchParams }: Props) {
   if (!vm.reg && !vm.elig.ok) {
     const r = vm.elig.reason;
     return (
-      <div className="grid justify-items-center gap-3 rounded-[var(--radius-md)] border border-line bg-panel px-6 py-10 text-center">
-        <Lock aria-hidden="true" size={28} className="text-fg-muted" />
-        <h1 className="font-display text-lg font-bold text-fg">{a.blocked[r]}</h1>
-        <p className="max-w-sm text-sm text-fg-muted">{fill(a.blocked[`${r}Line`], { date: vm.elig.at ? formatUb(new Date(vm.elig.at), lang, { month: "long", day: "numeric" }) : "" })}</p>
-        <div className="flex flex-wrap justify-center gap-2">
-          <ButtonLink href={`/${lang}/me/events`} size="lg">{c.nav.events}</ButtonLink>
-          {r === "members" && <ButtonLink href={`/${lang}/me/membership`} size="lg" variant="secondary">{c.membership.title}</ButtonLink>}
-        </div>
+      <div className="grid gap-5">
+        <PageHeader title={title} lead={a.title} sticker="lock" />
+        <EmptyState
+          sticker="lock" title={a.blocked[r]} line={fill(a.blocked[`${r}Line`], { date: vm.elig.at ? formatUb(new Date(vm.elig.at), lang, { month: "long", day: "numeric" }) : "" })}
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              <ButtonLink href={`/${lang}/me/events`} size="lg">{c.nav.events}</ButtonLink>
+              {r === "members" && <ButtonLink href={`/${lang}/me/membership`} size="lg" variant="secondary">{c.membership.title}</ButtonLink>}
+            </div>
+          }
+        />
       </div>
     );
   }

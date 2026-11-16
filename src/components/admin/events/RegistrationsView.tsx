@@ -20,8 +20,11 @@ import DataTable, { type Column } from "@/components/ui/DataTable";
 import EmptyState from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Field";
 import FilterBar from "@/components/ui/FilterBar";
+import FilterDisclosure from "@/components/ui/FilterDisclosure";
+import Icon3D from "@/components/Icon3D";
 import StatusPill from "@/components/ui/StatusPill";
 import BulkBar from "./BulkBar";
+import Glance from "./Glance";
 import RegistrationDrawer from "./RegistrationDrawer";
 import SegmentTabs from "./SegmentTabs";
 import TeamBoard from "./TeamBoard";
@@ -157,7 +160,7 @@ export default function RegistrationsView({ lang, eventId, slug, published, appl
         );
       },
     },
-    { key: "school", header: t.cols.school, hideBelow: "md", sortValue: (r) => r.school ?? "", cell: (r) => <span className="text-fg-muted">{r.school ?? "—"}</span> },
+    { key: "school", header: t.cols.school, hideBelow: "md", sortValue: (r) => r.school ?? "", cell: (r) => <span className="whitespace-nowrap text-fg-muted">{r.school ?? "—"}</span> },
     { key: "status", header: t.cols.status, sortValue: (r) => r.status, cell: (r) => <StatusPill status={r.status} label={statusLabel(r.status)} /> },
     ...(hasTeams ? [{
       key: "team", header: t.cols.team, hideBelow: "lg" as const, sortValue: (r: RegRow) => (r.teamId ? teamName.get(r.teamId) ?? "" : ""),
@@ -177,17 +180,13 @@ export default function RegistrationsView({ lang, eventId, slug, published, appl
     <div className="grid grid-cols-1 gap-5">
       <section aria-labelledby="glance" className="grid gap-2">
         <h2 id="glance" className="text-sm font-bold text-fg">{t.glance}</h2>
-        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div className="col-span-2 grid content-start gap-1 rounded-[var(--radius-md)] border border-line bg-panel p-4 lg:col-span-1">
-            <dt className="text-sm font-semibold text-fg-muted">{application ? t.accepted : t.goingSeats}</dt>
-            <dd className="grid gap-1.5">
-              <span className="tnum font-display text-2xl font-bold text-fg">{seats}</span>
-              <CapacityBar value={seats} max={capacity} label={capacity === null ? fill(t.noLimit, { n: seats }) : fill(t.seats, { n: seats, max: capacity })} />
-            </dd>
-          </div>
-          {application && <Stat label={t.applied} value={counts.applied} />}
-          <Stat label={t.waitlisted} value={counts.waitlisted} />
-          {application && <Stat label={t.rejected} value={counts.rejected} />}
+        <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Glance label={application ? t.accepted : t.goingSeats} value={seats} icon="ticket" tone="green" className="col-span-2 md:col-span-1">
+            <CapacityBar value={seats} max={capacity} label={capacity === null ? fill(t.noLimit, { n: seats }) : fill(t.seats, { n: seats, max: capacity })} />
+          </Glance>
+          {application && <Glance label={t.applied} value={counts.applied} icon="clipboard" tone="blue" />}
+          <Glance label={t.waitlisted} value={counts.waitlisted} icon="clock" tone="yellow" className={application ? undefined : "col-span-2 md:col-span-1"} />
+          {application && <Glance label={t.rejected} value={counts.rejected} icon="flag" tone="ember" className="col-span-2 md:col-span-1" />}
         </dl>
       </section>
 
@@ -213,8 +212,12 @@ export default function RegistrationsView({ lang, eventId, slug, published, appl
       </div>
 
       {application && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] border border-line bg-panel px-4 py-3">
-          <p role="status" className="text-sm font-semibold text-fg">{waiting.total > 0 ? plural(lang, waiting.total, t.waiting) : t.nothingWaiting}</p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[var(--radius-md)] border border-line bg-panel p-4">
+          <Icon3D name="send" sizes="48px" className="pointer-events-none size-11 shrink-0 -rotate-6 drop-shadow-[0_6px_8px_rgb(0_40_70/0.25)]" />
+          <div className="grid min-w-0 flex-1 gap-0.5 basis-56">
+            <p role="status" className="text-sm font-bold text-fg">{waiting.total > 0 ? plural(lang, waiting.total, t.waiting) : t.nothingWaiting}</p>
+            <p className="text-sm text-fg-muted">{t.send.hint}</p>
+          </div>
           <ConfirmDialog
             trigger={<Button variant={waiting.total > 0 ? "primary" : "secondary"} size="sm" disabled={waiting.total === 0 || pending} icon={<Send aria-hidden="true" size={14} />}>{t.send.button}</Button>}
             title={fill(t.send.title, { n: waiting.total })}
@@ -228,7 +231,7 @@ export default function RegistrationsView({ lang, eventId, slug, published, appl
         <TeamBoard
           lang={lang} rows={rows} teams={teams} capacity={capacity} teamMin={teamMin} teamMax={teamMax} pending={pending} statusLabel={statusLabel}
           onDecide={(ids, dec) => decide(ids, dec, "team")}
-          onSolo={() => { setView("list"); setSegment("all"); setTeamFilter(["solo"]); }}
+          onSolo={() => { setView("list"); setSegment("all"); setTeamFilter(["solo"]); }} onList={() => setView("list")}
         />
       ) : (
         <>
@@ -238,15 +241,21 @@ export default function RegistrationsView({ lang, eventId, slug, published, appl
               <Search aria-hidden="true" size={16} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-fg-muted" />
               <Input id="regs-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.searchPlaceholder} className="pl-9" />
             </div>
-            {hasTeams && (
-              <FilterBar
-                label={t.teamFilter} value={teamFilter} onChange={setTeamFilter}
-                options={[{ value: "team", label: t.teamTeam, count: rows.filter((r) => r.teamId && r.status !== "cancelled").length }, { value: "solo", label: t.teamSolo, count: rows.filter((r) => !r.teamId && r.status !== "cancelled").length }]}
-              />
+            {(hasTeams || answerGroups.length > 0) && (
+              <FilterDisclosure label={t.filters} activeCount={teamFilter.length + Object.values(answerFilters).reduce((n, v) => n + v.length, 0)} className="md:contents">
+                <div className="flex flex-wrap items-center gap-2">
+                {hasTeams && (
+                  <FilterBar
+                    label={t.teamFilter} value={teamFilter} onChange={setTeamFilter}
+                    options={[{ value: "team", label: t.teamTeam, count: rows.filter((r) => r.teamId && r.status !== "cancelled").length }, { value: "solo", label: t.teamSolo, count: rows.filter((r) => !r.teamId && r.status !== "cancelled").length }]}
+                  />
+                )}
+                {answerGroups.map((g) => (
+                  <FilterBar key={g.q.id} label={tf(g.q.label, lang)} options={g.options} value={answerFilters[g.q.id] ?? []} onChange={(v) => setAnswerFilters((p) => ({ ...p, [g.q.id]: v }))} />
+                ))}
+                </div>
+              </FilterDisclosure>
             )}
-            {answerGroups.map((g) => (
-              <FilterBar key={g.q.id} label={tf(g.q.label, lang)} options={g.options} value={answerFilters[g.q.id] ?? []} onChange={(v) => setAnswerFilters((p) => ({ ...p, [g.q.id]: v }))} />
-            ))}
           </div>
           <p role="status" className="text-sm font-semibold text-fg-muted">{plural(lang, filtered.length, t.results)}</p>
           <DataTable
@@ -276,15 +285,6 @@ export default function RegistrationsView({ lang, eventId, slug, published, appl
         onClose={() => setDrawerId(null)} onDecide={(dec, sc) => drawerRow && decide([drawerRow.id], dec, sc)}
       />
       {node}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="grid content-start gap-1 rounded-[var(--radius-md)] border border-line bg-panel p-4">
-      <dt className="text-sm font-semibold text-fg-muted">{label}</dt>
-      <dd className="tnum font-display text-2xl font-bold text-fg">{value}</dd>
     </div>
   );
 }

@@ -17,7 +17,7 @@ async function Body({ lang, params }: { lang: Locale; params: Params }) {
   await requireStaffPage();
   await connection();
   const { db, event } = loadEvent(id);
-  return <CommsView rows={outboxForEvent(db, event)} lang={lang} />;
+  return <CommsView rows={outboxForEvent(db, event)} lang={lang} eventId={event.id} />;
 }
 
 export default async function CommsPage({ params }: { params: Params }) {

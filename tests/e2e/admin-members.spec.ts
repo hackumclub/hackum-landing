@@ -316,7 +316,7 @@ test.describe("settings", () => {
   test("seasons: current season and whether applications are open are visible", async ({ page }) => {
     await open(page, "settings");
     await expect(page.getByText("Current season", { exact: true })).toBeVisible();
-    await expect(page.locator("tbody tr").filter({ hasText: "Current" })).toHaveCount(1);
+    await expect(page.getByTestId("season-item").filter({ hasText: "Current" })).toHaveCount(1);
     await expect(page.getByText(/Open for .+ · closes|Opens for .+ on|Not accepting applications right now/)).toBeVisible();
   });
 
@@ -339,7 +339,7 @@ test.describe("settings", () => {
     await drawer.getByLabel(/^Applications close/).fill("2090-03-01T10:00");
     await drawer.getByRole("button", { name: "Save" }).click();
     await expect(page.getByRole("status").filter({ hasText: `${year} оны улирал saved` })).toBeVisible();
-    const row = page.locator("tbody tr").filter({ hasText: String(year) });
+    const row = page.getByTestId("season-item").filter({ hasText: String(year) });
     await expect(row).toContainText("Scheduled");
     await row.getByRole("button", { name: /^Edit/ }).click();
     await expect(page.getByRole("dialog").getByLabel(/^Year/)).toBeDisabled();
@@ -350,7 +350,7 @@ test.describe("settings", () => {
 
   test("staff: roles are listed; your own admin role can't be removed; grant then remove an organizer", async ({ page }) => {
     await open(page, "settings/staff");
-    const me = page.locator("tbody tr").filter({ hasText: "Dev Admin" });
+    const me = page.getByTestId("staff-item").filter({ hasText: "Dev Admin" });
     await expect(me).toContainText("Admin");
     await expect(me).toContainText("You");
     await me.getByRole("button", { name: /^Remove access/ }).click();
@@ -368,12 +368,12 @@ test.describe("settings", () => {
     await page.getByRole("button", { name: "Grant role" }).click();
     await expect(page.getByRole("alertdialog")).toContainText(`Make ${label} an organizer?`);
     await page.getByRole("alertdialog").getByRole("button", { name: "Grant role" }).click();
-    const added = page.locator("tbody tr").filter({ hasText: label });
+    const added = page.getByTestId("staff-item").filter({ hasText: label });
     await expect(added).toContainText("Organizer");
     await added.getByRole("button", { name: /^Remove access/ }).click();
     await expect(page.getByRole("alertdialog")).toContainText(`Remove ${label}’s staff access?`);
     await page.getByRole("alertdialog").getByRole("button", { name: "Remove access" }).click();
-    await expect(page.locator("tbody tr").filter({ hasText: label })).toHaveCount(0);
+    await expect(page.getByTestId("staff-item").filter({ hasText: label })).toHaveCount(0);
   });
 
   test("integrations: five honest 'Local demo: simulated' cards, env var names, the state legend, and a reset button (not clicked)", async ({ page }) => {
@@ -392,10 +392,10 @@ test.describe("audit", () => {
   test("newest first, plain-language actions, and a result count", async ({ page }) => {
     await open(page, "audit");
     await expect(page.getByText(/^\d+ results?$/)).toBeVisible();
-    const times = await page.locator("tbody time").evaluateAll((els) => els.map((e) => Date.parse(e.getAttribute("datetime") ?? "")));
+    const times = await page.locator("main ol time").evaluateAll((els) => els.map((e) => Date.parse(e.getAttribute("datetime") ?? "")));
     expect(times.length).toBeGreaterThan(5);
     expect([...times].sort((a, b) => b - a)).toEqual(times);
-    expect(await page.locator("tbody").innerText()).not.toMatch(/\b(event\.update|registration\.decide|membership\.approve)\b/);
+    expect(await page.locator("main ol").innerText()).not.toMatch(/\b(event\.update|registration\.decide|membership\.approve)\b/);
   });
 
   test("action-group, actor and range filters narrow server-side and live in the URL", async ({ page }) => {
@@ -405,9 +405,11 @@ test.describe("audit", () => {
     await page.getByRole("group", { name: "Filter by kind of action" }).getByRole("button", { name: "Members" }).click();
     await expect(page).toHaveURL(/group=members/);
     await expect.poll(() => number(results)).toBeLessThan(all);
-    for (const t of await page.locator("tbody tr td:nth-child(2)").allInnerTexts()) expect(t).toMatch(/member|profile/i);
+    for (const g of await page.locator("main ol li button").evaluateAll((els) => els.map((e) => e.getAttribute("data-group")))) expect(g).toBe("members");
+    const members = await number(results);
     await page.getByRole("button", { name: "Clear filters" }).click();
-    await expect.poll(() => number(results)).toBe(all);
+    await expect(page).not.toHaveURL(/group=/);
+    await expect.poll(() => number(results)).toBeGreaterThan(members); // other specs write to the shared audit log, so no exact total
     await page.getByRole("group", { name: "Time range" }).getByRole("button", { name: "Last 24 hours" }).click();
     await expect(page).toHaveURL(/range=24h/);
     await expect.poll(() => number(results)).toBeLessThanOrEqual(all);
@@ -419,14 +421,14 @@ test.describe("audit", () => {
     await open(page, "audit?actor=nobody-with-this-id");
     await expect(page.getByRole("heading", { name: "Nothing found" })).toBeVisible();
     await open(page, "audit?group=%3Cscript%3E&range=forever&page=-7");
-    await expect(page.locator("tbody tr").first()).toBeVisible();
+    await expect(page.locator("main ol li button").first()).toBeVisible();
     await open(page, "audit?page=999");
-    await expect(page.locator("tbody tr").first()).toBeVisible();
+    await expect(page.locator("main ol li button").first()).toBeVisible();
   });
 
   test("a row opens the diff as readable before → after pairs", async ({ page }) => {
     await open(page, "audit");
-    await page.getByRole("button", { name: /^Changed event details/ }).first().click();
+    await page.getByRole("button", { name: / edited / }).first().click();
     const drawer = page.getByRole("dialog");
     await expect(drawer.getByRole("heading", { name: "Changes" })).toBeVisible();
     await expect(drawer.getByText("Before:")).toHaveCount(await drawer.getByText("After:").count());
@@ -515,9 +517,161 @@ test.describe("accessibility", () => {
       await page.getByRole("dialog").waitFor();
       await scan("season form");
       await open(page, "audit");
-      await page.getByRole("button", { name: /^Changed event details/ }).first().click();
+      await page.getByRole("button", { name: / edited / }).first().click();
       await page.getByRole("dialog").waitFor();
       await scan("audit diff");
     });
   }
+});
+
+// ── polish pass: phone layouts, profile card, application cards, comms tiles, audit story, settings timeline ───────────────
+async function firstFreeGuestHandle(page: Page): Promise<string> {
+  await page.getByRole("button", { name: /^Guests \d+/ }).click();
+  const rows = page.locator("tbody tr");
+  const n = await rows.count();
+  for (let i = 0; i < n; i++) {
+    const h = (await rows.nth(i).locator("td").nth(1).innerText()).match(/@([\w-]+)/)?.[1] ?? "";
+    if (h && !PERSONA_HANDLES.includes(h)) return h;
+  }
+  return "";
+}
+
+test.describe("phone polish", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("directory: chips fold behind Filters, the segment row scrolls with a cue, rows are avatar + name + status", async ({ page }) => {
+    await signInAs(page, "dev-organizer");
+    await open(page, "members");
+    const season = page.getByRole("group", { name: "Filter by season" });
+    await expect(season).toBeHidden();
+    const filters = page.getByRole("button", { name: /^Filters/ });
+    await expect(filters).toHaveAttribute("aria-expanded", "false");
+    await filters.click();
+    await expect(season).toBeVisible();
+    await expect(page.getByRole("group", { name: "Filter by team" })).toBeVisible();
+    await season.getByRole("button", { name: /^2025/ }).click();
+    await expect(page.getByRole("button", { name: /^Filters 1/ })).toBeVisible(); // the active count shows on the folded button
+    // 360px-class phones clip the 4th segment: the row must scroll and carry the fade cue (a mask) while content is hidden.
+    await page.setViewportSize({ width: 360, height: 800 });
+    const seg = page.getByRole("group", { name: "Filter by status" });
+    expect(await seg.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+    await expect.poll(() => seg.evaluate((el) => getComputedStyle(el).maskImage || getComputedStyle(el).webkitMaskImage)).not.toBe("none");
+    // At most 3 table columns (select, person, status) are visible.
+    const visibleHeaders = await page.locator("thead th").evaluateAll((els) => els.filter((e) => getComputedStyle(e).display !== "none").length);
+    expect(visibleHeaders).toBeLessThanOrEqual(3);
+  });
+
+  test("bulk bar stays in view at the bottom while scrolling a long list", async ({ page }) => {
+    await signInAs(page, "dev-organizer");
+    await open(page, "members");
+    await page.locator("tbody tr").nth(2).getByRole("checkbox").check();
+    const bar = page.getByRole("group", { name: "Actions for the selected people" });
+    await expect(bar).toBeVisible();
+    await page.evaluate(() => window.scrollTo(0, 1500));
+    await expect.poll(async () => (await bar.boundingBox())?.y ?? 0).toBeGreaterThan(400);
+    const box = await bar.boundingBox();
+    expect(box!.y + box!.height).toBeLessThanOrEqual(844);
+  });
+
+  test("applications: full-width Approve (primary) and Reject, a labelled private-note disclosure", async ({ page }) => {
+    await signInAs(page, "dev-organizer");
+    await open(page, "members/applications");
+    test.skip((await page.getByRole("button", { name: "Approve", exact: true }).count()) === 0, "no pending applications left in the shared demo data");
+    const approve = page.getByRole("button", { name: "Approve", exact: true }).first();
+    const reject = page.getByRole("button", { name: "Reject", exact: true }).first();
+    expect((await approve.boundingBox())!.width).toBeGreaterThan(280);
+    expect((await reject.boundingBox())!.width).toBeGreaterThan(280);
+    expect((await approve.boundingBox())!.y).toBeLessThan((await reject.boundingBox())!.y); // primary first on a phone
+    await expect(page.getByText("Add a private note (only staff can see it)").first()).toBeVisible();
+    await expect(page.locator("blockquote").first()).toBeVisible();
+  });
+
+  test("comms rows stay inside the screen: previews are icon buttons with names", async ({ page }) => {
+    await signInAs(page, "dev-organizer");
+    await open(page, "comms");
+    const preview = page.getByRole("button", { name: /^Preview:/ }).first();
+    const box = await preview.boundingBox();
+    expect(box!.width).toBeGreaterThanOrEqual(40);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+  });
+});
+
+test.describe("profile card", () => {
+  test("the drawer is a profile card; Change status asks, names the person and the new status, and round-trips", async ({ page }) => {
+    await signInAs(page, "dev-organizer");
+    await open(page, "members");
+    const handle = await firstFreeGuestHandle(page);
+    test.skip(handle === "", "no non-persona guest left in the shared demo data");
+    await page.getByRole("searchbox", { name: "Search" }).fill(handle);
+    await page.getByRole("button", { name: /Open .*’s profile/ }).first().click();
+    const drawer = page.getByRole("dialog");
+    await expect(drawer.getByText(`@${handle}`).first()).toBeVisible();
+    await expect(drawer.getByRole("heading", { name: "Season history" })).toBeVisible();
+    await drawer.getByRole("button", { name: "Change status" }).click();
+    await expect(drawer.getByText("Choose the new status")).toBeVisible();
+    await expect(drawer.getByRole("button", { name: "Guest", exact: true })).toHaveCount(0); // the current status is not offered
+    await drawer.getByRole("button", { name: "Member", exact: true }).click();
+    await expect(page.getByRole("alertdialog")).toContainText(/Set .+ as “Member”\?/);
+    await page.getByRole("alertdialog").getByRole("button", { name: "Promote to member" }).click();
+    await expect(drawer.getByRole("status").filter({ hasText: /is now “Member”/ })).toBeVisible();
+    // Put the shared data back.
+    await drawer.getByRole("button", { name: "Change status" }).click();
+    await drawer.getByRole("button", { name: "Guest", exact: true }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Set guest" }).click();
+    await expect(drawer.getByRole("status").filter({ hasText: /is now “Guest”/ })).toBeVisible();
+  });
+});
+
+test.describe("look and feel", () => {
+  test("comms: budget meter plus four tinted KPI tiles with 3D icons", async ({ page }) => {
+    await signInAs(page, "dev-organizer");
+    await open(page, "comms");
+    await expect(page.getByRole("meter")).toBeVisible();
+    for (const k of ["Sent", "Queued", "Failed", "Skipped"]) await expect(page.locator('section[aria-labelledby="comms-kpis"]').getByText(k, { exact: true })).toBeVisible();
+    expect(await page.locator('section[aria-labelledby="comms-kpis"] img[src*="icons3d"]').count()).toBeGreaterThanOrEqual(5); // send + mail, clock, bell, shield
+  });
+
+  test("audit: rows are grouped by day under sticky headers, one human sentence per row, and the diff drawer opens", async ({ page }) => {
+    await signInAs(page, "dev-organizer");
+    await open(page, "audit");
+    const headers = page.locator("main ol > li > h3");
+    expect(await headers.count()).toBeGreaterThanOrEqual(2);
+    expect(await headers.first().evaluate((el) => getComputedStyle(el).position)).toBe("sticky");
+    const first = page.locator("main ol li ul li button").first();
+    await expect(first).toContainText(/^(Dev Admin|Dev Organizer|[\w -]+) (created|edited|published|approved|rejected|decided|changed|updated|applied|gave|merged|saved|emailed|re-queued)/);
+    expect(await page.locator("main ol").innerText()).not.toMatch(/\b(event\.update|membership\.approve)\b/);
+    await first.click();
+    await expect(page.getByRole("dialog").getByRole("heading", { name: "Changes" })).toBeVisible();
+  });
+
+  test("audit: the empty state offers a way out", async ({ page }) => {
+    await signInAs(page, "dev-organizer");
+    await open(page, "audit?actor=nobody-with-this-id");
+    await expect(page.getByRole("link", { name: "Clear filters" })).toBeVisible();
+  });
+
+  test("settings: seasons are a timeline with the current season highlighted; staff are cards with avatars and role pills", async ({ page }) => {
+    await signInAs(page, "dev-admin");
+    await open(page, "settings");
+    const items = page.getByTestId("season-item");
+    expect(await items.count()).toBeGreaterThanOrEqual(2);
+    await expect(page.locator('[data-testid="season-item"][data-current="true"]')).toHaveCount(1);
+    await open(page, "settings/staff");
+    const mine = page.getByTestId("staff-item").filter({ hasText: "Dev Admin" });
+    await expect(mine.getByText("Admin", { exact: true })).toBeVisible();
+    await expect(mine.getByText("DA", { exact: true })).toBeVisible(); // avatar initials
+  });
+
+  test("integrations: five 3D icons (passkey, lock, mail, clock, wifi) and a legend with all four states", async ({ page }) => {
+    await signInAs(page, "dev-admin");
+    await open(page, "settings/integrations");
+    for (const n of ["passkey", "lock", "mail", "clock", "wifi"]) await expect(page.locator(`main li img[src*="${n}.png"], main li img[src*="${n}.png"]`).first()).toHaveCount(1);
+    for (const s of ["Simulated", "Connected", "Misconfigured", "Failing"]) await expect(page.getByText(s, { exact: true })).toBeVisible();
+  });
+
+  test("merge: the empty list and the compare view each have one clear next action", async ({ page }) => {
+    await signInAs(page, "dev-admin");
+    await open(page, "members/merge");
+    await expect(page.getByRole("button", { name: "Compare" }).first().or(page.getByRole("link", { name: "Pick two manually" }))).toBeVisible();
+  });
 });

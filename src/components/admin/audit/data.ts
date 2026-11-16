@@ -10,6 +10,8 @@ import type { Db } from "@/lib/mockdb/types";
 
 export type AuditRowDto = {
   id: string; actor: string; action: string; entity: string; at: string;
+  /** One human sentence that starts with the actor's name: "Dev Organizer approved Anuujin’s membership". */
+  sentence: string; group: AuditGroup;
   diff: { key: string; label: string; before: string | null; after: string; changed: boolean }[];
 };
 export type AuditData = {
@@ -17,7 +19,7 @@ export type AuditData = {
   actors: { id: string; name: string }[]; now: string;
 };
 
-function entityLabel(db: Db, entity: string, id: string, lang: Locale, c: AreaCopy): string {
+function entityLabel(db: Db, entity: string, id: string, lang: Locale, c: AreaCopy): { label: string; name: string } {
   const kind = entityKind(entity);
   const a = c.audit;
   const person = (pid: string | null) => { const p = profileOf(db, pid); return p ? tf(p.name, lang).trim() || p.name.mn || p.handle : null; };
@@ -35,9 +37,10 @@ function entityLabel(db: Db, entity: string, id: string, lang: Locale, c: AreaCo
     case "application": { const x = db.membership_applications.find((y) => y.id === id); name = x ? person(x.profile_id) : null; break; }
     case "season": { const s = db.seasons.find((x) => String(x.year) === id); name = s ? tf(s.label, lang) : null; break; }
     case "notification": { const n = db.notifications.find((x) => x.id === id); name = n ? c.comms.templates[n.template] : null; break; }
-    case "other": return `${a.entities.other} · ${id}`;
+    case "other": return { label: `${a.entities.other} · ${id}`, name: id };
   }
-  return a.entityOf.replace("{kind}", a.entities[kind]).replace("{name}", name ?? `${id} (${a.entityGone})`);
+  const shown = name ?? `${id} (${a.entityGone})`;
+  return { label: a.entityOf.replace("{kind}", a.entities[kind]).replace("{name}", shown), name: shown };
 }
 
 export function loadAudit(filter: AuditFilter, lang: Locale, c: AreaCopy, status: Dict["status"]): AuditData {
@@ -65,14 +68,22 @@ export function loadAudit(filter: AuditFilter, lang: Locale, c: AreaCopy, status
     return formatDiffValue(v, lang, words);
   };
 
-  const rows = matches.slice(from, to).map((e): AuditRowDto => ({
+  const rows = matches.slice(from, to).map((e): AuditRowDto => {
+    const actor = actorName(e.actor_profile_id);
+    const action = c.audit.actions[e.action] ?? humanizeCode(e.action);
+    const target = entityLabel(db, e.entity, e.entity_id, lang, c);
+    const template = c.audit.sentences[e.action];
+    return {
     id: e.id,
-    actor: actorName(e.actor_profile_id),
-    action: c.audit.actions[e.action] ?? humanizeCode(e.action),
-    entity: entityLabel(db, e.entity, e.entity_id, lang, c),
+    actor,
+    action,
+    entity: target.label,
+    sentence: template ? template.replace("{actor}", actor).replace("{target}", target.name) : c.audit.sentenceFallback.replace("{actor}", actor).replace("{action}", action),
+    group: auditGroup(e.action),
     at: e.at,
     diff: diffPairs(e.diff).map((p) => ({ key: p.key, label: c.audit.keys[p.key] ?? humanizeCode(p.key), before: p.changed ? show(p.key, p.before) : null, after: show(p.key, p.after), changed: p.changed })),
-  }));
+    };
+  });
   const actorIds = [...new Set(db.audit_log.map((e) => e.actor_profile_id).filter((x): x is string => !!x))];
   const actors = actorIds.map((id) => ({ id, name: actorName(id) })).sort((a, b) => a.name.localeCompare(b.name, lang));
   return { rows, total: matches.length, page, pages, from, to, actors, now: now.toISOString() };

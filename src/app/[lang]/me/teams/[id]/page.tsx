@@ -10,7 +10,8 @@ import Avatar from "@/components/ui/Avatar";
 import { ButtonLink } from "@/components/ui/Button";
 import CopyButton from "@/components/me/CopyButton";
 import LeaveTeamButton from "@/components/me/LeaveTeamButton";
-import { PageSkeleton, Section } from "@/components/me/parts";
+import Sticker from "@/components/Sticker";
+import { PageHeader, PageSkeleton, Section } from "@/components/me/parts";
 import { meContext } from "@/components/me/context";
 
 type Props = { params: Promise<{ lang: string; id: string }> };
@@ -32,13 +33,17 @@ async function Body({ params }: Props) {
   const short = v.members.length < v.min;
   return (
     <div className="grid gap-6">
-      <header className="grid gap-1">
-        <p className="text-sm font-semibold text-fg-muted">{t.title}</p>
-        <h1 className="font-display text-2xl font-bold text-fg md:text-3xl">{v.name}</h1>
-        <p className="text-sm text-fg-muted">
-          <Link href={`/${lang}/events/${v.slug}`} className="font-semibold text-accent-fg hover:underline">{eventTitle}</Link>
-        </p>
-      </header>
+      <PageHeader
+        sticker="team" title={v.name}
+        lead={<Link href={`/${lang}/events/${v.slug}`} className="inline-flex min-h-11 items-center font-semibold underline-offset-4 hover:underline">{t.event}: {eventTitle}</Link>}
+      />
+
+      {short && (
+        <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-line p-4" style={{ background: "radial-gradient(120% 160% at 0% 0%, var(--ops-warn-soft), var(--ops-panel) 70%)" }}>
+          <Sticker name="queue" sizes="64px" className="w-14 shrink-0" />
+          <p className="text-sm font-bold text-warn-fg">{fill(t.needMore, { min: v.min })}</p>
+        </div>
+      )}
 
       <div className="grid gap-4 rounded-[var(--radius-md)] border border-line bg-panel p-4 md:p-5">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -46,24 +51,20 @@ async function Body({ params }: Props) {
           <span className="inline-flex items-center gap-1 text-sm text-fg-muted">
             {v.locked ? <Lock aria-hidden="true" size={14} /> : <Unlock aria-hidden="true" size={14} />}{v.locked ? t.locked : t.open}
           </span>
-          {short && <span className="text-sm font-semibold text-warn-fg">{fill(t.needMore, { min: v.min })}</span>}
         </div>
         {v.lookingFor.length > 0 && (
           <p className="flex flex-wrap items-center gap-2 text-sm text-fg-muted">{t.lookingFor}:
             {v.lookingFor.map((x) => <span key={x} className="rounded-full bg-neutral-soft px-2.5 py-0.5 text-xs font-bold text-fg">{x}</span>)}
           </p>
         )}
-        <div className="grid gap-1">
+        <div className="grid gap-2 rounded-[var(--radius-sm)] p-4" style={{ background: "radial-gradient(120% 140% at 100% 0%, var(--ops-accent-soft), var(--ops-panel-2) 70%)" }}>
           <p className="text-sm font-semibold text-fg-muted">{t.code}</p>
-          <p className="font-display text-3xl font-bold text-fg tnum" data-testid="team-code">{v.code}</p>
+          <p className="w-fit rounded-[var(--radius-sm)] border-2 border-dashed border-accent bg-panel px-4 py-2 font-display text-3xl font-black tracking-wide text-fg tnum" data-testid="team-code">{v.code}</p>
+          <p className="text-sm text-fg-muted"><span className="font-bold text-fg">{t.share}.</span> {t.shareLine}</p>
         </div>
-        <div className="grid gap-1">
-          <p className="text-sm font-semibold text-fg">{t.share}</p>
-          <p className="text-sm text-fg-muted">{t.shareLine}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <CopyButton value={v.code} label={t.copyCode} copiedLabel={t.copied} />
-          <CopyButton value={invitePath} label={t.copyLink} copiedLabel={t.copied} variant="ghost" />
+        <div className="grid gap-2 sm:flex sm:flex-wrap">
+          <CopyButton value={v.code} label={t.copyCode} copiedLabel={t.copied} className="w-full sm:w-auto" />
+          <CopyButton value={invitePath} label={t.copyLink} copiedLabel={t.copied} variant="ghost" className="w-full sm:w-auto" />
         </div>
       </div>
 

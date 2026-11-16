@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useOptimistic, useState, useTransition } from "react";
+import { CalendarPlus, Check, Loader2, Ticket, Video } from "lucide-react";
+import Sticker from "@/components/Sticker";
 import { fill } from "@/i18n/config";
 import type { PublicCopy } from "@/i18n/areas/public";
 import type { Result } from "@/lib/result";
@@ -28,9 +30,9 @@ export type PanelProps = {
 // Initials must read at 12px: white on brand-dark (5.8:1), ink on leaf (6.0:1) and on sun (9.8:1).
 const AVATAR = ["bg-brand-dark text-white", "bg-leaf text-ink", "bg-sun text-ink"];
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase();
-const primary = "btn-primary inline-flex min-h-[48px] items-center justify-center rounded-full px-7 py-3 text-center disabled:cursor-wait";
-const secondary = "btn-glass-light inline-flex min-h-[44px] items-center justify-center rounded-full px-5 py-2.5 text-sm font-bold text-ink hover:text-brand";
-const chip = "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-bold";
+const primary = "btn-primary inline-flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full px-8 py-3.5 text-center text-lg shadow-glow disabled:cursor-wait";
+const secondary = "btn-glass-light inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold text-ink hover:text-brand";
+const chip = "inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-bold";
 
 /**
  * The registration panel on an event page. The server decides what to offer (src/lib/public/rsvp.ts); this component
@@ -62,7 +64,7 @@ export default function RsvpPanel({ copy: c, eventId, name, view, seats, dates, 
   const left = seats.capacity === null ? null : Math.max(0, seats.capacity - going);
 
   return (
-    <section aria-labelledby={`${errorId}-h`} aria-busy={pending}>
+    <section aria-labelledby={`${errorId}-h`} aria-busy={pending} className="min-w-0">
       <h2 id={`${errorId}-h`} className="font-display text-lg font-black">{c.title}</h2>
       <div className="mt-4 space-y-4">
         <Seats c={c} capacity={seats.capacity} left={left} going={going} waitlisted={seats.waitlisted} />
@@ -84,10 +86,15 @@ function Seats({ c, capacity, left, going, waitlisted }: { c: PanelProps["copy"]
   if (capacity === null && going === 0) return null;
   const pct = capacity ? Math.min(100, Math.round((going / capacity) * 100)) : 0;
   return (
-    <div>
+    <div className="rounded-2xl bg-white/60 p-4 ring-1 ring-white/80">
       {capacity !== null && left !== null ? (
         <>
-          <div aria-hidden className="h-2 overflow-hidden rounded-full bg-brand-tint"><div className={`h-full rounded-full transition-[width] duration-500 ${left === 0 ? "bg-ink" : "bg-brand"}`} style={{ width: `${pct}%` }} /></div>
+          <div className="flex items-end justify-between gap-3">
+            <p aria-hidden className="font-display text-3xl leading-none font-black tabular-nums">{going}<span className="text-lg text-muted">/{capacity}</span></p>
+          </div>
+          <div aria-hidden className="mt-3 h-3 overflow-hidden rounded-full bg-brand-tint shadow-[inset_0_1px_2px_rgb(0_60_100/0.2)]">
+            <div className={`h-full rounded-full transition-[width] duration-500 ${left === 0 ? "bg-ink" : "bg-gradient-to-b from-[#13a3ea] via-[#0085ca] to-[#006ba3]"}`} style={{ width: `${pct}%` }} />
+          </div>
           <p className="mt-2 text-sm font-bold">{left === 0 ? fill(c.seatsFull, { total: capacity }) : fill(c.seatsLeft, { left, total: capacity })}</p>
         </>
       ) : <p className="text-sm font-bold">{fill(c.seatsOpen, { n: going })}</p>}
@@ -103,12 +110,12 @@ function Attendees({ c, attendees }: { c: PanelProps["copy"]; attendees: PanelPr
     <div>
       <p className="text-sm text-faint">{c.attendees}</p>
       <div role="group" aria-label={fill(c.attendeesAria, { names: attendees.more ? `${names} ${fill(c.more, { n: attendees.more })}` : names })} className="mt-2 flex items-center">
-        <ul aria-hidden className="flex -space-x-1.5">
+        <ul aria-hidden className="flex -space-x-2">
           {attendees.shown.map((p, i) => (
-            <li key={p.id} title={p.name} className={`grid h-9 w-9 place-items-center rounded-full text-xs font-black ring-2 ring-white ${AVATAR[i % AVATAR.length]}`}>{initials(p.name)}</li>
+            <li key={p.id} title={p.name} className={`grid h-10 w-10 place-items-center rounded-full text-xs font-black shadow-sm ring-2 ring-white ${AVATAR[i % AVATAR.length]}`}>{initials(p.name)}</li>
           ))}
         </ul>
-        {attendees.more > 0 ? <span aria-hidden className="ml-2 text-sm font-bold text-muted">{fill(c.more, { n: attendees.more })}</span> : null}
+        {attendees.more > 0 ? <span aria-hidden className="ml-2 rounded-full bg-brand-tint px-2.5 py-1 text-sm font-black text-brand-deep">{fill(c.more, { n: attendees.more })}</span> : null}
       </div>
     </div>
   );
@@ -123,26 +130,32 @@ function Body({ c, state, pending, name, dates, ordinal, links, confirming, conf
   const note = "text-sm text-muted";
   switch (state.kind) {
     case "signed_out":
-      return <div className="space-y-2"><Link href={links.signIn} className={`${primary} w-full sm:w-auto`}>{state.apply ? c.signInApply : c.signInRsvp}</Link><p className={note}>{c.signInNote}</p></div>;
+      return <div className="space-y-2"><Link href={links.signIn} className={primary}>{state.apply ? c.signInApply : c.signInRsvp}</Link><p className={note}>{c.signInNote}</p></div>;
     case "needs_onboarding":
-      return <div className="space-y-2"><p className="font-bold">{c.finishProfile}</p><p className={note}>{c.finishProfileLead}</p><Link href={links.onboarding} className={`${primary} w-full sm:w-auto`}>{c.finishProfileCta}</Link></div>;
+      return <div className="space-y-2"><p className="font-bold">{c.finishProfile}</p><p className={note}>{c.finishProfileLead}</p><Link href={links.onboarding} className={primary}>{c.finishProfileCta}</Link></div>;
     case "rsvp":
       return (
         <div className="space-y-2">
           {state.waitlist ? <p className={note}>{c.waitlistNote}</p> : null}
-          <button type="button" onClick={onRsvp} disabled={pending} className={`${primary} w-full sm:w-auto`}>{pending ? c.saving : state.waitlist ? c.joinWaitlist : c.rsvp}</button>
+          <button type="button" onClick={onRsvp} disabled={pending} className={primary}>
+            {pending ? <Loader2 aria-hidden className="size-5 motion-safe:animate-spin" /> : <Ticket aria-hidden className="size-5" />}
+            {pending ? c.saving : state.waitlist ? c.joinWaitlist : c.rsvp}
+          </button>
         </div>
       );
     case "going":
       return (
         <div className="space-y-4">
-          <div><p className={`${chip} bg-leaf/15 text-ink`}><span aria-hidden className="size-2 rounded-full bg-leaf" />{c.going}</p><p className={`mt-2 ${note}`}>{c.goingNote}</p></div>
+          <div className="flex items-center gap-3 rounded-2xl bg-leaf/15 p-4 ring-1 ring-leaf/30">
+            <Sticker name="rsvp" sizes="72px" className="w-[4.5rem] shrink-0 -rotate-3" />
+            <div><p className="flex items-center gap-2 font-black"><span aria-hidden className="grid size-6 place-items-center rounded-full bg-leaf text-ink"><Check className="size-4" /></span><span>{c.going}</span></p><p className={`mt-1 ${note}`}>{c.goingNote}</p></div>
+          </div>
           <div className="space-y-2">
             <p className="text-sm font-bold">{c.addToCalendar}</p>
             <div className="flex flex-wrap gap-2">
-              {links.google ? <a href={links.google} target="_blank" rel="noopener noreferrer" className={secondary}>{c.google}</a> : null}
+              {links.online ? <a href={links.online} target="_blank" rel="noopener noreferrer" className={`${secondary} w-full`}><Video aria-hidden className="size-4" />{c.joinOnline}</a> : null}
+              {links.google ? <a href={links.google} target="_blank" rel="noopener noreferrer" className={secondary}><CalendarPlus aria-hidden className="size-4" />{c.google}</a> : null}
               <a href={links.ics} download className={secondary}>{c.ics}</a>
-              {links.online ? <a href={links.online} target="_blank" rel="noopener noreferrer" className={secondary}>{c.joinOnline}</a> : null}
             </div>
           </div>
           <Cancel c={c} name={name} pending={pending} confirming={confirming} confirmId={confirmId} onAsk={onAskCancel} onKeep={onKeep} onConfirm={onCancel} />
@@ -167,7 +180,7 @@ function Body({ c, state, pending, name, dates, ordinal, links, confirming, conf
       return (
         <div className="space-y-2">
           <p className={note}>{c.applyNote}</p>
-          <Link href={links.apply} className={`${primary} w-full sm:w-auto`}>{c.apply}</Link>
+          <Link href={links.apply} className={primary}>{c.apply}</Link>
           {dates.decisionBy ? <p className={note}>{fill(c.decisionBy, { date: dates.decisionBy })}</p> : null}
         </div>
       );

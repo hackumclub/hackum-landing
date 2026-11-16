@@ -1,13 +1,13 @@
 "use client";
 import { useMemo, useState } from "react";
-import { tf, type Locale } from "@/i18n/config";
+import { href, tf, type Locale } from "@/i18n/config";
 import { copy } from "@/i18n/areas/admin-events";
 import { plural } from "@/i18n/plural";
 import type { OutboxRow } from "@/lib/events/admin-outbox";
 import type { NotifStatus } from "@/lib/mockdb/types";
 import type { Status } from "@/lib/status";
 import { formatUb } from "@/lib/time";
-import Button from "@/components/ui/Button";
+import Button, { ButtonLink } from "@/components/ui/Button";
 import DataTable, { type Column } from "@/components/ui/DataTable";
 import EmptyState from "@/components/ui/EmptyState";
 import StatusPill from "@/components/ui/StatusPill";
@@ -18,7 +18,7 @@ const TONE: Record<NotifStatus, Status> = { queued: "pending", sending: "applied
 const ORDER: NotifStatus[] = ["queued", "sending", "sent", "failed", "skipped"];
 const when = (iso: string, lang: Locale) => formatUb(new Date(iso), lang, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
-export default function CommsView({ rows, lang }: { rows: OutboxRow[]; lang: Locale }) {
+export default function CommsView({ rows, lang, eventId }: { rows: OutboxRow[]; lang: Locale; eventId: string }) {
   const t = copy[lang].comms;
   const [tab, setTab] = useState<NotifStatus | "all">("all");
   const counts = useMemo(() => {
@@ -28,7 +28,7 @@ export default function CommsView({ rows, lang }: { rows: OutboxRow[]; lang: Loc
   }, [rows]);
   const visible = tab === "all" ? rows : rows.filter((r) => r.status === tab);
 
-  if (rows.length === 0) return <EmptyState sticker="mail" title={t.empty.title} line={t.empty.line} />;
+  if (rows.length === 0) return <EmptyState sticker="mail" title={t.empty.title} line={t.empty.line} action={<ButtonLink href={href(lang, `/admin/events/${eventId}/registrations`)}>{t.empty.action}</ButtonLink>} />;
 
   const columns: Column<OutboxRow>[] = [
     { key: "template", header: t.cols.template, sortValue: (r) => t.templates[r.template] ?? r.template, cell: (r) => <span className="font-semibold text-fg">{t.templates[r.template] ?? r.template}</span> },

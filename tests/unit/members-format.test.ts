@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { auditGroup, diffPairs, entityKind, formatDiffValue, humanizeCode, notifGroup, paginate, relativeTime, seasonWindow, validateSeason, withQuery } from "@/lib/members/format";
+import { auditGroup, dayKey, dayRelation, groupByDay, diffPairs, entityKind, formatDiffValue, humanizeCode, notifGroup, paginate, relativeTime, seasonWindow, validateSeason, withQuery } from "@/lib/members/format";
 
 const NOW = new Date("2026-11-16T04:00:00Z");
 const ago = (ms: number) => new Date(NOW.getTime() - ms);
@@ -17,7 +17,10 @@ describe("relativeTime", () => {
   });
   it("handles the future and Mongolian without throwing", () => {
     expect(relativeTime(new Date(NOW.getTime() + 2 * HOUR), NOW, "en")).toBe("in 2 hours");
-    expect(relativeTime(ago(3 * HOUR), NOW, "mn").length).toBeGreaterThan(2);
+    expect(relativeTime(ago(3 * HOUR), NOW, "mn")).toBe("3 цагийн өмнө"); // Mongolian words, never an English fallback
+    expect(relativeTime(ago(DAY), NOW, "mn")).toBe("өчигдөр");
+    expect(relativeTime(new Date(NOW.getTime() + 2 * DAY), NOW, "mn")).toBe("2 өдрийн дараа");
+    expect(relativeTime(ago(70 * DAY), NOW, "mn")).toBe("2 сарын өмнө");
   });
 });
 
@@ -132,5 +135,23 @@ describe("withQuery", () => {
     expect(withQuery("/mn/admin/audit", { group: ["events", "staff"], actor: "p_1", range: null, page: 1 })).toBe("/mn/admin/audit?group=events%2Cstaff&actor=p_1&page=1");
     expect(withQuery("/x", { a: "", b: [], c: undefined })).toBe("/x");
     expect(withQuery("/x", { q: "a b&c" })).toBe("/x?q=a+b%26c");
+  });
+});
+
+describe("audit day grouping (Ulaanbaatar days, UTC+8)", () => {
+  it("keys an instant by its UB calendar day", () => {
+    expect(dayKey("2026-11-15T15:59:00Z")).toBe("2026-11-15"); // 23:59 in UB
+    expect(dayKey("2026-11-15T16:00:00Z")).toBe("2026-11-16"); // midnight in UB
+  });
+  it("groups a newest-first list into consecutive days without reordering", () => {
+    const rows = [{ at: "2026-11-16T03:00:00Z", n: 1 }, { at: "2026-11-16T01:00:00Z", n: 2 }, { at: "2026-11-15T10:00:00Z", n: 3 }, { at: "2026-11-10T10:00:00Z", n: 4 }];
+    const g = groupByDay(rows);
+    expect(g.map((x) => [x.key, x.items.map((i) => i.n)])).toEqual([["2026-11-16", [1, 2]], ["2026-11-15", [3]], ["2026-11-10", [4]]]);
+    expect(groupByDay([])).toEqual([]);
+  });
+  it("tells today and yesterday apart from older days", () => {
+    expect(dayRelation("2026-11-16", NOW)).toBe("today");
+    expect(dayRelation("2026-11-15", NOW)).toBe("yesterday");
+    expect(dayRelation("2026-11-01", NOW)).toBe("date");
   });
 });

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeCheck, CalendarPlus, ExternalLink, Hourglass, Info, MapPin, PartyPopper, Users, type LucideIcon } from "lucide-react";
+import { CalendarDays, CalendarPlus, CalendarX, Clock, ExternalLink, MapPin, Navigation } from "lucide-react";
 import type { Dict } from "@/i18n";
 import type { MeCopy } from "@/i18n/areas/me";
 import { fill, tf, type Locale } from "@/i18n/config";
@@ -10,13 +10,23 @@ import { countdown, ordinal, type Attention, type EventCardVm, type MembershipVi
 import { ButtonLink, buttonClass } from "@/components/ui/Button";
 import StatusPill from "@/components/ui/StatusPill";
 import Icon3D from "@/components/Icon3D";
+import Sticker from "@/components/Sticker";
+import type { StickerName } from "@/lib/manul";
 import { cx } from "@/components/ui/cx";
-import { Card } from "./parts";
-import { placeText, whenText } from "./EventCard";
+import { Card, DateChip, Poster } from "./parts";
+import { CancelButton } from "./EventActions";
+import { chipParts, placeText, whenText } from "./EventCard";
 
-/** The soonest event the person is going to, as a ticket: details on one side, a countdown stub on the other, notches on the tear line. */
-export function NextEventCard({ vm, lang, c, now }: { vm: EventCardVm; lang: Locale; c: MeCopy; now: Date }) {
+/** Calendar-style action tile for the ticket's quick-actions row: icon over label, 64px tall so it is an easy thumb target. */
+const tile = "h-auto! min-h-16! w-full flex-col! gap-1! rounded-[var(--radius-sm)]! px-2! py-2! text-xs! leading-tight! whitespace-normal!";
+
+/**
+ * The soonest event the person is going to, as a ticket: the poster large with a countdown chip, then the details and a
+ * row of quick actions (calendar, directions or join link, cancel), notches on the tear line between them.
+ */
+export function NextEventCard({ vm, lang, c, d, now }: { vm: EventCardVm; lang: Locale; c: MeCopy; d: Dict; now: Date }) {
   const h = c.home;
+  const T = c.event;
   const title = tf(vm.title, lang);
   const left = countdown(vm, now, lang);
   const place = placeText(vm, c);
@@ -25,44 +35,60 @@ export function NextEventCard({ vm, lang, c, now }: { vm: EventCardVm; lang: Loc
     title, start: new Date(vm.starts_at), end: new Date(vm.ends_at), location,
     description: `${tf(vm.tagline, lang)}\n${SITE_URL}/${lang}/events/${vm.slug}`.trim(),
   });
+  const maps = vm.venue ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(vm.venue)}` : null;
+  const chip = chipParts(vm, lang);
   const notch = "absolute size-4 rounded-full border border-line bg-canvas";
   return (
-    <article aria-label={h.nextTitle} className="grid grid-cols-[minmax(0,1fr)] overflow-hidden rounded-[var(--radius-md)] border border-line bg-panel md:grid-cols-[minmax(0,1fr)_auto_11rem]">
-      <div className="grid content-start gap-2 p-4 md:p-5">
-        <h3 className="font-display text-xl leading-snug font-bold text-fg">
-          <Link href={`/${lang}/events/${vm.slug}`} className="hover:underline">{title}</Link>
-        </h3>
-        <p className="text-sm font-bold text-accent-fg">{whenText(vm, lang)}</p>
-        {place && <p className="flex items-center gap-1.5 text-sm text-fg-muted"><MapPin aria-hidden="true" size={16} className="shrink-0" />{place}</p>}
-        <div className="mt-2 flex flex-wrap gap-2">
-          {vm.onlineUrl && <ButtonLink href={vm.onlineUrl} target="_blank" rel="noopener noreferrer" size="lg" icon={<ExternalLink aria-hidden="true" size={16} />}>{c.event.joinOnline}</ButtonLink>}
-          <a href={`/api/events/${encodeURIComponent(vm.slug)}/ics`} title={h.ics} className={buttonClass(vm.onlineUrl ? "secondary" : "primary", "lg")}><CalendarPlus aria-hidden="true" size={16} />{h.addToCalendar}</a>
-          <a href={gcal} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "lg")}>{h.google}<ExternalLink aria-hidden="true" size={14} /></a>
+    <article aria-label={h.nextTitle} className="grid grid-cols-[minmax(0,1fr)] overflow-hidden rounded-[var(--radius-md)] border border-line bg-panel shadow-[var(--shadow-card)] md:grid-cols-[minmax(0,5fr)_auto_minmax(0,6fr)]">
+      <Poster cover={vm.cover} sizes="(min-width: 768px) 400px, 100vw" className="aspect-[5/4] md:aspect-auto md:min-h-80">
+        <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
+          <DateChip month={chip.month} day={chip.day} />
+          <span className="ops-gloss inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold"><Clock aria-hidden="true" size={16} />{left.kind === "live" ? h.countdownLive : left.text}</span>
         </div>
-        <p className="text-xs text-fg-muted">{h.calendarNote}</p>
-      </div>
-      {/* Tear line: dashed, with a notch cut out of each end (left/right on phones, top/bottom beside the stub). */}
+        <div className="absolute bottom-3 left-3"><StatusPill status="going" label={d.status.going} className="shadow-[0_4px_10px_-4px_rgb(0_20_40/0.5)] ring-2 ring-panel" /></div>
+      </Poster>
+      {/* Tear line: dashed, with a notch cut out of each end (left/right on phones, top/bottom beside the poster). */}
       <div aria-hidden="true" className="relative h-0 border-t-2 border-dashed border-line md:h-auto md:w-0 md:border-t-0 md:border-l-2">
         <span className={cx(notch, "-top-[9px] -left-2 md:-top-2 md:-left-[9px]")} />
         <span className={cx(notch, "-top-[9px] -right-2 md:top-auto md:right-auto md:-bottom-2 md:-left-[9px]")} />
       </div>
-      <div className="grid content-center justify-items-start gap-1 p-4 md:justify-items-center md:p-5 md:text-center">
-        <Icon3D name="calendar" sizes="64px" className="size-12" />
-        <p className="font-display text-lg font-bold text-fg">{left.text}</p>
-        <p className="text-xs text-fg-muted tnum">{formatUb(new Date(vm.starts_at), lang, { hour: "2-digit", minute: "2-digit" })}</p>
+      <div className="grid content-between gap-4 p-4 md:p-5">
+        <div className="grid gap-2">
+          <h3 className="font-display text-xl leading-snug font-bold text-fg [overflow-wrap:anywhere]">
+            <Link href={`/${lang}/events/${vm.slug}`} className="hover:underline">{title}</Link>
+          </h3>
+          <p className="flex items-center gap-1.5 text-sm font-bold text-accent-fg"><CalendarDays aria-hidden="true" size={16} className="shrink-0" />{whenText(vm, lang)}</p>
+          {place && <p className="flex items-start gap-1.5 text-sm text-fg-muted"><MapPin aria-hidden="true" size={16} className="mt-0.5 shrink-0" />{place}</p>}
+        </div>
+        {vm.onlineUrl && <ButtonLink href={vm.onlineUrl} target="_blank" rel="noopener noreferrer" size="lg" className="w-full" icon={<ExternalLink aria-hidden="true" size={16} />}>{T.joinOnline}</ButtonLink>}
+        <div className="grid gap-2">
+          <p className="sr-only">{h.quickActions}</p>
+          <div className="grid grid-cols-3 gap-2">
+            <a href={`/api/events/${encodeURIComponent(vm.slug)}/ics`} title={h.ics} className={buttonClass("secondary", "lg", tile)}><CalendarPlus aria-hidden="true" size={20} className="text-accent-fg" />{h.calendarShort}</a>
+            {maps
+              ? <a href={maps} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "lg", tile)}><Navigation aria-hidden="true" size={20} className="text-accent-fg" />{h.directions}</a>
+              : <a href={gcal} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "lg", tile)}><ExternalLink aria-hidden="true" size={20} className="text-accent-fg" />{h.google}</a>}
+            <CancelButton eventId={vm.id} variant="secondary" doneText={T.cancelDone} errors={c.errors as Record<string, string>} keep={T.keep} confirm={T.cancel}
+              trigger={T.cancel} title={fill(T.cancelTitle, { title })} body={T.cancelBody} className={tile} icon={<CalendarX aria-hidden="true" size={20} className="text-danger-fg" />} />
+          </div>
+          <p className="text-xs text-fg-muted">{h.calendarNote}{" "}<a href={gcal} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-6 items-center gap-1 font-semibold text-accent-fg hover:underline">{h.google}<ExternalLink aria-hidden="true" size={12} /></a></p>
+        </div>
       </div>
     </article>
   );
 }
 
-const ICON: Record<string, LucideIcon> = { going: PartyPopper, rejected: Info, waitlisted: Hourglass, waitlist: Hourglass, approved: BadgeCheck, team: Users };
-const TONE: Record<string, string> = { going: "bg-ok-soft text-ok-fg", approved: "bg-ok-soft text-ok-fg", waitlisted: "bg-warn-soft text-warn-fg", waitlist: "bg-warn-soft text-warn-fg", team: "bg-warn-soft text-warn-fg", rejected: "bg-neutral-soft text-fg" };
+// One Manul per kind of news: checkin = good news, queue = waiting, comfort = bad news, team = needs people.
+const STICKER: Record<string, StickerName> = { going: "checkin", approved: "checkin", waitlisted: "queue", waitlist: "queue", rejected: "comfort", team: "team" };
+const WASH: Record<string, string> = {
+  going: "var(--ops-ok-soft)", approved: "var(--ops-ok-soft)", waitlisted: "var(--ops-warn-soft)", waitlist: "var(--ops-warn-soft)", team: "var(--ops-accent-soft)", rejected: "var(--ops-neutral-soft)",
+};
 
-/** "Needs your attention": decisions, waitlist spots, membership answers and short teams. Each is one line, one link. */
+/** "Needs your attention": decisions, waitlist spots, membership answers and short teams. Each is one sticker, one line, one link. */
 export function AttentionList({ items, lang, c }: { items: Attention[]; lang: Locale; c: MeCopy }) {
   const h = c.home;
   return (
-    <ul className="grid gap-2">
+    <ul className="grid gap-3">
       {items.map((a, i) => {
         let key: string, title: string, line: string, href: string, action: string;
         switch (a.kind) {
@@ -89,17 +115,16 @@ export function AttentionList({ items, lang, c }: { items: Attention[]; lang: Lo
             href = `/${lang}/me/teams/${a.teamId}`; action = h.teamOpen;
             break;
         }
-        const Icon = ICON[key] ?? Info;
         return (
           <li key={i}>
-            <Card className="flex flex-wrap items-start gap-3">
-              <span aria-hidden="true" className={cx("grid size-9 shrink-0 place-items-center rounded-full", TONE[key])}><Icon size={18} /></span>
-              <div className="grid min-w-0 flex-1 basis-40 gap-0.5">
+            <div className="relative grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 overflow-hidden rounded-[var(--radius-md)] border border-line bg-panel p-4" style={{ background: `radial-gradient(120% 140% at 0% 0%, ${WASH[key]}, var(--ops-panel) 70%)` }}>
+              <Sticker name={STICKER[key] ?? "checkin"} sizes="72px" className="w-[4.5rem] -rotate-3" />
+              <div className="grid min-w-0 gap-0.5">
                 <p className="text-sm font-bold text-fg">{title}</p>
                 <p className="text-sm text-fg-muted">{line}</p>
               </div>
-              <Link href={href} className={buttonClass("secondary", "lg", "w-full shrink-0 sm:w-auto")}>{action}</Link>
-            </Card>
+              <Link href={href} className={buttonClass("secondary", "lg", "col-span-2 w-full bg-panel")}>{action}</Link>
+            </div>
           </li>
         );
       })}
@@ -113,7 +138,7 @@ export function MembershipCta({ m, lang, c, d }: { m: MembershipView; lang: Loca
   if (m.status === "member") return null;
   if (m.app && m.app.status === "pending") {
     return (
-      <Card className="flex items-start gap-3">
+      <Card className="flex items-start gap-3" style={{ background: "radial-gradient(120% 160% at 100% 0%, var(--ops-warn-soft), var(--ops-panel) 65%)" }}>
         <Icon3D name="heart" sizes="64px" className="size-12 shrink-0" />
         <div className="grid min-w-0 flex-1 gap-1">
           <p className="flex flex-wrap items-center gap-2 font-bold text-fg">{h.ctaPendingTitle}<StatusPill status="pending" label={d.status.pending} /></p>
@@ -124,8 +149,8 @@ export function MembershipCta({ m, lang, c, d }: { m: MembershipView; lang: Loca
   }
   if (m.window.state !== "open" || !m.canApply) return null;
   return (
-    <Card className="flex flex-wrap items-center gap-3">
-      <Icon3D name="rocket" sizes="64px" className="size-14 shrink-0" />
+    <Card className="flex flex-wrap items-center gap-3 shadow-[var(--shadow-card)]" style={{ background: "radial-gradient(120% 160% at 100% 0%, var(--ops-accent-soft), var(--ops-panel) 65%)" }}>
+      <Icon3D name="rocket" sizes="64px" className="size-14 shrink-0 drop-shadow-[0_8px_10px_rgb(0_40_70/0.25)]" />
       <div className="grid min-w-0 flex-1 basis-44 gap-1">
         <p className="font-display text-lg font-bold text-fg">{h.ctaTitle}</p>
         <p className="text-sm text-fg-muted">{fill(h.ctaLine, { season: tf(m.window.label, lang), date: formatUb(new Date(m.window.until), lang, { month: "long", day: "numeric" }) })}</p>

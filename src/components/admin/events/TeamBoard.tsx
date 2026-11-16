@@ -11,9 +11,9 @@ import StatusPill from "@/components/ui/StatusPill";
 import type { RegStatus } from "@/lib/status";
 
 /** Teams as cards: members, who is captain, what they are looking for, status mix, and accept / reject for the whole team. */
-export default function TeamBoard({ lang, rows, teams, capacity, teamMin, teamMax, pending, statusLabel, onDecide, onSolo }: {
+export default function TeamBoard({ lang, rows, teams, capacity, teamMin, teamMax, pending, statusLabel, onDecide, onSolo, onList }: {
   lang: Locale; rows: RegRow[]; teams: TeamRow[]; capacity: number | null; teamMin: number; teamMax: number; pending: boolean;
-  statusLabel: (s: RegStatus) => string; onDecide: (ids: string[], d: "accept" | "reject") => void; onSolo: () => void;
+  statusLabel: (s: RegStatus) => string; onDecide: (ids: string[], d: "accept" | "reject") => void; onSolo: () => void; onList: () => void;
 }) {
   const t = copy[lang].regs.teams;
   const byId = new Map(rows.map((r) => [r.id, r]));
@@ -21,7 +21,7 @@ export default function TeamBoard({ lang, rows, teams, capacity, teamMin, teamMa
   const live = teams.map((tm) => ({ tm, members: tm.memberIds.map((id) => byId.get(id)).filter((r): r is RegRow => !!r && r.status !== "cancelled") })).filter((x) => x.members.length > 0);
 
   if (live.length === 0) {
-    return <EmptyState sticker="team" title={t.empty.title} line={t.empty.line} />;
+    return <EmptyState sticker="team" title={t.empty.title} line={t.empty.line} action={<Button variant="secondary" onClick={onList}>{t.empty.action}</Button>} />;
   }
   return (
     <div className="grid gap-4">

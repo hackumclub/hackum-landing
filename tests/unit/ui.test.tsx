@@ -125,3 +125,21 @@ describe("DataTable", () => {
     expect(screen.getByText("No events yet")).toBeInTheDocument();
   });
 });
+
+describe("DataTable row actions", () => {
+  it("opens a row when its cell is clicked, but not when a button or checkbox inside it is", async () => {
+    const onRowClick = vi.fn();
+    render(<DataTable rows={ROWS} columns={[...COLS, { key: "act", header: "Act", cell: () => <button type="button">Do it</button> }]} getId={(r) => r.id} caption="Events" selectable onRowClick={onRowClick} empty={<p>None</p>} />);
+    await userEvent.click(screen.getByText("Hackathon"));
+    expect(onRowClick).toHaveBeenCalledTimes(1);
+    expect(onRowClick.mock.calls[0][0]).toMatchObject({ id: "b" });
+    await userEvent.click(screen.getAllByRole("button", { name: "Do it" })[0]);
+    await userEvent.click(screen.getAllByRole("checkbox")[1]);
+    expect(onRowClick).toHaveBeenCalledTimes(1);
+  });
+  it("hides a column below the xl breakpoint and gives checkboxes a 20px target", () => {
+    render(<DataTable rows={ROWS} columns={[...COLS, { key: "x", header: "Wide only", cell: (r) => r.id, hideBelow: "xl" }]} getId={(r) => r.id} caption="Events" selectable empty={<p>None</p>} />);
+    expect(screen.getByRole("columnheader", { name: "Wide only" }).className).toContain("xl:table-cell");
+    expect(screen.getAllByRole("checkbox")[0].className).toContain("size-5");
+  });
+});

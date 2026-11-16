@@ -5,12 +5,13 @@ import Stage from "@/components/ops/Stage";
 import Icon3D from "@/components/Icon3D";
 import { usePathname } from "next/navigation";
 import { useId, useMemo, useState, type ReactNode } from "react";
-import { CheckCircle2, TriangleAlert, X } from "lucide-react";
+import { CheckCircle2, Lock, TriangleAlert, X } from "lucide-react";
 import { cx } from "@/components/ui/cx";
 import { Input, Select } from "@/components/ui/Field";
 import IconButton from "@/components/ui/IconButton";
 import Avatar from "@/components/ui/Avatar";
 import Skeleton from "@/components/ui/Skeleton";
+import ScrollRow from "./ScrollRow";
 import type { L, Locale } from "@/i18n/config";
 import { tf } from "@/i18n/config";
 import type { AreaCopy } from "@/i18n/areas/admin-members";
@@ -37,7 +38,8 @@ export type SectionTab = { href: string; label: string; count?: number; disabled
 export function SectionTabs({ label, tabs }: { label: string; tabs: SectionTab[] }) {
   const path = usePathname();
   return (
-    <nav aria-label={label} className="-mx-1 overflow-x-auto border-b border-line">
+    <nav aria-label={label} className="min-w-0 border-b border-line">
+      <ScrollRow className="-mx-1">
       <ul className="flex gap-1 px-1">
         {tabs.map((t) => {
           const active = path === t.href;
@@ -46,6 +48,7 @@ export function SectionTabs({ label, tabs }: { label: string; tabs: SectionTab[]
             <li key={t.href}>
               {t.disabledReason ? (
                 <span aria-disabled="true" title={t.disabledReason} className={cx(base, "cursor-not-allowed border-transparent text-fg-muted opacity-70")}>
+                  <Lock aria-hidden="true" size={13} />
                   {t.label}
                   <span className="sr-only"> ({t.disabledReason})</span>
                 </span>
@@ -59,6 +62,7 @@ export function SectionTabs({ label, tabs }: { label: string; tabs: SectionTab[]
           );
         })}
       </ul>
+      </ScrollRow>
     </nav>
   );
 }
@@ -66,7 +70,7 @@ export function SectionTabs({ label, tabs }: { label: string; tabs: SectionTab[]
 /** Segment buttons with counts ("All 140 · Members 40"). One is always selected; announced with aria-pressed. */
 export function Segments<V extends string>({ label, value, onChange, options }: { label: string; value: V; onChange: (v: V) => void; options: { value: V; label: string; count?: number }[] }) {
   return (
-    <div role="group" aria-label={label} className="-mx-1 flex gap-1 overflow-x-auto border-b border-line px-1">
+    <ScrollRow role="group" aria-label={label} className="-mx-1 flex gap-1 border-b border-line px-1">
       {options.map((o) => {
         const on = o.value === value;
         return (
@@ -77,7 +81,7 @@ export function Segments<V extends string>({ label, value, onChange, options }: 
           </button>
         );
       })}
-    </div>
+    </ScrollRow>
   );
 }
 
@@ -142,7 +146,7 @@ export function PageHeader({ title, lead, action, icon }: { title: string; lead?
   return (
     <Stage
       compact title={title} lead={lead} actions={action}
-      art={icon ? <Icon3D name={icon} sizes="208px" className="w-24 rotate-3 drop-shadow-[0_18px_22px_rgb(0_30_60/0.45)] md:w-44" /> : undefined}
+      art={icon ? <Icon3D name={icon} sizes="208px" className="ml-auto block w-14 rotate-3 drop-shadow-[0_18px_22px_rgb(0_30_60/0.45)] md:w-44" /> : undefined}
     />
   );
 }

@@ -11,7 +11,7 @@ export default function Stage({ title, lead, kicker, actions, art, compact = fal
 }) {
   return (
     <section data-stage className={cx("ops-stage", compact ? "min-h-28 px-5 py-6 md:px-9 md:py-8" : "px-5 py-8 md:px-12 md:py-12", className)}>
-      <div className={cx("relative z-10 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center", art ? "pr-16 md:pr-0" : undefined)}>
+      <div className={cx("relative z-10 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center", art ? "pr-24 md:pr-0" : undefined)}>
         <div className="min-w-0">
           {kicker && <p className="mb-2 text-sm font-bold text-[var(--ops-on-stage-lead)]">{kicker}</p>}
           <h1 className={cx("font-display font-black leading-[1.04] [overflow-wrap:anywhere]", compact ? "text-[clamp(28px,4.2vw,44px)]" : "text-[clamp(32px,5.2vw,60px)]")}>{title}</h1>
