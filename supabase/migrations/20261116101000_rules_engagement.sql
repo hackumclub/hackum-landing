@@ -108,7 +108,7 @@ begin
   if v_status = 'published' then
     for r in select * from public.profiles x where x.deleted_at is null and x.onboarded_at is not null
         and (pl.audience = 'everyone' or (pl.audience = 'members' and x.status = 'member') or (pl.audience = 'community' and x.status in ('member', 'alumni')))
-        and coalesce((x.notif_prefs ->> 'announcements')::boolean, false) order by x.id loop
+        and x.notif_prefs -> 'announcements' is distinct from 'false'::jsonb order by x.id loop
       -- Deduped per poll and person: closing and re-opening a poll never mails anyone twice.
       if app.enqueue_notification(r.id, 'poll_opened', jsonb_build_object('to_name', app.display_name(r), 'poll_id', pl.id,
            'poll_title_mn', pl.title ->> 'mn', 'poll_title_en', pl.title ->> 'en'), 2::smallint, 'poll:' || pl.id::text || ':' || r.id::text) then
@@ -128,7 +128,7 @@ begin
   select * into pl from public.polls where id = p_poll_id for share;
   if not found or pl.status = 'draft' then perform app.fail('not_found'); end if;
   if not app.poll_is_open(pl) then perform app.fail('closed'); end if;
-  if not app.poll_eligible(pl.audience, me.id) then perform app.fail('forbidden'); end if;
+  if not app.poll_eligible_for(pl.audience, me.id) then perform app.fail('forbidden'); end if;
   select array_agg(o ->> 'id') into known from jsonb_array_elements(pl.options) o;
   if cardinality(ids) < 1 or cardinality(ids) > (case when pl.multi then pl.max_choices else 1 end)
      or (select count(distinct x) from unnest(ids) x) <> cardinality(ids) or exists (select 1 from unnest(ids) x where x is null or not (x = any (known))) then
@@ -148,7 +148,7 @@ begin
   v_staff := app.is_staff();
   select * into pl from public.polls where id = p_poll_id;
   if not found or (pl.status = 'draft' and not v_staff) then perform app.fail('not_found'); end if;
-  if not v_staff and not app.poll_eligible(pl.audience, me.id) then perform app.fail('forbidden'); end if;
+  if not v_staff and not app.poll_eligible_for(pl.audience, me.id) then perform app.fail('forbidden'); end if;
   select v.option_ids into mine from public.poll_votes v where v.poll_id = pl.id and v.profile_id = me.id;
   ended := app.poll_has_ended(pl);
   visible := v_staff or (case pl.results when 'after_vote' then mine is not null or ended when 'after_close' then ended else false end);

@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { normalizeInviteCode } from "@/lib/teams/invite-code-format";
 import { useState, useTransition } from "react";
 import type { MeCopy } from "@/i18n/areas/me";
 import { fill } from "@/i18n/config";
@@ -18,7 +19,7 @@ export default function JoinTeamBox({ c, max, defaultCode = "" }: { c: MeCopy["a
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    const value = code.trim().toUpperCase();
+    const value = normalizeInviteCode(code);
     if (!value) { setError(c.codeNeeded); return; }
     setError(null);
     start(async () => {

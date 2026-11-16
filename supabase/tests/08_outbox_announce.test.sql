@@ -120,13 +120,13 @@ update public.profiles set clerk_user_id = null, email = 'old.member@example.tes
 select tests.as_person('m1');
 select throws_ok($$select app.upsert_clerk_profile('user_x', 'x@example.test')$$, '42501', null, 'people cannot call the webhook helper');
 select tests.as_service();
-select is(app.upsert_clerk_profile('user_new1', 'Brand.New@Example.test', '{"mn":"Шинэ","en":"New"}', 'en'), app.upsert_clerk_profile('user_new1', 'brand.new@example.test'), 'a new Clerk user gets a profile; the same id again is idempotent');
-select is(app.upsert_clerk_profile('user_claim', 'OLD.member@example.test'), tests.pid('legacy2'), 'a matching unclaimed legacy profile is claimed by email');
+select is(app.upsert_clerk_profile('user_new1', 'Brand.New@Example.test', '{"mn":"Шинэ","en":"New"}', 'en', true), app.upsert_clerk_profile('user_new1', 'brand.new@example.test', null, 'mn', true), 'a new Clerk user gets a profile; the same id again is idempotent');
+select is(app.upsert_clerk_profile('user_claim', 'OLD.member@example.test', null, 'mn', true), tests.pid('legacy2'), 'a matching unclaimed legacy profile is claimed by email');
 select tests.as_owner();
 select is(tests.val($$select clerk_user_id || ':' || status || ':' || handle from public.profiles where handle = 'legacy2'$$), 'user_claim:member:legacy2', 'it keeps its history (status member)');
 select is(tests.val($$select status::text || ':' || coalesce(onboarded_at::text, 'not onboarded') || ':' || handle from public.profiles where clerk_user_id = 'user_new1'$$), 'guest:not onboarded:brand-new', 'new profiles are guests that still need onboarding, with a handle from the address');
 select tests.as_service();
-select throws_ok($$select app.upsert_clerk_profile('user_other', 'old.member@example.test')$$, 'P0001', 'conflict', 'an address already claimed by another Clerk user conflicts');
+select throws_ok($$select app.upsert_clerk_profile('user_other', 'old.member@example.test', null, 'mn', true)$$, 'P0001', 'conflict', 'an address already claimed by another Clerk user conflicts');
 select is(app.anonymize_clerk_user('user_new1'), true, 'user.deleted anonymises');
 select tests.as_owner();
 select is(tests.val($$select (deleted_at is not null)::text || ':' || coalesce(email::text, 'null') || ':' || coalesce(clerk_user_id, 'null') || ':' || (name ->> 'mn') from public.profiles where handle like 'deleted-%'$$), 'true:null:null:', 'no personal field survives');

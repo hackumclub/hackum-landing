@@ -21,13 +21,11 @@ end $$;
 
 -- ── policies (all permissive, per command; see spec §4 "RLS summary") ─────────────────────────────────────────────────
 
--- profiles: own row or staff. Other people's profiles are reached through the views below (safe columns only: no email,
--- no calendar token). A person updates only whitelisted columns (column grants), never status, clerk_user_id or deleted_at.
+-- profiles: own row or staff, read only. Other people's profiles are reached through the views below (safe columns only: no
+-- email, no calendar token). Nobody updates profiles directly: every write goes through update_profile / update_prefs /
+-- update_academic / complete_onboarding / set_avatar_path, which validate.
 create policy profiles_select on public.profiles for select to authenticated
   using (id = (select app.current_profile_id()) or (select app.is_staff()));
-create policy profiles_update_own on public.profiles for update to authenticated
-  using (id = (select app.current_profile_id()))
-  with check (id = (select app.current_profile_id()) and deleted_at is null);
 
 create policy staff_roles_select on public.staff_roles for select to authenticated
   using (profile_id = (select app.current_profile_id()) or (select app.is_staff()));
@@ -35,10 +33,10 @@ create policy staff_roles_select on public.staff_roles for select to authenticat
 create policy seasons_select on public.seasons for select to anon, authenticated using (true);
 
 create policy memberships_select on public.memberships for select to anon, authenticated
-  using (profile_id = (select app.current_profile_id()) or (select app.is_staff()) or app.profile_visible(profile_id));
+  using (profile_id = (select app.current_profile_id()) or (select app.is_staff()) or profile_id in (select app.visible_profile_ids()));
 
 create policy profile_semesters_select on public.profile_semesters for select to authenticated
-  using (profile_id = (select app.current_profile_id()) or (select app.is_staff()) or (shared and app.profile_visible(profile_id)));
+  using (profile_id = (select app.current_profile_id()) or (select app.is_staff()) or (shared and profile_id in (select app.visible_profile_ids())));
 
 -- events: anon sees published / completed / archived. Signed-in people also see a cancelled event they registered for; staff see all.
 create policy events_select_public on public.events for select to anon
@@ -81,10 +79,10 @@ create policy audit_log_select on public.audit_log for select to authenticated u
 create policy event_feedback_select on public.event_feedback for select to authenticated using (profile_id = (select app.current_profile_id()));
 
 create policy polls_select on public.polls for select to authenticated
-  using ((select app.is_staff()) or (status <> 'draft' and app.poll_eligible(audience)));
+  using ((select app.is_staff()) or (status <> 'draft' and app.poll_eligible_me(audience)));
 -- Staff see who voted only on polls that are not anonymous.
 create policy poll_votes_select on public.poll_votes for select to authenticated
-  using (profile_id = (select app.current_profile_id()) or ((select app.is_staff()) and not app.poll_is_anonymous(poll_id)));
+  using (profile_id = (select app.current_profile_id()) or poll_id in (select app.staff_votable_poll_ids()));
 
 -- Staff edits to the timeline go straight to the table, so a trigger writes the audit row (all other staff actions audit in their function).
 create function app.audit_timeline() returns trigger
@@ -128,17 +126,17 @@ grant select on public.profiles, public.staff_roles, public.seasons, public.memb
   public.notifications, public.inbox, public.email_daily_usage, public.email_suppressions, public.subscribers, public.timeline_milestones,
   public.audit_log, public.event_feedback, public.polls, public.poll_votes to authenticated;
 grant insert, update, delete on public.timeline_milestones to authenticated;
--- Only these columns of a person's own profile; links, avatar and the onboarding fields go through update_profile / set_avatar_path /
--- complete_onboarding so their validation runs. status, clerk_user_id, email, handle, calendar_token, deleted_at are never writable.
-grant update (name, school, school_id, major, major_track, program_index, grad_year, visibility, locale, notif_prefs) on public.profiles to authenticated;
+-- No UPDATE grant on profiles at all: the validated RPCs are the only write path.
 
 -- ── function privileges: closed by default, opened one by one ──────────────────────────────────────────────────────────
 
 revoke execute on all functions in schema app from public, anon, authenticated;
 
 -- Used by the policies above (evaluated as the calling role).
-grant execute on function app.jwt_issuer_ok(), app.current_profile_id(), app.is_staff(), app.is_admin(), app.profile_visible(uuid),
-  app.is_seated(uuid), app.has_registration(uuid), app.my_team_ids(), app.poll_eligible(public.poll_audience, uuid), app.poll_is_anonymous(uuid)
+-- None takes a profile id: each answers only about the caller (is_seated / has_registration), or returns a fixed set (visible_profile_ids,
+-- staff_votable_poll_ids, my_team_ids), so none can be used to probe someone else.
+grant execute on function app.jwt_issuer_ok(), app.current_profile_id(), app.is_staff(), app.is_admin(), app.visible_profile_ids(),
+  app.is_seated(uuid), app.has_registration(uuid), app.my_team_ids(), app.poll_eligible_me(public.poll_audience), app.staff_votable_poll_ids()
   to anon, authenticated;
 
 -- The rule functions the app calls over RPC (each checks the caller itself and raises P0001 '<code>').
@@ -154,7 +152,8 @@ grant execute on function
   app.create_event(jsonb), app.preview_event_change(uuid, jsonb), app.update_event(uuid, jsonb), app.set_event_status(uuid, text),
   app.create_poll(jsonb), app.update_poll(uuid, jsonb), app.set_poll_status(uuid, text), app.vote(uuid, text[]), app.poll_tallies(uuid),
   app.submit_feedback(uuid, integer, integer, text, text, boolean), app.feedback_summary(uuid),
-  app.mark_read(uuid[]), app.mark_all_read(), app.retry_notification(uuid), app.send_announcement(text, jsonb, jsonb, jsonb)
+  app.mark_read(uuid[]), app.mark_all_read(), app.retry_notification(uuid), app.send_announcement(text, jsonb, jsonb, jsonb),
+  app.note_team_code_failure()
   to authenticated;
 
 grant execute on function app.subscribe(text, text, text, text) to anon, authenticated;

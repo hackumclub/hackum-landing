@@ -1,10 +1,11 @@
 "use server";
 // Read-only helpers for the apply flow that actions.ts does not cover.
 import { err, ok, type Result } from "@/lib/result";
+import { normalizeInviteCode } from "@/lib/teams/invite-code-format";
 import { getStore } from "@/lib/mockdb/store";
 import { getActorId } from "@/lib/server/session";
 
-const CODE = /^[A-Z0-9-]{3,16}$/;
+const CODE = /^[A-Z0-9-]{3,24}$/;
 
 /**
  * "Is this invite code usable for this event?": lets the join step show the team's name and free spots before submitting.
@@ -13,7 +14,7 @@ const CODE = /^[A-Z0-9-]{3,16}$/;
  */
 export async function checkTeamCode(input: { eventId: string; code: string }): Promise<Result<{ name: string; size: number; max: number }>> {
   if (!(await getActorId())) return err("unauthenticated");
-  const code = String(input.code ?? "").trim().toUpperCase();
+  const code = normalizeInviteCode(String(input.code ?? ""));
   if (!CODE.test(code)) return err("invalid");
   const db = getStore().read();
   const team = db.teams.find((t) => t.invite_code === code && t.event_id === input.eventId);

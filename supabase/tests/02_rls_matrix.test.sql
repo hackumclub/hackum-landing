@@ -62,12 +62,12 @@ select is((select count(*) from information_schema.columns where table_schema = 
 select is((select count(*) from public.events where slug = 'cnx'), 1::bigint, 'a registrant still sees their cancelled event');
 select is((select count(*) from public.event_online_links), 1::bigint, 'a seated person reads the online link');
 select is((select count(*) from public.audit_log), 0::bigint, 'a guest cannot read the audit log');
-select lives_ok($$update public.profiles set name = '{"mn":"Шинэ","en":"New"}' where id = tests.pid('alice')$$, 'a person updates their own name');
+select throws_ok($$update public.profiles set name = '{"mn":"Шинэ","en":"New"}' where id = tests.pid('alice')$$, '42501', null, 'a person cannot update their profile directly (update_profile validates)');
 select throws_ok($$update public.profiles set status = 'member' where id = tests.pid('alice')$$, '42501', null, 'a guest cannot change their own status');
 select throws_ok($$update public.profiles set clerk_user_id = 'user_other' where id = tests.pid('alice')$$, '42501', null, 'nor their clerk_user_id');
 select throws_ok($$update public.profiles set deleted_at = now() where id = tests.pid('alice')$$, '42501', null, 'nor deleted_at');
-select is(tests.affected($$update public.profiles set name = '{"mn":"Hack","en":"x"}' where id = tests.pid('bob')$$), 0::bigint, 'a person cannot update someone else''s profile');
-select lives_ok($$update public.profiles set school_id = 'must' where id = tests.pid('alice')$$, 'school_id is allowed');
+select throws_ok($$update public.profiles set name = '{"mn":"Hack","en":"x"}' where id = tests.pid('bob')$$, '42501', null, 'and certainly not someone else''s');
+select lives_ok($$select app.update_academic('must', '', 'software', null, '')$$, 'school and major change through update_academic');
 select throws_ok($$insert into public.event_registrations (event_id, profile_id, status) values (tests.eid('pub'), tests.pid('alice'), 'going')$$, '42501', null, 'no direct registration insert');
 select throws_ok($$update public.inbox set read_at = now()$$, '42501', null, 'no direct inbox update');
 select throws_ok($$insert into public.timeline_milestones (year, title) values (2030, '{"mn":"x","en":""}')$$, '42501', null, 'a guest cannot write the timeline');

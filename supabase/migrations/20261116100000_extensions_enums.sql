@@ -2,6 +2,7 @@
 -- Ids are uuid, times are timestamptz, email/handle are citext, bilingual text ({mn,en}) is the domain public.l_text.
 
 create extension if not exists citext with schema extensions;
+create extension if not exists pgcrypto with schema extensions; -- gen_random_bytes for invite codes
 
 -- `app` = rule functions + private settings (not directly readable by API roles). Default privileges are closed first so a
 -- function created later is never executable by anon/authenticated until a migration grants it explicitly.

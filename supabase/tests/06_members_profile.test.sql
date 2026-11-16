@@ -1,5 +1,5 @@
 begin;
-select plan(85);
+select plan(86);
 select tests.use_issuer();
 
 select tests.profile('fresh', 'guest', 'num', 'software', false);
@@ -166,8 +166,9 @@ select tests.as_person('g');
 select app.submit_join_form('{"goal":"AI"}'); select app.submit_join_form('{"goal":"Web"}');
 select is((select count(*) from public.form_submissions), 1::bigint, 'one join submission per person, the newest wins');
 select tests.as_anon();
-select is((select app.subscribe('Бат', 'Bat@Example.COM', 'mn', 'footer') ->> 'created'), 'true', 'the public newsletter takes a sign-up');
-select is((select app.subscribe('Бат', 'bat@example.com', 'mn', 'footer') ->> 'created'), 'false', 'a repeated address (any case) is a silent success');
+select lives_ok($$select app.subscribe('Бат', 'Bat@Example.COM', 'mn', 'footer')$$, 'the public newsletter takes a sign-up');
+select lives_ok($$select app.subscribe('Бат', 'bat@example.com', 'mn', 'footer')$$, 'a repeated address (any case) is a silent success');
+select is(tests.count($$select 1 from public.subscribers where email = 'bat@example.com'$$), 1::bigint, 'and stays one row');
 select throws_ok($$select app.subscribe('Бат', 'not-an-email')$$, 'P0001', 'invalid', 'a bad address is invalid');
 
 select * from finish();

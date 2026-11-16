@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { normalizeInviteCode } from "@/lib/teams/invite-code-format";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { ArrowLeft, Check, Hourglass, KeyRound, Loader2, Mail, Pencil, Plus, UserRound, type LucideIcon } from "lucide-react";
 import type { MeCopy } from "@/i18n/areas/me";
@@ -24,7 +25,7 @@ type Team = { mode: "create" | "join" | "solo"; name: string; code: string };
 type CodeResult = Awaited<ReturnType<typeof checkTeamCode>>;
 type Done = { status: string; teamId?: string; inviteCode?: string };
 
-const CODE_SHAPE = /^[A-Z0-9-]{3,16}$/;
+const CODE_SHAPE = /^[A-Z0-9-]{3,24}$/;
 const maxFor = (q: Question) => (q.type === "long" ? LONG_MAX : q.type === "url" ? URL_MAX : SHORT_MAX);
 
 /** Hackathon application: answers → team → review → success. Mirrors parseAnswers on the client; maps every server error to specific copy. */
@@ -57,7 +58,7 @@ export default function ApplyFlow({ lang, eventId, slug, title, questions, teamM
   useHideTabs(!done && !statusSlot);
 
   // Live code check: debounce, then ask the server. State is derived (a stale result for an older code is ignored).
-  const normalized = team.code.trim().toUpperCase();
+  const normalized = normalizeInviteCode(team.code);
   const shaped = CODE_SHAPE.test(normalized);
   useEffect(() => {
     if (team.mode !== "join" || !shaped) return;

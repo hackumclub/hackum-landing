@@ -34,7 +34,10 @@ create table public.profiles (
   locale text not null default 'mn' check (locale in ('mn', 'en')),
   links jsonb not null default '{}' check (jsonb_typeof(links) = 'object' and octet_length(links::text) <= 1500),
   notif_prefs jsonb not null default '{"reminders":true,"updates":true,"announcements":true}'
-    check (jsonb_typeof(notif_prefs) = 'object' and notif_prefs ?& array['reminders', 'updates', 'announcements']),
+    check (jsonb_typeof(notif_prefs) = 'object'
+      and jsonb_typeof(notif_prefs -> 'reminders') is not distinct from 'boolean' and jsonb_typeof(notif_prefs -> 'updates') is not distinct from 'boolean'
+      and jsonb_typeof(notif_prefs -> 'announcements') is not distinct from 'boolean'
+      and (notif_prefs - 'reminders' - 'updates' - 'announcements') = '{}'::jsonb),
   calendar_token text not null unique default replace(gen_random_uuid()::text, '-', ''),
   onboarded_at timestamptz,
   created_at timestamptz not null default now(),

@@ -199,7 +199,7 @@ test.describe("hackathon application", () => {
     await page.getByRole("button", { name: "Submit application" }).click();
     await expect(page.getByRole("heading", { name: "Application sent!" })).toBeVisible();
     code = (await page.getByTestId("invite-code").innerText()).trim();
-    expect(code).toMatch(/^HK-[A-Z0-9]{4}$/);
+    expect(code).toMatch(/^HK-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
     await expect(page.getByText("You'll get the calendar invite if you're accepted.")).toBeVisible();
     await page.getByRole("button", { name: "Copy", exact: true }).click();
     await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();

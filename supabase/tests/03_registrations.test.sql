@@ -106,7 +106,7 @@ select tests.as_owner();
 select is(tests.count($$select 1 from public.notifications where template = 'application_received'$$), 1::bigint, 'with the received email, not an RSVP confirmation');
 select is(tests.count($$select 1 from public.notifications where template = 'rsvp_confirmed' and payload ->> 'event_slug' = 'hack'$$), 0::bigint, 'no RSVP confirmation');
 select is(tests.val($$select (answers ? 'extra')::text from public.event_registrations where event_id = tests.eid('hack') and profile_id = tests.pid('a')$$), 'false', 'unknown answer keys are dropped');
-select ok(tests.team_code('Нүүдэлчид') ~ '^HK-[A-Z0-9]{4}$', 'the team has an HK-XXXX invite code');
+select ok(tests.team_code('Нүүдэлчид') ~ '^HK-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$', 'the team has an HK-XXXX-XXXX-XXXX invite code');
 select tests.as_person('b');
 select is((select app.register_for_event(tests.eid('hack'), '{"skills":"y"}', jsonb_build_object('mode', 'join', 'code', lower(tests.team_code('Нүүдэлчид')))) ->> 'status'), 'applied', 'a second person joins with the code (any case)');
 select tests.as_person('c');

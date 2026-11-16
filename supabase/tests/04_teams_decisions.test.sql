@@ -30,7 +30,7 @@ select is((select count(*) from public.teams), 1::bigint, 'a member reads their 
 select tests.as_person('c');
 select is((select count(*) from public.teams), 0::bigint, 'and an outsider does not');
 select app.register_for_event(tests.eid('hack'), '{"skills":"x"}');
-select is((select app.create_team(tests.eid('hack'), 'Team U') ->> 'invite_code') ~ '^HK-[A-Z0-9]{4}$', true, 'create_team gives a registered applicant a new team');
+select is((select app.create_team(tests.eid('hack'), 'Team U') ->> 'invite_code') ~ '^HK-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$', true, 'create_team gives a registered applicant a new team');
 select throws_ok($$select app.create_team(tests.eid('hack'), 'Team V')$$, 'P0001', 'conflict', 'but only one');
 select tests.as_person('d');
 select app.register_for_event(tests.eid('hack'), '{"skills":"x"}', jsonb_build_object('mode', 'join', 'code', tests.team_code('Team T')));

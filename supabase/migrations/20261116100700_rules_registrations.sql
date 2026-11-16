@@ -60,7 +60,8 @@ begin
       if length(v_name) < 2 or length(v_name) > 40 then perform app.fail('invalid'); end if;
       if exists (select 1 from public.teams x where x.event_id = ev.id and lower(x.name) = lower(v_name)) then perform app.fail('conflict'); end if;
     elsif v_mode = 'join' then
-      select * into t from public.teams x where x.invite_code = upper(btrim(coalesce(p_team ->> 'code', ''))) for update;
+      if not app.team_code_allowed(me.id) then perform app.fail('rate_limited'); end if;
+      select * into t from public.teams x where x.invite_code = app.normalize_invite_code(p_team ->> 'code') for update;
       if not found or t.event_id <> ev.id then perform app.fail('not_found'); end if;
       if t.locked then perform app.fail('closed'); end if;
       if (select count(*) from public.event_registrations x where x.team_id = t.id and x.status <> 'cancelled') >= ev.team_size_max then
@@ -161,7 +162,8 @@ language plpgsql security definer set search_path = '' as $$
 declare me public.profiles; t public.teams; ev public.events; reg public.event_registrations;
 begin
   me := app.require_profile(true);
-  select * into t from public.teams x where x.invite_code = upper(btrim(coalesce(p_code, '')));
+  if not app.team_code_allowed(me.id) then perform app.fail('rate_limited'); end if;
+  select * into t from public.teams x where x.invite_code = app.normalize_invite_code(p_code);
   if not found then perform app.fail('not_found'); end if;
   select * into ev from public.events where id = t.event_id for update;
   select * into t from public.teams where id = t.id for update;

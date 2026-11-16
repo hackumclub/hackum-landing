@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { normalizeInviteCode } from "@/lib/teams/invite-code-format";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
@@ -23,12 +24,12 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
   return isLocale(lang) ? { title: copy[lang].apply.title } : {};
 }
 
-const CODE = /^[A-Za-z0-9-]{3,16}$/;
+const CODE = /^[A-Za-z0-9 -]{3,24}$/;
 
 async function Body({ params, searchParams }: Props) {
   const { slug } = await params;
   const rawCode = (await searchParams).code;
-  const prefill = typeof rawCode === "string" && CODE.test(rawCode) ? rawCode.toUpperCase() : null;
+  const prefill = typeof rawCode === "string" && CODE.test(rawCode) ? normalizeInviteCode(rawCode) : null;
   const { lang, session, db, now, d, c } = await meContext(params, (l) => `/${l}/me/events/${encodeURIComponent(slug)}/apply${prefill ? `?code=${prefill}` : ""}`);
   const a = c.apply;
 

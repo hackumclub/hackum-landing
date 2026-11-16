@@ -139,7 +139,7 @@ begin
   if n = 0 then return false; end if;
   select * into who from public.profiles p where p.id = p_profile and p.deleted_at is null;
   pref := app.pref_of(p_template);
-  if found and not (pref is not null and not coalesce((who.notif_prefs ->> pref)::boolean, false)) then
+  if found and not (pref is not null and who.notif_prefs -> pref = 'false'::jsonb) then
     perform app.push_inbox(who.id, p_template::text::public.inbox_kind, p_payload, p_dedupe);
   end if;
   return true;
@@ -171,13 +171,13 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Visibility helpers used by RLS policies (security definer so a policy on table A can look at table B without recursion).
-create function app.profile_visible(p_profile uuid) returns boolean
+-- The profiles the caller may see in directories: public ones, plus members-visibility ones for signed-in people. A set with no
+-- argument (never "is profile X visible?"), so it cannot be used to probe a chosen person.
+create function app.visible_profile_ids() returns setof uuid
 language sql stable security definer set search_path = '' as $$
-  select exists (
-    select 1 from public.profiles p
-    where p.id = p_profile and p.deleted_at is null
-      and (p.visibility = 'public' or (p.visibility = 'members' and app.current_profile_id() is not null))
-  )
+  select p.id from public.profiles p
+  where p.deleted_at is null
+    and (p.visibility = 'public' or (p.visibility = 'members' and app.current_profile_id() is not null))
 $$;
 
 create function app.is_seated(p_event uuid) returns boolean
@@ -200,20 +200,28 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Poll audience: onboarded, not deleted; members -> status member; community -> member or alumni; everyone.
-create function app.poll_eligible(p_audience public.poll_audience, p_profile uuid default null) returns boolean
+-- poll_eligible_for takes any profile id, so it is internal (security definer rule functions only, never granted to API roles).
+create function app.poll_eligible_for(p_audience public.poll_audience, p_profile uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
   select exists (
     select 1 from public.profiles p
-    where p.id = coalesce(p_profile, app.current_profile_id()) and p.deleted_at is null and p.onboarded_at is not null
+    where p.id = p_profile and p.deleted_at is null and p.onboarded_at is not null
       and (p_audience = 'everyone'
         or (p_audience = 'members' and p.status = 'member')
         or (p_audience = 'community' and p.status in ('member', 'alumni')))
   )
 $$;
 
-create function app.poll_is_anonymous(p_poll uuid) returns boolean
+-- The version policies and the API may call: it only ever looks at the caller.
+create function app.poll_eligible_me(p_audience public.poll_audience) returns boolean
 language sql stable security definer set search_path = '' as $$
-  select coalesce((select pl.anonymous from public.polls pl where pl.id = p_poll), true)
+  select app.poll_eligible_for(p_audience, app.current_profile_id())
+$$;
+
+-- Polls whose voters staff may see (not anonymous). No argument, empty unless the caller is staff.
+create function app.staff_votable_poll_ids() returns setof uuid
+language sql stable security definer set search_path = '' as $$
+  select pl.id from public.polls pl where not pl.anonymous and app.is_staff()
 $$;
 
 -- ── question / answer validation (port of src/lib/events/questions.ts: questionsSchema + answersSchema) ───────────────────
@@ -304,16 +312,57 @@ begin
   return out;
 end $$;
 
--- Invite codes: HK- plus four of 0-9A-Z (what the mock generates), retried until unused.
+-- Invite codes: HK-XXXX-XXXX-XXXX, 12 characters (60 bits) from a 32-character alphabet without I, O, 0, 1. 256 is divisible by 32,
+-- so taking the low five bits of each random byte has no bias. pgcrypto's CSPRNG, never random(). Retried until unused.
 create function app.gen_invite_code() returns text
 language plpgsql volatile security definer set search_path = '' as $$
-declare alphabet constant text := '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'; code text;
+declare alphabet constant text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; b bytea; code text;
 begin
-  for attempt in 1..50 loop
-    code := 'HK-';
-    for i in 1..4 loop code := code || substr(alphabet, 1 + floor(random() * 36)::integer, 1); end loop;
+  for attempt in 1..20 loop
+    b := extensions.gen_random_bytes(12);
+    code := '';
+    for i in 0..11 loop
+      code := code || substr(alphabet, (get_byte(b, i) & 31) + 1, 1);
+      if i in (3, 7) then code := code || '-'; end if;
+    end loop;
+    code := 'HK-' || code;
     if not exists (select 1 from public.teams t where t.invite_code = code) then return code; end if;
   end loop;
   perform app.fail('server');
   return null;
+end $$;
+
+-- What people type or paste -> the stored form. Strips everything that is not a letter or digit, uppercases. HK + 12 -> canonical,
+-- HK + 4 -> the legacy demo code HK-XXXX, anything else -> uppercased trimmed input (it will simply not be found).
+create function app.normalize_invite_code(p_code text) returns text
+language plpgsql immutable parallel safe set search_path = '' as $$
+declare v text := upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g'));
+begin
+  if v ~ '^HK[A-Z0-9]{12}$' then return 'HK-' || substr(v, 3, 4) || '-' || substr(v, 7, 4) || '-' || substr(v, 11, 4); end if;
+  if v ~ '^HK[A-Z0-9]{4}$' then return 'HK-' || substr(v, 3, 4); end if;
+  return upper(btrim(coalesce(p_code, '')));
+end $$;
+
+-- Guess throttling: failed joins are noted here (by the app, after a join `not_found`, because a raised error rolls its own
+-- writes back) and 10 in an hour block further attempts. Private: no policy, no privileges for API roles.
+create table app.team_code_failures (
+  profile_id uuid not null references public.profiles (id) on delete cascade,
+  at timestamptz not null default now()
+);
+create index team_code_failures_profile_at_idx on app.team_code_failures (profile_id, at);
+alter table app.team_code_failures enable row level security;
+revoke all on app.team_code_failures from public, anon, authenticated;
+
+create function app.team_code_allowed(p_profile uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select (select count(*) from app.team_code_failures f where f.profile_id = p_profile and f.at > now() - interval '1 hour') < 10
+$$;
+
+create function app.note_team_code_failure() returns void
+language plpgsql security definer set search_path = '' as $$
+declare me uuid := app.current_profile_id();
+begin
+  if me is null then perform app.fail('unauthenticated'); end if;
+  insert into app.team_code_failures (profile_id) values (me);
+  delete from app.team_code_failures where profile_id = me and at < now() - interval '1 day';
 end $$;

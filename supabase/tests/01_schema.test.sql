@@ -22,7 +22,7 @@ select ok(not has_table_privilege('authenticated', 'app.settings', 'select'), 's
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'status', 'update'), 'status is not updatable by a person');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'clerk_user_id', 'update'), 'clerk_user_id is not updatable');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'deleted_at', 'update'), 'deleted_at is not updatable');
-select ok(has_column_privilege('authenticated', 'public.profiles', 'school_id', 'update'), 'school_id is updatable');
+select ok(not has_table_privilege('authenticated', 'public.profiles', 'update') and not has_column_privilege('authenticated', 'public.profiles', 'school_id', 'update'), 'profiles are written only through the validated RPCs (no direct update at all)');
 select ok(not has_function_privilege('authenticated', 'app.enqueue_notification(uuid, public.notif_template, jsonb, smallint, text, timestamptz)', 'execute'), 'people cannot enqueue mail');
 select ok(not has_function_privilege('anon', 'app.register_for_event(uuid, jsonb, jsonb)', 'execute'), 'anon cannot register');
 select ok(has_function_privilege('authenticated', 'app.register_for_event(uuid, jsonb, jsonb)', 'execute'), 'authenticated can register');

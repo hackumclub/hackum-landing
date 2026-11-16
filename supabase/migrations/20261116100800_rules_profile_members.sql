@@ -302,10 +302,10 @@ begin
 end $$;
 
 -- Newsletter sign-up: the one write the public site makes without a signed-in person. A repeated address (any letter case)
--- is a success that changes nothing, so the endpoint cannot be used to find out who is subscribed.
-create function app.subscribe(p_name text, p_email text, p_lang text default 'mn', p_source text default 'join_page') returns jsonb
+-- is a success that changes nothing, and the function returns nothing, so the endpoint cannot be used to find out who is subscribed.
+create function app.subscribe(p_name text, p_email text, p_lang text default 'mn', p_source text default 'join_page') returns void
 language plpgsql security definer set search_path = '' as $$
-declare v_name text := btrim(regexp_replace(coalesce(p_name, ''), '\s+', ' ', 'g')); v_email text := lower(btrim(coalesce(p_email, ''))); v_src text; n integer;
+declare v_name text := btrim(regexp_replace(coalesce(p_name, ''), '\s+', ' ', 'g')); v_email text := lower(btrim(coalesce(p_email, ''))); v_src text;
 begin
   if length(v_name) < 1 or length(v_name) > 80 or v_name ~ '[[:cntrl:]]'
      or length(v_email) < 6 or length(v_email) > 254 or v_email ~ '[[:cntrl:]]'
@@ -315,6 +315,4 @@ begin
   end if;
   v_src := case when p_source in ('join_page', 'footer', 'event_page') then p_source else 'join_page' end;
   insert into public.subscribers (email, name, lang, source) values (v_email, v_name, p_lang, v_src) on conflict (email) do nothing;
-  get diagnostics n = row_count;
-  return jsonb_build_object('created', n > 0);
 end $$;
