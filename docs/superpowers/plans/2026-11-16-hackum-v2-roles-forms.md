@@ -219,3 +219,12 @@ A walkthrough of every flow as seven kinds of user (signed-out, new guest, other
 | Deferred | 21 (event-day tooling, message attendees, per-registration actions) | needs its own spec: it changes the rule layer |
 
 Task 1 is done; Tasks 2–4 done (domain, NUM picker, shared UI).
+
+---
+
+## Slice: feedback, polls, reports (Tasks 22–25)
+Spec: `docs/superpowers/specs/2026-11-16-hackum-feedback-polls-reports-design.md`.
+- **Task 22: domain (lead, TDD):** `feedback.ts` (`submitFeedback`, `feedbackSummary`, `feedbackRows`, `enqueueFeedbackRequests`), `polls.ts` (`createPoll`, `updatePoll`, `setPollStatus`, `vote`, `pollResults`, `eligibleFor`), `reports.ts` (`eventReport`, `periodReport`), templates `feedback_request` / `poll_opened`, tick wiring, inbox emission.
+- **Task 23: member side:** feedback prompt (Home card, Past tab, `/me/events/[slug]/feedback`), `/me/polls`, Home "Open poll" card, "Voice of the club" badge, renderer text for the two new email templates.
+- **Task 24: admin polls:** `/admin/polls` list/editor/results, nav item, publish confirm naming audience and count.
+- **Task 25: reports and export:** event report tab and `/admin/reports`, print stylesheet, chart image download, "Download PDF".

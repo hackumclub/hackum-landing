@@ -7,7 +7,8 @@ Framework preset: **Next.js** (auto-detected). Build command `next build`, no ou
 |---|---|---|
 | `SUBSCRIBE_WEBHOOK_URL` | for the Join form | HTTPS endpoint that receives `{ name, email, lang, ts }` per sign-up (Google Apps Script → Sheet, Zapier, your API). Without it the form says "temporarily unavailable". See `docs/subscribe.md`. |
 | `SUBSCRIBE_WEBHOOK_SECRET` | optional | Sent as `Authorization: Bearer <secret>` to the webhook. |
-| `SITE_URL` | optional | Canonical origin for metadata/sitemap/robots (e.g. `https://hackum.club`). Defaults to Vercel's production domain (`VERCEL_PROJECT_PRODUCTION_URL`). |
+| `SITE_URL` | optional | Canonical origin for metadata/sitemap/robots (e.g. `https://hackum.club`). Defaults to Vercel's production domain (`VERCEL_PROJECT_PRODUCTION_URL`). Also the origin inside event links in Google Calendar and `.ics` downloads, so set it in production; locally it falls back to `http://localhost:3000`, so the port in those links is wrong when the dev server runs elsewhere. |
+| `NEXT_PUBLIC_CLUB_EMAIL` | optional | Public contact address for alumni and visitors (mailto links). Leave unset until the club domain exists: links then fall back to the club's Instagram. |
 | `APP_ENV` | optional | Value of the `env` field in structured logs (defaults to `NODE_ENV`). |
 
 ## What the platform does for us
